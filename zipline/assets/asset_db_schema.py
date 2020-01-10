@@ -6,7 +6,7 @@ import sqlalchemy as sa
 # assets database
 # NOTE: When upgrading this remember to add a downgrade in:
 # .asset_db_migrations
-ASSET_DB_VERSION = 7
+ASSET_DB_VERSION = 8
 
 # A frozenset of the names of all tables in the assets db
 # NOTE: When modifying this schema, update the ASSET_DB_VERSION value
@@ -47,6 +47,7 @@ equities = sa.Table(
         nullable=False,
         primary_key=True,
     ),
+    sa.Column('real_sid', sa.Text, unique=True, nullable=False),
     sa.Column('asset_name', sa.Text),
     sa.Column('start_date', sa.Integer, default=0, nullable=False),
     sa.Column('end_date', sa.Integer, nullable=False),
@@ -144,6 +145,7 @@ futures_contracts = sa.Table(
         nullable=False,
         primary_key=True,
     ),
+    sa.Column('real_sid', sa.Text, unique=True, nullable=False),
     sa.Column('symbol', sa.Text, unique=True, index=True),
     sa.Column(
         'root_symbol',

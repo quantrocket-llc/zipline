@@ -77,6 +77,7 @@ cdef class Asset:
 
     _kwargnames = frozenset({
         'sid',
+        'real_sid',
         'symbol',
         'asset_name',
         'start_date',
@@ -90,6 +91,7 @@ cdef class Asset:
 
     def __init__(self,
                  int64_t sid, # sid is required
+                 object real_sid, # real_sid is required
                  object exchange_info, # exchange is required
                  object symbol="",
                  object asset_name="",
@@ -101,6 +103,7 @@ cdef class Asset:
                  float multiplier=1.0):
 
         self.sid = sid
+        self.real_sid = real_sid
         self.symbol = symbol
         self.asset_name = asset_name
         self.exchange_info = exchange_info
@@ -110,6 +113,10 @@ cdef class Asset:
         self.auto_close_date = auto_close_date
         self.tick_size = tick_size
         self.price_multiplier = multiplier
+
+    @property
+    def zipline_sid(self):
+        return self.sid
 
     @property
     def exchange(self):
@@ -170,9 +177,9 @@ cdef class Asset:
 
     def __repr__(self):
         if self.symbol:
-            return '%s(%d [%s])' % (type(self).__name__, self.sid, self.symbol)
+            return '%s(%s [%s])' % (type(self).__name__, self.real_sid, self.symbol)
         else:
-            return '%s(%d)' % (type(self).__name__, self.sid)
+            return '%s(%s)' % (type(self).__name__, self.real_sid)
 
     cpdef __reduce__(self):
         """
@@ -182,6 +189,7 @@ cdef class Asset:
         be serialized/deserialized during pickling.
         """
         return (self.__class__, (self.sid,
+                                 self.real_sid,
                                  self.exchange_info,
                                  self.symbol,
                                  self.asset_name,
@@ -203,6 +211,7 @@ cdef class Asset:
         """
         return {
             'sid': self.sid,
+            'real_sid': self.real_sid,
             'symbol': self.symbol,
             'asset_name': self.asset_name,
             'start_date': self.start_date,
@@ -306,6 +315,7 @@ cdef class Future(Asset):
     """
     _kwargnames = frozenset({
         'sid',
+        'real_sid',
         'symbol',
         'root_symbol',
         'asset_name',
@@ -322,6 +332,7 @@ cdef class Future(Asset):
 
     def __init__(self,
                  int64_t sid, # sid is required
+                 object real_sid, # real_sid is required
                  object exchange_info, # exchange is required
                  object symbol="",
                  object root_symbol="",
@@ -337,6 +348,7 @@ cdef class Future(Asset):
 
         super().__init__(
             sid,
+            real_sid,
             exchange_info,
             symbol=symbol,
             asset_name=asset_name,
@@ -378,6 +390,7 @@ cdef class Future(Asset):
         be serialized/deserialized during pickling.
         """
         return (self.__class__, (self.sid,
+                                 self.real_sid,
                                  self.exchange_info,
                                  self.symbol,
                                  self.root_symbol,

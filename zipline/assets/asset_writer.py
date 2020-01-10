@@ -106,6 +106,7 @@ def _no_default(df, column):
 
 # Default values for the equities DataFrame
 _equities_defaults = {
+    'real_sid': _no_default,
     'symbol': _default_none,
     'asset_name': _default_none,
     'start_date': lambda df, col: 0,
@@ -122,6 +123,7 @@ del _direct_equities_defaults['symbol']
 
 # Default values for the futures DataFrame
 _futures_defaults = {
+    'real_sid': _no_default,
     'symbol': _default_none,
     'root_symbol': _default_none,
     'asset_name': _default_none,
