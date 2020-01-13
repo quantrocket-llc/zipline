@@ -8,6 +8,7 @@ cdef class Asset:
 
     cdef readonly object symbol
     cdef readonly object asset_name
+    cdef readonly object currency
 
     cdef readonly object start_date
     cdef readonly object end_date
@@ -16,6 +17,7 @@ cdef class Asset:
 
     cdef readonly object tick_size
     cdef readonly float price_multiplier
+    cdef readonly float price_magnifier
 
     cpdef __reduce__(self)
     cpdef to_dict(self)

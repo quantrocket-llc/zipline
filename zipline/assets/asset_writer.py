@@ -108,6 +108,7 @@ def _no_default(df, column):
 _equities_defaults = {
     'real_sid': _no_default,
     'symbol': _default_none,
+    'currency': _no_default,
     'asset_name': _default_none,
     'start_date': lambda df, col: 0,
     'end_date': lambda df, col: np.iinfo(np.int64).max,
@@ -115,6 +116,7 @@ _equities_defaults = {
     'auto_close_date': _default_none,
     # the full exchange name
     'exchange': _no_default,
+    'price_magnifier': lambda df, col: 1,
 }
 
 # the defaults for ``equities`` in ``write_direct``
@@ -126,6 +128,7 @@ _futures_defaults = {
     'real_sid': _no_default,
     'symbol': _default_none,
     'root_symbol': _default_none,
+    'currency': _no_default,
     'asset_name': _default_none,
     'start_date': lambda df, col: 0,
     'end_date': lambda df, col: np.iinfo(np.int64).max,
@@ -136,6 +139,7 @@ _futures_defaults = {
     'auto_close_date': _default_none,
     'tick_size': _default_none,
     'multiplier': lambda df, col: 1,
+    'price_magnifier': lambda df, col: 1,
 }
 
 # Default values for the exchanges DataFrame

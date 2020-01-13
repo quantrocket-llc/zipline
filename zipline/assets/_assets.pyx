@@ -86,13 +86,16 @@ cdef class Asset:
         'auto_close_date',
         'tick_size',
         'multiplier',
+        'price_magnifier',
         'exchange_info',
+        'currency',
     })
 
     def __init__(self,
                  int64_t sid, # sid is required
                  object real_sid, # real_sid is required
                  object exchange_info, # exchange is required
+                 object currency, # currency is required
                  object symbol="",
                  object asset_name="",
                  object start_date=None,
@@ -100,19 +103,22 @@ cdef class Asset:
                  object first_traded=None,
                  object auto_close_date=None,
                  object tick_size=0.01,
-                 float multiplier=1.0):
+                 float multiplier=1.0,
+                 float price_magnifier=1.0):
 
         self.sid = sid
         self.real_sid = real_sid
         self.symbol = symbol
         self.asset_name = asset_name
         self.exchange_info = exchange_info
+        self.currency = currency
         self.start_date = start_date
         self.end_date = end_date
         self.first_traded = first_traded
         self.auto_close_date = auto_close_date
         self.tick_size = tick_size
         self.price_multiplier = multiplier
+        self.price_magnifier = price_magnifier
 
     @property
     def zipline_sid(self):
@@ -192,13 +198,15 @@ cdef class Asset:
                                  self.real_sid,
                                  self.exchange_info,
                                  self.symbol,
+                                 self.currency,
                                  self.asset_name,
                                  self.start_date,
                                  self.end_date,
                                  self.first_traded,
                                  self.auto_close_date,
                                  self.tick_size,
-                                 self.price_multiplier))
+                                 self.price_multiplier,
+                                 self.price_magnifier))
 
     cpdef to_dict(self):
         """Convert to a python dict containing all attributes of the asset.
@@ -213,6 +221,7 @@ cdef class Asset:
             'sid': self.sid,
             'real_sid': self.real_sid,
             'symbol': self.symbol,
+            'currency': self.currency,
             'asset_name': self.asset_name,
             'start_date': self.start_date,
             'end_date': self.end_date,
@@ -222,6 +231,7 @@ cdef class Asset:
             'exchange_full': self.exchange_full,
             'tick_size': self.tick_size,
             'multiplier': self.price_multiplier,
+            'price_magnifier': self.price_magnifier,
             'exchange_info': self.exchange_info,
         }
 
@@ -319,6 +329,7 @@ cdef class Future(Asset):
         'symbol',
         'root_symbol',
         'asset_name',
+        'currency',
         'start_date',
         'end_date',
         'notice_date',
@@ -328,12 +339,14 @@ cdef class Future(Asset):
         'exchange_info',
         'tick_size',
         'multiplier',
+        'price_magnifier',
     })
 
     def __init__(self,
                  int64_t sid, # sid is required
                  object real_sid, # real_sid is required
                  object exchange_info, # exchange is required
+                 object currency, # currency is required
                  object symbol="",
                  object root_symbol="",
                  object asset_name="",
@@ -344,20 +357,23 @@ cdef class Future(Asset):
                  object auto_close_date=None,
                  object first_traded=None,
                  object tick_size=0.001,
-                 float multiplier=1.0):
+                 float multiplier=1.0,
+                 float price_magnifier=1.0):
 
         super().__init__(
             sid,
             real_sid,
             exchange_info,
             symbol=symbol,
+            currency=currency,
             asset_name=asset_name,
             start_date=start_date,
             end_date=end_date,
             first_traded=first_traded,
             auto_close_date=auto_close_date,
             tick_size=tick_size,
-            multiplier=multiplier
+            multiplier=multiplier,
+            price_magnifier=price_magnifier
         )
         self.root_symbol = root_symbol
         self.notice_date = notice_date
@@ -394,6 +410,7 @@ cdef class Future(Asset):
                                  self.exchange_info,
                                  self.symbol,
                                  self.root_symbol,
+                                 self.currency,
                                  self.asset_name,
                                  self.start_date,
                                  self.end_date,
@@ -402,7 +419,8 @@ cdef class Future(Asset):
                                  self.auto_close_date,
                                  self.first_traded,
                                  self.tick_size,
-                                 self.price_multiplier))
+                                 self.price_multiplier,
+                                 self.price_magnifier))
 
     cpdef to_dict(self):
         """
