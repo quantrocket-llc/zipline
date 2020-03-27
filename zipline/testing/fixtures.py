@@ -1,4 +1,3 @@
-import itertools
 import os
 import sqlite3
 from unittest import TestCase
@@ -8,18 +7,20 @@ from contextlib2 import ExitStack
 from logbook import NullHandler, Logger
 import numpy as np
 import pandas as pd
-from six import with_metaclass, iteritems, itervalues
+from six import with_metaclass, iteritems, itervalues, PY2
 import responses
 from toolz import flip, groupby, merge
 from trading_calendars import (
     get_calendar,
     register_calendar_alias,
 )
+import h5py
 
 import zipline
 from zipline.algorithm import TradingAlgorithm
 from zipline.assets import Equity, Future
 from zipline.assets.continuous_futures import CHAIN_PREDICATES
+from zipline.data.fx import DEFAULT_FX_RATE
 from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.utils.memoize import classlazyval
 from zipline.pipeline import SimplePipelineEngine
@@ -52,7 +53,11 @@ from ..data.data_portal import (
     DEFAULT_MINUTE_HISTORY_PREFETCH,
     DEFAULT_DAILY_HISTORY_PREFETCH,
 )
-from ..data.fx import InMemoryFXRateReader
+from ..data.fx import (
+    InMemoryFXRateReader,
+    HDF5FXRateReader,
+    HDF5FXRateWriter,
+)
 from ..data.hdf5_daily_bars import (
     HDF5DailyBarReader,
     HDF5DailyBarWriter,
@@ -245,6 +250,10 @@ class ZiplineTestCase(with_metaclass(DebugMROMeta, TestCase)):
             The callback to invoke at the end of each test.
         """
         return self._instance_teardown_stack.callback(callback)
+
+    if PY2:
+        def assertRaisesRegex(self, *args, **kwargs):
+            return self.assertRaisesRegexp(*args, **kwargs)
 
 
 def alias(attr_name):
@@ -573,16 +582,15 @@ class WithBenchmarkReturns(WithDefaultDateBounds,
     def BENCHMARK_RETURNS(cls):
         benchmark_returns = read_checked_in_benchmark_data()
 
-        # Zipline ordinarily uses cached benchmark returns and treasury
-        # curves data, but when running the zipline tests this cache is not
-        # always updated to include the appropriate dates required by both
-        # the futures and equity calendars. In order to create more
-        # reliable and consistent data throughout the entirety of the
-        # tests, we read static benchmark returns and treasury curve csv
-        # files from source. If a test using this fixture attempts to run
-        # outside of the static date range of the csv files, raise an
-        # exception warning the user to either update the csv files in
-        # source or to use a date range within the current bounds.
+        # Zipline ordinarily uses cached benchmark returns data, but when
+        # running the zipline tests this cache is not always updated to include
+        # the appropriate dates required by both the futures and equity
+        # calendars. In order to create more reliable and consistent data
+        # throughout the entirety of the tests, we read static benchmark
+        # returns files from source. If a test using this fixture attempts to
+        # run outside of the static date range of the csv files, raise an
+        # exception warning the user to either update the csv files in source
+        # or to use a date range within the current bounds.
         static_start_date = benchmark_returns.index[0].date()
         static_end_date = benchmark_returns.index[-1].date()
         warning_message = (
@@ -2088,51 +2096,160 @@ class WithFXRates(object):
     # Currencies between which exchange rates can be calculated.
     FX_RATES_CURRENCIES = ["USD", "CAD", "GBP", "EUR"]
 
-    # Fields for which exchange rate data is present.
-    FX_RATES_FIELDS = ["mid"]
+    # Kinds of rates for which exchange rate data is present.
+    FX_RATES_RATE_NAMES = ["mid"]
+
+    # Default chunk size used for fx artifact compression.
+    HDF5_FX_CHUNK_SIZE = 75
+
+    # Rate used by default for Pipeline API queries that don't specify a rate
+    # explicitly.
+    @classproperty
+    def FX_RATES_DEFAULT_RATE(cls):
+        return cls.FX_RATES_RATE_NAMES[0]
 
     @classmethod
     def init_class_fixtures(cls):
         super(WithFXRates, cls).init_class_fixtures()
 
         cal = get_calendar(cls.FX_RATES_CALENDAR)
-        sessions = cal.sessions_in_range(
+        cls.fx_rates_sessions = cal.sessions_in_range(
             cls.FX_RATES_START_DATE,
             cls.FX_RATES_END_DATE,
         )
 
         cls.fx_rates = cls.make_fx_rates(
-            cls.FX_RATES_FIELDS,
+            cls.FX_RATES_RATE_NAMES,
             cls.FX_RATES_CURRENCIES,
-            sessions,
+            cls.fx_rates_sessions,
         )
 
-        cls.in_memory_fx_rate_reader = InMemoryFXRateReader(cls.fx_rates)
+        cls.in_memory_fx_rate_reader = InMemoryFXRateReader(
+            cls.fx_rates,
+            cls.FX_RATES_DEFAULT_RATE,
+        )
 
     @classmethod
-    def make_fx_rates(cls, fields, currencies, sessions):
+    def make_fx_rates_from_reference(cls, reference):
+        """
+        Helper method for implementing make_fx_rates.
+
+        Takes a (dates x currencies) DataFrame of "reference" values, which are
+        assumed to be the "true" value of each currency in some unknown
+        external currency. Computes fx rates from A -> B as by dividing the
+        reference value for A by the reference value for B.
+
+        Parameters
+        ----------
+        reference : pd.DataFrame
+            DataFrame of "true" values for currencies.
+
+        Returns
+        -------
+        rates : dict[str, pd.DataFrame]
+            Map from quote currency to FX rates for that currency.
+        """
+        out = {}
+        for quote in reference.columns:
+            out[quote] = reference.divide(reference[quote], axis=0)
+
+        return out
+
+    @classmethod
+    def make_fx_rates(cls, rate_names, currencies, sessions):
         rng = np.random.RandomState(42)
 
-        # Assign each currency a "true value" timeseries.
-        true_values = {}
-        for field, currency in sorted(itertools.product(fields, currencies)):
-            start, end = sorted(rng.uniform(0.5, 1.5, (2,)))
-            true_values[currency] = np.linspace(start, end, len(sessions))
+        out = {}
+        for rate_name in rate_names:
+            cols = {}
+            for currency in currencies:
+                start, end = sorted(rng.uniform(0.5, 1.5, (2,)))
+                cols[currency] = np.linspace(start, end, len(sessions))
 
-        true_values_df = pd.DataFrame(
-            true_values,
-            index=sessions,
-            columns=sorted(currencies),
+            reference = pd.DataFrame(cols, index=sessions, columns=currencies)
+            out[rate_name] = cls.make_fx_rates_from_reference(reference)
+
+        return out
+
+    @classmethod
+    def write_h5_fx_rates(cls, path):
+        """Write cls.fx_rates to disk with an HDF5FXRateWriter.
+
+        Returns an HDF5FXRateReader that reader from written data.
+        """
+        sessions = cls.fx_rates_sessions
+
+        # Write in-memory data to h5 file.
+        with h5py.File(path, 'w') as h5_file:
+            writer = HDF5FXRateWriter(h5_file, cls.HDF5_FX_CHUNK_SIZE)
+            fx_data = ((rate, quote, quote_frame.values)
+                       for rate, rate_dict in cls.fx_rates.items()
+                       for quote, quote_frame in rate_dict.items())
+
+            writer.write(
+                dts=sessions.values,
+                currencies=np.array(cls.FX_RATES_CURRENCIES, dtype=object),
+                data=fx_data,
+            )
+
+        h5_file = cls.enter_class_context(h5py.File(path, 'r'))
+
+        return HDF5FXRateReader(
+            h5_file,
+            default_rate=cls.FX_RATES_DEFAULT_RATE,
         )
 
-        # Define rates as the ratio between each asset's true values.
-        out = {}
-        for i, field in enumerate(fields):
-            out[field] = {}
-            for quote in currencies:
-                out[field][quote] = true_values_df.divide(
-                    true_values_df[quote],
-                    axis=0,
+    @classmethod
+    def get_expected_fx_rate_scalar(cls, rate, quote, base, dt):
+        """Get the expected FX rate for the given scalar coordinates.
+        """
+        if base is None:
+            return np.nan
+
+        if rate == DEFAULT_FX_RATE:
+            rate = cls.FX_RATES_DEFAULT_RATE
+
+        col = cls.fx_rates[rate][quote][base]
+        if dt < col.index[0]:
+            return np.nan
+
+        # PERF: We call this function a lot in some suites, and get_loc is
+        # surprisingly expensive, so optimizing it has a meaningful impact on
+        # overall suite performance. See test_fast_get_loc_ffilled_for
+        # assurance that this behaves the same as get_loc.
+        ix = fast_get_loc_ffilled(col.index.values, dt.asm8)
+        return col.values[ix]
+
+    @classmethod
+    def get_expected_fx_rates(cls, rate, quote, bases, dts):
+        """Get an array of expected FX rates for the given indices.
+        """
+        out = np.empty((len(dts), len(bases)), dtype='float64')
+
+        for i, dt in enumerate(dts):
+            for j, base in enumerate(bases):
+                out[i, j] = cls.get_expected_fx_rate_scalar(
+                    rate, quote, base, dt,
                 )
 
         return out
+
+    @classmethod
+    def get_expected_fx_rates_columnar(cls, rate, quote, bases, dts):
+        assert len(bases) == len(dts)
+        rates = [
+            cls.get_expected_fx_rate_scalar(rate, quote, base, dt)
+            for base, dt in zip(bases, dts)
+        ]
+        return np.array(rates, dtype='float64')
+
+
+def fast_get_loc_ffilled(dts, dt):
+    """
+    Equivalent to dts.get_loc(dt, method='ffill'), but with reasonable
+    microperformance.
+    """
+    ix = dts.searchsorted(dt, side='right') - 1
+    if ix < 0:
+        raise KeyError(dt)
+    return ix

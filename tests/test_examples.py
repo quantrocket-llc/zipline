@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from functools import partial
+from operator import itemgetter
 import tarfile
 
 import matplotlib
@@ -36,6 +37,8 @@ _multiprocess_can_split_ = False
 
 matplotlib.use('Agg')
 
+EXAMPLE_MODULES = examples.load_example_modules()
+
 
 class ExamplesTests(WithTmpDir, ZiplineTestCase):
     # some columns contain values with unique ids that will not be the same
@@ -58,17 +61,14 @@ class ExamplesTests(WithTmpDir, ZiplineTestCase):
             serialization='pickle',
         )
 
-        market_data = ('SPY_benchmark.csv', 'treasury_curves.csv')
-        for data in market_data:
-            update_modified_time(
-                cls.tmpdir.getpath(
-                    'example_data/root/data/' + data
-                )
-            )
+        update_modified_time(
+            cls.tmpdir.getpath('example_data/root/data/SPY_benchmark.csv'),
+        )
 
-    @parameterized.expand(sorted(examples.EXAMPLE_MODULES))
+    @parameterized.expand(sorted(EXAMPLE_MODULES))
     def test_example(self, example_name):
         actual_perf = examples.run_example(
+            EXAMPLE_MODULES,
             example_name,
             # This should match the invocation in
             # zipline/tests/resources/rebuild_example_data
@@ -77,11 +77,20 @@ class ExamplesTests(WithTmpDir, ZiplineTestCase):
             },
         )
         expected_perf = self.expected_perf[example_name]
+        # Exclude positions column as the positions do not always have the
+        # same order
+        columns = [column for column in examples._cols_to_check
+                   if column != 'positions']
         assert_equal(
-            actual_perf[examples._cols_to_check],
-            expected_perf[examples._cols_to_check],
+            actual_perf[columns],
+            expected_perf[columns],
             # There is a difference in the datetime columns in pandas
             # 0.16 and 0.17 because in 16 they are object and in 17 they are
             # datetime[ns, UTC]. We will just ignore the dtypes for now.
             check_dtype=False,
+        )
+        # Sort positions by SID before comparing
+        assert_equal(
+            expected_perf['positions'].apply(sorted, key=itemgetter('sid')),
+            actual_perf['positions'].apply(sorted, key=itemgetter('sid')),
         )

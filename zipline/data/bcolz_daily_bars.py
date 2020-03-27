@@ -706,5 +706,14 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
             return price
 
     def currency_codes(self, sids):
-        # TODO: Better handling for this.
-        return np.full(len(sids), b'USD', dtype='S3')
+        # XXX: This is pretty inefficient. This reader doesn't really support
+        # country codes, so we always either return USD or None if we don't
+        # know about the sid at all.
+        first_rows = self._first_rows
+        out = []
+        for sid in sids:
+            if sid in first_rows:
+                out.append('USD')
+            else:
+                out.append(None)
+        return np.array(out, dtype=object)

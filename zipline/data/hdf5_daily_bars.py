@@ -115,6 +115,7 @@ from zipline.data.bar_reader import (
 )
 from zipline.data.session_bars import CurrencyAwareSessionBarReader
 from zipline.utils.memoize import lazyval
+from zipline.utils.numpy_utils import bytes_array_to_native_str_object_array
 from zipline.utils.pandas_utils import check_indexes_all_same
 
 
@@ -695,7 +696,8 @@ class HDF5DailyBarReader(CurrencyAwareSessionBarReader):
 
     @lazyval
     def _currency_codes(self):
-        return self._country_group[CURRENCY][CODE][:]
+        bytes_array = self._country_group[CURRENCY][CODE][:]
+        return bytes_array_to_native_str_object_array(bytes_array)
 
     def currency_codes(self, sids):
         """Get currencies in which prices are quoted for the requested sids.
@@ -707,25 +709,21 @@ class HDF5DailyBarReader(CurrencyAwareSessionBarReader):
 
         Returns
         -------
-        currency_codes : np.array[S3]
+        currency_codes : np.array[object]
             Array of currency codes for listing currencies of ``sids``.
         """
-        all_sids = sids
+        # Find the index of requested sids in our stored sids.
+        ixs = self.sids.searchsorted(sids, side='left')
 
-        # For each sid in ``sids``, find its index in ``all_sids``.
-        ixs = all_sids.searchsorted(sids, side='left')
+        result = self._currency_codes[ixs]
 
-        # searchsorted will return the index of the next lowest sid if the
-        # lookup fails. Check for this case and raise an error.
-        not_found = (all_sids[ixs] != sids)
-        if not_found.any():
-            # TODO: Should we return an unknown sentinel here?
-            missing = sids[not_found]
-            raise ValueError(
-                "Unable to find currency codes for sids:\n{}".format(missing)
-            )
+        # searchsorted returns the index of the next lowest sid if the lookup
+        # fails. Fill these sids with the special "missing" sentinel.
+        not_found = (self.sids[ixs] != sids)
 
-        return self._currency_codes[ixs]
+        result[not_found] = None
+
+        return result
 
     @property
     def last_available_dt(self):

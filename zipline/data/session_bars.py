@@ -39,7 +39,8 @@ class CurrencyAwareSessionBarReader(SessionBarReader):
 
     @abstractmethod
     def currency_codes(self, sids):
-        """Get currencies in which prices are quoted for the requested sids.
+        """
+        Get currencies in which prices are quoted for the requested sids.
 
         Assumes that a sid's prices are always quoted in a single currency.
 
@@ -50,6 +51,8 @@ class CurrencyAwareSessionBarReader(SessionBarReader):
 
         Returns
         -------
-        currency_codes : np.array[S3]
-            Array of currency codes for listing currencies of ``sids``.
+        currency_codes : np.array[object]
+            Array of currency codes for listing currencies of
+            ``sids``. Implementations should return None for sids whose
+            currency is unknown.
         """
