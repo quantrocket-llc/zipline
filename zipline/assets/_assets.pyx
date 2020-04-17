@@ -47,7 +47,9 @@ cdef class Asset:
     Attributes
     ----------
     sid : int
-        Persistent unique identifier assigned to the asset.
+        Internal Zipline sid. Persistent unique identifier assigned to the asset.
+    real_sid: str
+        The QuantRocket sid.
     symbol : str
         Most recent ticker under which the asset traded. This field can change
         without warning if the asset changes tickers. Use ``sid`` if you need a
@@ -62,6 +64,8 @@ cdef class Asset:
         STOCK EXCHANGE').
     country_code : str
         Two character code indicating the country in which the asset trades.
+    currency : str
+        ISO currency of asset.
     start_date : pd.Timestamp
         Date on which the asset first traded.
     end_date : pd.Timestamp
@@ -69,6 +73,11 @@ cdef class Asset:
         to the current (real time) date for assets that are still trading.
     tick_size : float
         Minimum amount that the price can change for this asset.
+    multiplier : float
+        The contract multiplier
+    price_magnifier : float
+        The price magnifier by which to divide prices when prices are quoted in a smaller
+        unit than the asset's currency.
     auto_close_date : pd.Timestamp
         Date on which positions in this asset will be automatically liquidated
         to cash during a simulation. By default, this is three days after

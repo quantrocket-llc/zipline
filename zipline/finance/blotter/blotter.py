@@ -58,8 +58,7 @@ class Blotter(with_metaclass(ABCMeta)):
         Market order:    order(asset, amount)
         Limit order:     order(asset, amount, style=LimitOrder(limit_price))
         Stop order:      order(asset, amount, style=StopOrder(stop_price))
-        StopLimit order: order(asset, amount, style=StopLimitOrder(limit_price,
-                               stop_price))
+        StopLimit order: order(asset, amount, style=StopLimitOrder(limit_price, stop_price))
         """
 
         raise NotImplementedError('order')

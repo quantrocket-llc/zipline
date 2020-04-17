@@ -741,13 +741,13 @@ class Ledger(object):
 
     @property
     def portfolio(self):
-        """Compute the current portfolio.
+        # Compute the current portfolio.
 
-        Notes
-        -----
-        This is cached, repeated access will not recompute the portfolio until
-        the portfolio may have changed.
-        """
+        # Notes
+        # -----
+        # This is cached, repeated access will not recompute the portfolio until
+        # the portfolio may have changed.
+
         self.update_portfolio()
         return self._immutable_portfolio
 

@@ -91,10 +91,6 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
     :class:`~zipline.finance.slippage.SlippageModel` and implement
     :meth:`process_order`.
 
-    Methods
-    -------
-    process_order(data, order)
-
     Attributes
     ----------
     volume_for_bar : int
