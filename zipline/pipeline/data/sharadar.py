@@ -33,9 +33,9 @@ class SharadarSP500(DataSet):
     domain = US_EQUITIES
     in_sp500 = Column(bool_dtype)
 
-class SharadarUSQuarterlyFundamentals(DataSet):
+class SharadarQuarterlyFundamentals(DataSet):
     """
-    Dataset representing Sharadar US quarterly fundamentals.
+    Dataset representing Sharadar quarterly fundamentals.
 
     Attributes
     ----------
@@ -601,7 +601,7 @@ class SharadarUSQuarterlyFundamentals(DataSet):
     --------
     Select stocks with low enterprise multiples:
 
-    >>> have_low_enterprise_multiples = SharadarUSQuarterlyFundamentals.EVEBITDA.latest.percentile_between(0, 20)
+    >>> have_low_enterprise_multiples = SharadarQuarterlyFundamentals.EVEBITDA.latest.percentile_between(0, 20)
     """
     domain = US_EQUITIES
 
@@ -711,7 +711,7 @@ class SharadarUSQuarterlyFundamentals(DataSet):
     TBVPS = Column(float64_dtype) # Tangible Assets Book Value per Share - [Metrics] Measures the ratio between [Tangibles] and [SharesWA] as adjusted by [ShareFactor].
     PRICE = Column(float64_dtype) # Share Price (Adjusted Close) - [Entity] The price per common share adjusted for stock splits but not adjusted for dividends; used in the computation of [PE1]; [PS1]; [DivYield] and [SPS].
 
-class SharadarUSAnnualFundamentals(DataSet):
+class SharadarAnnualFundamentals(DataSet):
     """
     Dataset representing Sharadar annual fundamentals.
 
@@ -1279,7 +1279,7 @@ class SharadarUSAnnualFundamentals(DataSet):
     --------
     Select stocks with low enterprise multiples:
 
-    >>> have_low_enterprise_multiples = SharadarUSQuarterlyFundamentals.EVEBITDA.latest.percentile_between(0, 20)
+    >>> have_low_enterprise_multiples = SharadarAnnualFundamentals.EVEBITDA.latest.percentile_between(0, 20)
 
     """
     domain = US_EQUITIES
@@ -1390,7 +1390,7 @@ class SharadarUSAnnualFundamentals(DataSet):
     TBVPS = Column(float64_dtype) # Tangible Assets Book Value per Share - [Metrics] Measures the ratio between [Tangibles] and [SharesWA] as adjusted by [ShareFactor].
     PRICE = Column(float64_dtype) # Share Price (Adjusted Close) - [Entity] The price per common share adjusted for stock splits but not adjusted for dividends; used in the computation of [PE1]; [PS1]; [DivYield] and [SPS].
 
-class SharadarUSTrailingTwelveMonthFundamentals(DataSet):
+class SharadarTrailingTwelveMonthFundamentals(DataSet):
     """
     Dataset representing Sharadar trailing twelve month fundamentals.
 
@@ -1958,7 +1958,7 @@ class SharadarUSTrailingTwelveMonthFundamentals(DataSet):
     --------
     Select stocks with low enterprise multiples:
 
-    >>> have_low_enterprise_multiples = SharadarUSQuarterlyFundamentals.EVEBITDA.latest.percentile_between(0, 20)
+    >>> have_low_enterprise_multiples = SharadarTrailingTwelveMonthFundamentals.EVEBITDA.latest.percentile_between(0, 20)
     """
     domain = US_EQUITIES
 
@@ -2068,7 +2068,7 @@ class SharadarUSTrailingTwelveMonthFundamentals(DataSet):
     TBVPS = Column(float64_dtype) # Tangible Assets Book Value per Share - [Metrics] Measures the ratio between [Tangibles] and [SharesWA] as adjusted by [ShareFactor].
     PRICE = Column(float64_dtype) # Share Price (Adjusted Close) - [Entity] The price per common share adjusted for stock splits but not adjusted for dividends; used in the computation of [PE1]; [PS1]; [DivYield] and [SPS].
 
-class SharadarUSInstitutions(DataSet):
+class SharadarInstitutions(DataSet):
     """
     Dataset representing Sharadar institutional ownership.
 
@@ -2178,7 +2178,7 @@ class SharadarUSInstitutions(DataSet):
     --------
     Select stocks with large institutional ownership:
 
-    >>> have_inst_own = SharadarUSInstitutions.TOTALVALUE.latest.percentile_between(80, 100)
+    >>> have_inst_own = SharadarInstitutions.TOTALVALUE.latest.percentile_between(80, 100)
     """
     domain = US_EQUITIES
 

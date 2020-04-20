@@ -19,7 +19,6 @@ from zipline.utils.numpy_utils import (
     datetime64D_dtype,
     NaTD)
 from zipline.pipeline.data import Column, DataSet
-from zipline.pipeline.domain import US_EQUITIES
 
 class SecuritiesMaster(DataSet):
     """
@@ -445,11 +444,11 @@ class SecuritiesMaster(DataSet):
     --------
     Filter ETFs:
 
-    >>> are_etfs = USSecuritiesMaster.Etf.latest
+    >>> are_etfs = SecuritiesMaster.Etf.latest
 
     Filter NYSE stocks:
 
-    >>> are_nyse_stocks = USSecuritiesMaster.Exchange.latest.eq("XNYS")
+    >>> are_nyse_stocks = SecuritiesMaster.Exchange.latest.eq("XNYS")
     """
     Sid = Column(object_dtype)
     Symbol = Column(object_dtype)
@@ -599,5 +598,3 @@ class SecuritiesMaster(DataSet):
     figi_SecurityType2 = Column(object_dtype)
     figi_SecurityDescription = Column(object_dtype)
     figi_IsComposite = Column(bool_dtype)
-
-USSecuritiesMaster = SecuritiesMaster.specialize(US_EQUITIES)

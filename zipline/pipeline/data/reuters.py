@@ -14,7 +14,6 @@
 
 from zipline.utils.numpy_utils import float64_dtype
 from zipline.pipeline.data import Column, DataSet
-from zipline.pipeline.domain import US_EQUITIES
 
 class ReutersAnnualFinancials(DataSet):
     """
@@ -332,10 +331,10 @@ class ReutersAnnualFinancials(DataSet):
 
     >>> class PriceBookRatio(CustomFactor):
             inputs = [
-                USEquityPricing.close,
-                ReutersUSAnnualFinancials.ATOT,  # total assets
-                ReutersUSAnnualFinancials.LTLL,  # total liabilities
-                ReutersUSAnnualFinancials.QTCO  # common shares outstanding
+                EquityPricing.close,
+                ReutersAnnualFinancials.ATOT,  # total assets
+                ReutersAnnualFinancials.LTLL,  # total liabilities
+                ReutersAnnualFinancials.QTCO  # common shares outstanding
             ]
             window_length = 1
             def compute(self, today, assets, out, closes, tot_assets, tot_liabilities, shares_out):
@@ -473,8 +472,6 @@ class ReutersAnnualFinancials(DataSet):
     QEDG = Column(float64_dtype) # ESOP Debt Guarantee
     LMIN = Column(float64_dtype) # Minority Interest
     ADEP = Column(float64_dtype) # Accumulated Depreciation, Total
-
-ReutersUSAnnualFinancials = ReutersAnnualFinancials.specialize(US_EQUITIES)
 
 class ReutersInterimFinancials(DataSet):
     """
@@ -792,10 +789,10 @@ class ReutersInterimFinancials(DataSet):
 
     >>> class PriceBookRatio(CustomFactor):
             inputs = [
-                USEquityPricing.close,
-                ReutersUSAnnualFinancials.ATOT,  # total assets
-                ReutersUSAnnualFinancials.LTLL,  # total liabilities
-                ReutersUSAnnualFinancials.QTCO  # common shares outstanding
+                EquityPricing.close,
+                ReutersInterimFinancials.ATOT,  # total assets
+                ReutersInterimFinancials.LTLL,  # total liabilities
+                ReutersInterimFinancials.QTCO  # common shares outstanding
             ]
             window_length = 1
             def compute(self, today, assets, out, closes, tot_assets, tot_liabilities, shares_out):
@@ -934,8 +931,6 @@ class ReutersInterimFinancials(DataSet):
     LMIN = Column(float64_dtype) # Minority Interest
     ADEP = Column(float64_dtype) # Accumulated Depreciation, Total
 
-ReutersUSInterimFinancials = ReutersInterimFinancials.specialize(US_EQUITIES)
-
 class ReutersAnnualEstimates(DataSet):
     """
     Dataset representing Reuters estimates. Utilizes annual estimates.
@@ -1012,7 +1007,7 @@ class ReutersAnnualEstimates(DataSet):
     --------
     Select stocks with high book value estimates:
 
-    >>> have_high_bvps = ReutersUSAnnualEstimates.BVPS.latest.percentile_between(80, 100)
+    >>> have_high_bvps = ReutersAnnualEstimates.BVPS.latest.percentile_between(80, 100)
     """
     BVPS = Column(float64_dtype) # Book Value Per Share
     CAPEX = Column(float64_dtype) # Capital Expenditure
@@ -1036,8 +1031,6 @@ class ReutersAnnualEstimates(DataSet):
     REVENUE = Column(float64_dtype) # Revenue
     ROA = Column(float64_dtype) # Return On Assets
     ROE = Column(float64_dtype) # Return On Equity
-
-ReutersUSAnnualEstimates = ReutersAnnualEstimates.specialize(US_EQUITIES)
 
 class ReutersQuarterlyEstimates(DataSet):
     """
@@ -1115,7 +1108,7 @@ class ReutersQuarterlyEstimates(DataSet):
     --------
     Select stocks with high book value estimates:
 
-    >>> have_high_bvps = ReutersUSQuarterlyEstimates.BVPS.latest.percentile_between(80, 100)
+    >>> have_high_bvps = ReutersQuarterlyEstimates.BVPS.latest.percentile_between(80, 100)
     """
     BVPS = Column(float64_dtype) # Book Value Per Share
     CAPEX = Column(float64_dtype) # Capital Expenditure
@@ -1139,8 +1132,6 @@ class ReutersQuarterlyEstimates(DataSet):
     REVENUE = Column(float64_dtype) # Revenue
     ROA = Column(float64_dtype) # Return On Assets
     ROE = Column(float64_dtype) # Return On Equity
-
-ReutersUSQuarterlyEstimates = ReutersQuarterlyEstimates.specialize(US_EQUITIES)
 
 class ReutersAnnualActuals(DataSet):
     """
@@ -1218,7 +1209,7 @@ class ReutersAnnualActuals(DataSet):
     --------
     Select stocks with high book value:
 
-    >>> have_high_bvps = ReutersUSAnnualActuals.BVPS.latest.percentile_between(80, 100)
+    >>> have_high_bvps = ReutersAnnualActuals.BVPS.latest.percentile_between(80, 100)
     """
     BVPS = Column(float64_dtype) # Book Value Per Share
     CAPEX = Column(float64_dtype) # Capital Expenditure
@@ -1242,8 +1233,6 @@ class ReutersAnnualActuals(DataSet):
     REVENUE = Column(float64_dtype) # Revenue
     ROA = Column(float64_dtype) # Return On Assets
     ROE = Column(float64_dtype) # Return On Equity
-
-ReutersUSAnnualActuals = ReutersAnnualActuals.specialize(US_EQUITIES)
 
 class ReutersQuarterlyActuals(DataSet):
     """
@@ -1321,7 +1310,7 @@ class ReutersQuarterlyActuals(DataSet):
     --------
     Select stocks with high book value:
 
-    >>> have_high_bvps = ReutersUSQuarterlyActuals.BVPS.latest.percentile_between(80, 100)
+    >>> have_high_bvps = ReutersQuarterlyActuals.BVPS.latest.percentile_between(80, 100)
     """
     BVPS = Column(float64_dtype) # Book Value Per Share
     CAPEX = Column(float64_dtype) # Capital Expenditure
@@ -1345,5 +1334,3 @@ class ReutersQuarterlyActuals(DataSet):
     REVENUE = Column(float64_dtype) # Revenue
     ROA = Column(float64_dtype) # Return On Assets
     ROE = Column(float64_dtype) # Return On Equity
-
-ReutersUSQuarterlyActuals = ReutersQuarterlyActuals.specialize(US_EQUITIES)
