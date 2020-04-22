@@ -1116,8 +1116,10 @@ class TradingAlgorithm(object):
 
         Parameters
         ----------
-        sid : int
-            The unique integer that identifies an asset.
+        sid : str or int
+            The unique asset identifier. If a string is passed, it is assumed to
+            be the QuantRocket sid; if an integer is passed, it is assumed to be
+            the internal Zipline sid.
 
         Returns
         -------
@@ -1129,6 +1131,8 @@ class TradingAlgorithm(object):
         SidsNotFound
             When a requested ``sid`` does not map to any asset.
         """
+        # Support for QuantRocket sids or Zipline integer sids is provided
+        # by a monkey-patch at runtime and is not implemented here
         return self.asset_finder.retrieve_asset(sid)
 
     @api_method
@@ -2253,7 +2257,6 @@ class TradingAlgorithm(object):
             this number will make it longer to get the first results but
             may improve the total runtime of the simulation. If an iterator
             is passed, we will run in chunks based on values of the iterator.
-            Default is True.
         eager : bool, optional
             Whether or not to compute this pipeline prior to
             before_trading_start.

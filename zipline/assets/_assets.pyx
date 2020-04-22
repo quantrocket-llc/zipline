@@ -48,6 +48,8 @@ cdef class Asset:
     ----------
     sid : int
         Internal Zipline sid. Persistent unique identifier assigned to the asset.
+    zipline_sid: int
+        Internal Zipline sid (alias for Asset.sid).
     real_sid: str
         The QuantRocket sid.
     symbol : str

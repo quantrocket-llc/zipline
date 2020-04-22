@@ -143,24 +143,24 @@ cdef class BarData:
     An instance of this object is passed as ``data`` to
     :func:`~zipline.api.handle_data` and
     :func:`~zipline.api.before_trading_start`.
-
-    Parameters
-    ----------
-    data_portal : DataPortal
-        Provider for bar pricing data.
-    simulation_dt_func : callable
-        Function which returns the current simulation time.
-        This is usually bound to a method of TradingSimulation.
-    data_frequency : {'minute', 'daily'}
-        The frequency of the bar data; i.e. whether the data is
-        daily or minute bars
-    restrictions : zipline.finance.asset_restrictions.Restrictions
-        Object that combines and returns restricted list information from
-        multiple sources
-    universe_func : callable, optional
-        Function which returns the current 'universe'.  This is for
-        backwards compatibility with older API concepts.
     """
+    # Parameters (excluded from docstring b/c not user-facing)
+    # ----------
+    # data_portal : DataPortal
+    #     Provider for bar pricing data.
+    # simulation_dt_func : callable
+    #     Function which returns the current simulation time.
+    #     This is usually bound to a method of TradingSimulation.
+    # data_frequency : {'minute', 'daily'}
+    #     The frequency of the bar data; i.e. whether the data is
+    #     daily or minute bars
+    # restrictions : zipline.finance.asset_restrictions.Restrictions
+    #     Object that combines and returns restricted list information from
+    #     multiple sources
+    # universe_func : callable, optional
+    #     Function which returns the current 'universe'.  This is for
+    #    backwards compatibility with older API concepts.
+
     cdef object data_portal
     cdef object simulation_dt_func
     cdef object data_frequency
