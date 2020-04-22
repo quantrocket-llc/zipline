@@ -2404,6 +2404,42 @@ class TradingAlgorithm(object):
     # End Pipeline API
     ##################
 
+    @api_method
+    def set_realtime_db(self, code, fields={}):
+        """
+        Sets the realtime database to use for querying up-to-date minute bars in
+        live trading.
+
+        Parameters
+        ----------
+        code : str, required
+            the realtime database code. Must be an aggregate database with
+            1-minute bars.
+
+        fields : dict, optional
+            dict mapping expected Zipline field names ('close', 'high', 'low', 'open',
+            'volume') to realtime database field names
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        Set the realtime database and map fields:
+
+        >>> algo.set_realtime_db(
+                "us-stk-tick-1min",
+                fields={
+                    "close": "LastPriceClose",
+                    "open": "LastPriceOpen",
+                    "high": "LastPriceHigh",
+                    "low": "LastPriceLow",
+                    "volume": "LastSizeSum"})
+        """
+        from zipline.data.realtime import set_realtime_db
+        set_realtime_db(code, fields)
+
     @classmethod
     def all_api_methods(cls):
         """
