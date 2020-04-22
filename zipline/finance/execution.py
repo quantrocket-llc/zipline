@@ -57,10 +57,28 @@ class MarketOrder(ExecutionStyle):
     Execution style for orders to be filled at current market price.
 
     This is the default for orders placed with :func:`~zipline.api.order`.
+
+    Parameters
+    ----------
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
+
+    Examples
+    --------
+    Place a SMART-routed market order using the Adaptive algorithm (Interactive
+    Brokers):
+
+    >>> style = MarketOrder(exchange="SMART", order_params={"AlgoStrategy": "Adaptive"})
+    >>> algo.order(asset, 100, style=style)
     """
 
-    def __init__(self, exchange=None):
+    def __init__(self, exchange=None, order_params=None):
         self._exchange = exchange
+        self.order_params = order_params
 
     def get_limit_price(self, _is_buy):
         return None
@@ -79,12 +97,19 @@ class LimitOrder(ExecutionStyle):
     limit_price : float
         Maximum price for buys, or minimum price for sells, at which the order
         should be filled.
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
     """
-    def __init__(self, limit_price, asset=None, exchange=None):
+    def __init__(self, limit_price, asset=None, exchange=None, order_params=None):
         check_stoplimit_prices(limit_price, 'limit')
 
         self.limit_price = limit_price
         self._exchange = exchange
+        self.order_params = order_params
         self.asset = asset
 
     def get_limit_price(self, is_buy):
@@ -109,12 +134,19 @@ class StopOrder(ExecutionStyle):
         Price threshold at which the order should be placed. For sells, the
         order will be placed if market price falls below this value. For buys,
         the order will be placed if market price rises above this value.
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
     """
-    def __init__(self, stop_price, asset=None, exchange=None):
+    def __init__(self, stop_price, asset=None, exchange=None, order_params=None):
         check_stoplimit_prices(stop_price, 'stop')
 
         self.stop_price = stop_price
         self._exchange = exchange
+        self.order_params = order_params
         self.asset = asset
 
     def get_limit_price(self, _is_buy):
@@ -142,14 +174,21 @@ class StopLimitOrder(ExecutionStyle):
         Price threshold at which the order should be placed. For sells, the
         order will be placed if market price falls below this value. For buys,
         the order will be placed if market price rises above this value.
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
     """
-    def __init__(self, limit_price, stop_price, asset=None, exchange=None):
+    def __init__(self, limit_price, stop_price, asset=None, exchange=None, order_params=None):
         check_stoplimit_prices(limit_price, 'limit')
         check_stoplimit_prices(stop_price, 'stop')
 
         self.limit_price = limit_price
         self.stop_price = stop_price
         self._exchange = exchange
+        self.order_params = order_params
         self.asset = asset
 
     def get_limit_price(self, is_buy):
