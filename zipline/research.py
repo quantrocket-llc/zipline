@@ -123,7 +123,7 @@ def run_pipeline(pipeline, start_date, end_date, bundle=None, chunksize=525):
 
     engine = SimplePipelineEngine(
         pipeline_loader,
-        bundle.asset_finder,
+        bundle_data.asset_finder,
         calendar_domain)
 
     return engine.run_chunked_pipeline(
