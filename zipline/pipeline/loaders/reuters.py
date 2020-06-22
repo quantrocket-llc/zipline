@@ -43,10 +43,11 @@ class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
         out = {}
 
         for column in columns:
+            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
             out[column] = AdjustedArray(
-                financials.loc[column.name].astype(column.dtype).values,
+                financials.loc[column.name].astype(column.dtype).fillna(missing_value).values,
                 adjustments={},
-                missing_value=MISSING_VALUES_BY_DTYPE[column.dtype]
+                missing_value=missing_value
             )
 
         return out
@@ -71,10 +72,11 @@ class ReutersEstimatesPipelineLoader(implements(PipelineLoader)):
         out = {}
 
         for column in columns:
+            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
             out[column] = AdjustedArray(
-                estimates.loc[column.name].astype(column.dtype).values,
+                estimates.loc[column.name].astype(column.dtype).fillna(missing_value).values,
                 adjustments={},
-                missing_value=MISSING_VALUES_BY_DTYPE[column.dtype]
+                missing_value=missing_value
             )
 
         return out

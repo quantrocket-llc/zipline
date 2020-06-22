@@ -38,10 +38,11 @@ class SecuritiesMasterPipelineLoader(implements(PipelineLoader)):
         out = {}
 
         for column in columns:
+            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
             out[column] = AdjustedArray(
-                securities.loc[column.name].astype(column.dtype).values,
+                securities.loc[column.name].astype(column.dtype).fillna(missing_value).values,
                 adjustments={},
-                missing_value=MISSING_VALUES_BY_DTYPE[column.dtype]
+                missing_value=missing_value
             )
 
         return out

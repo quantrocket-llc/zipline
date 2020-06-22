@@ -43,10 +43,11 @@ class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
         out = {}
 
         for column in columns:
+            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
             out[column] = AdjustedArray(
-                fundamentals.loc[column.name].astype(column.dtype).values,
+                fundamentals.loc[column.name].astype(column.dtype).fillna(missing_value).values,
                 adjustments={},
-                missing_value=MISSING_VALUES_BY_DTYPE[column.dtype]
+                missing_value=missing_value
             )
 
         return out
@@ -69,10 +70,11 @@ class SharadarInstitutionsPipelineLoader(implements(PipelineLoader)):
         out = {}
 
         for column in columns:
+            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
             out[column] = AdjustedArray(
-                institutions.loc[column.name].astype(column.dtype).values,
+                institutions.loc[column.name].astype(column.dtype).fillna(missing_value).values,
                 adjustments={},
-                missing_value=MISSING_VALUES_BY_DTYPE[column.dtype]
+                missing_value=missing_value
             )
 
         return out
@@ -93,8 +95,10 @@ class SharadarSP500PipelineLoader(implements(PipelineLoader)):
         # This dataset has only one column
         column = columns[0]
 
+        missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+
         return {column: AdjustedArray(
-            in_sp500.astype(column.dtype).values,
+            in_sp500.astype(column.dtype).fillna(missing_value).values,
             adjustments={},
-            missing_value=MISSING_VALUES_BY_DTYPE[column.dtype]
+            missing_value=missing_value
         )}
