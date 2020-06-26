@@ -17,6 +17,7 @@ from copy import copy
 import warnings
 from datetime import tzinfo, time
 import logbook
+import logging
 import pytz
 import pandas as pd
 from contextlib2 import ExitStack
@@ -133,6 +134,8 @@ from zipline.gens.sim_engine import MinuteSimulationClock
 from zipline.sources.benchmark_source import BenchmarkSource
 from zipline.zipline_warnings import ZiplineDeprecationWarning
 
+logger = logging.getLogger("quantrocket.zipline")
+logger.setLevel(logging.DEBUG)
 
 log = logbook.Logger("ZiplineLog")
 
@@ -206,6 +209,10 @@ class TradingAlgorithm(object):
         default: 'zipline'
     adjustment_reader : AdjustmentReader
         The interface to the adjustments.
+    strategy : str
+        the strategy code
+    show_progress_on_dates : iterable
+        iterable of dates on which progress should be shown
     """
 
     def __init__(self,
@@ -232,6 +239,8 @@ class TradingAlgorithm(object):
                  capital_changes=None,
                  get_pipeline_loader=None,
                  create_event_context=None,
+                 show_progress_on_dates=None,
+                 strategy=None,
                  **initialize_kwargs):
         # List of trading controls to be used to validate orders.
         self.trading_controls = []
@@ -404,6 +413,13 @@ class TradingAlgorithm(object):
         self.restrictions = NoRestrictions()
 
         self._backwards_compat_universe = None
+
+        self.strategy = strategy
+        if show_progress_on_dates is None:
+            self._show_progress_on_dates = []
+        else:
+            self._show_progress_on_dates = show_progress_on_dates
+        self._progress_last_logged = None
 
     def init_engine(self, get_loader):
         """
@@ -638,6 +654,7 @@ class TradingAlgorithm(object):
             perfs = []
             for perf in self.get_generator():
                 perfs.append(perf)
+                self._log_progress(perf)
 
             # convert perf dict to pandas dataframe
             daily_stats = self._create_daily_stats(perfs)
@@ -648,6 +665,61 @@ class TradingAlgorithm(object):
             self.metrics_tracker = None
 
         return daily_stats
+
+    def _log_progress(self, perf):
+        """
+        Logs progress and performance statistics.
+        """
+        if "daily_perf" not in perf:
+            return
+
+        current_dt = perf['daily_perf']['period_open'].date()
+        if current_dt not in self._show_progress_on_dates:
+            return
+
+        progress = perf["progress"]
+        progress100 = int(round(progress, 2) * 100)
+        progress10 = int(round(progress, 1) * 10)
+        bar = '█' * progress10 + '-' * (10-progress10)
+        sharpe = perf["cumulative_risk_metrics"]["sharpe"]
+        if sharpe is not None:
+            sharpe = round(sharpe, 2)
+        else:
+            sharpe = ""
+        returns = perf["cumulative_perf"]["returns"]
+        returns = int(round(returns, 2) * 100)
+        pnl = round(perf["cumulative_perf"]["pnl"])
+        max_drawdown = int(round(perf["cumulative_risk_metrics"]["max_drawdown"], 2) * 100)
+
+        msg = pd.Series(
+            [
+                f'{bar} {str(progress100).rjust(3)}%',
+                current_dt.isoformat(),
+                f"{returns}%".rjust(20),
+                str(sharpe).rjust(14),
+                f"{max_drawdown}%".rjust(14),
+                f'${pnl}'.rjust(16),
+            ],
+            index=[
+                "",
+                "Date",
+                "  Cumulative Returns",
+                "  Sharpe Ratio",
+                "  Max Drawdown",
+                "  Cumulative PNL"
+            ],
+            name=f"[{self.strategy}]").to_frame().T.to_string()
+
+        lines = msg.splitlines()
+
+        # Only log the header row the first time
+        if self._progress_last_logged is not None:
+            lines = lines[1:]
+
+        self._progress_last_logged = progress
+
+        for line in lines:
+            logger.info(line)
 
     def _create_daily_stats(self, perfs):
         # create daily and cumulative stats dataframe
