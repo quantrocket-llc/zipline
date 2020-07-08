@@ -56,7 +56,8 @@ from zipline.errors import (
     UnsupportedCancelPolicy,
     UnsupportedDatetimeFormat,
     UnsupportedOrderParameters,
-    ZeroCapitalError
+    ZeroCapitalError,
+    CannotStoreAssetInInitialize
 )
 from zipline.finance.blotter import SimulationBlotter
 from zipline.finance.controls import (
@@ -81,7 +82,7 @@ from zipline.finance.asset_restrictions import (
     StaticRestrictions,
     SecurityListRestrictions,
 )
-from zipline.assets import Asset, Equity, Future
+from zipline.assets import Asset, Equity, Future, ContinuousFuture
 from zipline.gens.tradesimulation import AlgorithmSimulator
 from zipline.finance.metrics import MetricsTracker, load as load_metrics_set
 from zipline.pipeline import Pipeline
@@ -441,8 +442,23 @@ class TradingAlgorithm(object):
         Call self._initialize with `self` made available to Zipline API
         functions.
         """
+        orig_attrs = [k for k in self.__dict__.keys()]
+
         with ZiplineAPI(self):
             self._initialize(self, *args, **kwargs)
+
+        # Complain if the user is trying to save an Asset in initialize
+        new_attrs = list(set(self.__dict__.keys()) - set(orig_attrs))
+        for attr in new_attrs:
+            if isinstance(getattr(self, attr), (Asset, ContinuousFuture)):
+                raise CannotStoreAssetInInitialize(
+                msg=(
+                    "cannot set context.{attr} to an Asset object in initialize() because "
+                    "doing so will cause the Asset to become stale in live trading. Please "
+                    "set this context variable in before_trading_start() instead.".format(
+                        attr=attr)
+                )
+            )
 
     def before_trading_start(self, data):
         self.compute_eager_pipelines()
