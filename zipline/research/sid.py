@@ -1,0 +1,90 @@
+#
+# Copyright 2020 QuantRocket LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+import pandas as pd
+from zipline.data import bundles
+from zipline.utils.extensions import load_extensions
+from zipline.research.exceptions import ValidationError
+from quantrocket.zipline import get_default_bundle
+
+def sid(sid, bundle=None):
+    """
+    Return an Asset object for the specified sid in the specified bundle
+    (or default bundle).
+
+    Parameters
+    ----------
+    sid : str, required
+        The sid to retrieve.
+
+    bundle : str, optional
+        the bundle code. If omitted, the default bundle will be used (and must be set).
+
+    Returns
+    -------
+    asset : zipline.assets.Asset
+
+    Notes
+    -----
+    Each asset is specific to the bundle from which it came. An
+    Asset object for AAPL from bundle A cannot be used to retrieve
+    AAPL data from bundle B, even if AAPL data is present in bundle
+    B.
+
+    Examples
+    --------
+    Get the asset object for AAPL:
+
+    >>> aapl = sid("FIBBG000B9XRY4", bundle="usstock-1min")
+    """
+    if not bundle:
+        bundle = get_default_bundle()
+        if not bundle:
+            raise ValidationError("you must specify a bundle or set a default bundle")
+        bundle = bundle["default_bundle"]
+
+    load_extensions(code=bundle)
+
+    bundle_data = bundles.load(
+        bundle,
+        os.environ,
+        pd.Timestamp.utcnow(),
+    )
+
+    zipline_sid = bundle_data.asset_finder.engine.execute(
+        """
+        SELECT
+            sid
+        FROM
+            equities
+        WHERE
+            real_sid = ?
+        UNION
+        SELECT
+            sid
+        FROM
+            futures_contracts
+        WHERE
+            real_sid = ?
+        """, (sid, sid)).scalar()
+
+    if not zipline_sid:
+        raise ValidationError(
+            f"No such sid {sid} in {bundle} bundle")
+
+    asset = bundle_data.asset_finder.retrieve_asset(zipline_sid)
+
+    return asset

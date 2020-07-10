@@ -23,11 +23,10 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.algorithm import _DEFAULT_DOMAINS
+from zipline.research.exceptions import ValidationError
 from quantrocket.zipline import get_default_bundle
 from quantrocket_trading_calendars import get_calendar
 
-class ValidationError(ValueError):
-    pass
 
 def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
     """
@@ -108,7 +107,7 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
             break
         start_date += pd.Timedelta(days=1)
     else:
-        raise ValidationError("start_date is not in calendar")
+        raise ValidationError(f"start_date is not in {calendar_name} calendar")
 
     # Roll-forward end_date to valid session
     for i in range(100):
