@@ -26,7 +26,7 @@ from quantrocket_trading_calendars import get_calendar
 
 def get_data(dt, bundle=None, data_frequency=None):
     """
-    Return a BarData object for the specified bundle (or default bundle)
+    Return a zipline.protocol.BarData object for the specified bundle (or default bundle)
     as of the specified datetime. This is the same object that is passed
     as the `data` parameter to `handle_data` and other backtest functions.
 

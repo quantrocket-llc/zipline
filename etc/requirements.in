@@ -33,6 +33,8 @@ pytz>=2018.5
 # Country Codes
 iso3166>=0.9
 trading-calendars>=1.6.1
+quantrocket-trading-calendars>=2.0.4
+quantrocket-client>=2.1.1
 
 # For fetching remote data
 requests>=2.9.1

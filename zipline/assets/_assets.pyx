@@ -54,7 +54,7 @@ cdef class Asset:
         The QuantRocket sid.
     symbol : str
         Most recent ticker under which the asset traded. This field can change
-        without warning if the asset changes tickers. Use ``sid`` if you need a
+        without warning if the asset changes tickers. Use ``real_sid`` if you need a
         persistent identifier.
     asset_name : str
         Full name of the asset.
@@ -71,7 +71,7 @@ cdef class Asset:
     start_date : pd.Timestamp
         Date on which the asset first traded.
     end_date : pd.Timestamp
-        Last date on which the asset traded. On Quantopian, this value is set
+        Last date on which the asset traded. This value is set
         to the current (real time) date for assets that are still trading.
     tick_size : float
         Minimum amount that the price can change for this asset.
@@ -333,6 +333,10 @@ cdef class Equity(Asset):
 @cython.embedsignature(False)
 cdef class Future(Asset):
     """Asset subclass representing ownership of a futures contract.
+
+    See Also
+    --------
+    zipline.api.continuous_future - Create a specifier for a continuous contract.
     """
     _kwargnames = frozenset({
         'sid',

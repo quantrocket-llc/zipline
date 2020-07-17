@@ -853,6 +853,14 @@ class TradingAlgorithm(object):
         ------
         ValueError
             Raised when ``field`` is not a valid option.
+
+        Examples
+        --------
+        Only perform a certain action in live trading:
+
+        >>> import zipline.api as algo
+        >>> if algo.get_environment("arena") == "trade":
+        >>>     ...
         """
         env = {
             'arena': self.sim_params.arena,
@@ -1003,6 +1011,17 @@ class TradingAlgorithm(object):
         calendar : Sentinel, optional
             Calendar used to compute rules that depend on the trading calendar.
 
+        Examples
+        --------
+        Schedule a function called rebalance to run every trading day 30 minutes
+        after the open:
+
+        >>> import zipline.api as algo
+        >>> algo.schedule_function(
+                rebalance,
+                algo.date_rules.every_day(),
+                algo.time_rules.market_open(minutes=30))
+
         See Also
         --------
         :class:`zipline.api.date_rules`
@@ -1057,9 +1076,7 @@ class TradingAlgorithm(object):
 
         Notes
         -----
-        These values will appear in the performance packets and the performance
-        dataframe passed to ``analyze`` and returned from
-        :func:`~zipline.run_algorithm`.
+        These values will appear in the results CSV returned in backtests.
         """
         # Make 2 objects both referencing the same iterator
         args = [iter(args)] * 2
@@ -1080,6 +1097,14 @@ class TradingAlgorithm(object):
         ----------
         benchmark : zipline.assets.Asset
             The asset to set as the new benchmark.
+
+        Examples
+        --------
+        Set the benchmark to SPY:
+
+        >>> import zipline.api as algo
+        >>> spy = algo.sid("FIBBG000BDTBL9")
+        >>> algo.set_benchmark(spy)
 
         Notes
         -----
@@ -1108,17 +1133,25 @@ class TradingAlgorithm(object):
         offset : int, optional
             The distance from the primary contract. Default is 0.
 
-        roll_style : str, optional
-            How rolls are determined. Default is 'volume'.
+        roll : str, optional
+            How rolls are determined. Possible choices: 'volume',
+            'calendar'. Default is 'volume'.
 
         adjustment : str, optional
-            Method for adjusting lookback prices between rolls. Options are
-            'mul', 'add', and None. Default is 'mul'.
+            Method for adjusting lookback prices between rolls. Possible choices:
+            'mul', 'add', None. Default is 'mul'.
 
         Returns
         -------
         continuous_future : zipline.assets.ContinuousFuture
             The continuous future specifier.
+
+        Examples
+        --------
+        Create a continuous future for ES, rolling on volume:
+
+        >>> import zipline.api as algo
+        >>> algo.continuous_future("ES", roll="volume")
         """
         return self.asset_finder.create_continuous_future(
             root_symbol_str,
@@ -1595,6 +1628,14 @@ class TradingAlgorithm(object):
         us_futures : FutureSlippageModel
             The slippage model to use for trading US futures.
 
+        Examples
+        --------
+        Set the equities slippage to 5 basis points:
+
+        >>> import zipline.api as algo
+        >>> from zipline.finance import slippage
+        >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))
+
         Notes
         -----
         This function can only be called during
@@ -1640,6 +1681,14 @@ class TradingAlgorithm(object):
         -----
         This function can only be called during
         :func:`~zipline.api.initialize`.
+
+        Examples
+        --------
+        Set the equities commission to 0.001 per share:
+
+        >>> import zipline.api as algo
+        >>> from zipline.finance import commission
+        >>> algo.set_commission(commission.PerShare(cost=0.001))
 
         See Also
         --------
@@ -1811,10 +1860,10 @@ class TradingAlgorithm(object):
 
         .. code-block:: python
 
-           order_target(sid(0), 10)
-           order_target(sid(0), 10)
+           order_target(asset, 10)
+           order_target(asset, 10)
 
-        This code will result in 20 shares of ``sid(0)`` because the first
+        This code will result in 20 shares of ``asset`` because the first
         call to ``order_target`` will not have been filled when the second
         ``order_target`` call is made.
 
@@ -1885,10 +1934,10 @@ class TradingAlgorithm(object):
 
         .. code-block:: python
 
-           order_target_value(sid(0), 10)
-           order_target_value(sid(0), 10)
+           order_target_value(asset, 10)
+           order_target_value(asset, 10)
 
-        This code will result in 20 dollars of ``sid(0)`` because the first
+        This code will result in 20 dollars of ``asset`` because the first
         call to ``order_target_value`` will not have been filled when the
         second ``order_target_value`` call is made.
 
@@ -1949,10 +1998,10 @@ class TradingAlgorithm(object):
 
         .. code-block:: python
 
-           order_target_percent(sid(0), 10)
-           order_target_percent(sid(0), 10)
+           order_target_percent(asset, 10)
+           order_target_percent(asset, 10)
 
-        This code will result in 20% of the portfolio being allocated to sid(0)
+        This code will result in 20% of the portfolio being allocated to ``asset``
         because the first call to ``order_target_percent`` will not have been
         filled when the second ``order_target_percent`` call is made.
 
@@ -2046,7 +2095,7 @@ class TradingAlgorithm(object):
 
         Returns
         -------
-        order : Order
+        order : zipline.finance.order.Order
             The order object.
         """
         if order_id in self.blotter.orders:

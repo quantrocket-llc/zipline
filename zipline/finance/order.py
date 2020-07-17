@@ -50,12 +50,22 @@ class Order(object):
     def __init__(self, dt, asset, amount, stop=None, limit=None, filled=0,
                  commission=0, id=None):
         """
-        @dt - datetime.datetime that the order was placed
-        @asset - asset for the order.
-        @amount - the number of shares to buy/sell
-                  a positive sign indicates a buy
-                  a negative sign indicates a sell
-        @filled - how many shares of the order have been filled so far
+        An order placed by an algorithm.
+
+        Attributes
+        ----------
+        dt : pd.Timestamp
+            datetime that the order was placed
+
+        asset : zipline.assets.Asset
+            asset for the order.
+
+        amount : int
+            the number of shares to buy/sell. A positive sign indicates
+            a buy, and a negative sign indicates a sell.
+
+        filled : int
+            how many shares of the order have been filled so far
         """
 
         # get a string representation of the uuid.

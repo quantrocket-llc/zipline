@@ -316,6 +316,13 @@ cdef class BarData:
 
         If the current simulation time is not a valid market time for an asset,
         we use the most recent market close instead.
+
+        Examples
+        --------
+        Get the latest price for AAPL (returns a scalar):
+
+        >>> aapl = algo.sid("FIBBG000B9XRY4")
+        >>> current_price = data.current(aapl, "price")
         """
         multiple_assets = _is_iterable(assets)
         multiple_fields = _is_iterable(fields)
@@ -665,6 +672,18 @@ cdef class BarData:
 
         If the current simulation time is not a valid market time, we use the
         last market close instead.
+
+        Examples
+        --------
+        Get prices for the past 30 minutes for multiple assets (returns
+        a DataFrame):
+
+        >>> minute_closes = data.history(assets, "close", 30, "1m")
+
+        Get the previous session's closing price for a single asset:
+
+        >>> spy = algo.sid("FIBBG000BDTBL9")
+        >>> spy_prior_close = data.history(spy, "price", 1, "1d").iloc[-1]
         """
         if isinstance(fields, string_types):
             single_asset = isinstance(assets, PricingDataAssociable)
