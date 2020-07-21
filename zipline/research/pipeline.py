@@ -17,9 +17,11 @@ import os
 import pandas as pd
 from zipline.data import bundles
 import zipline.pipeline.domain as domain
+from zipline.pipeline import Pipeline
 from zipline.utils.extensions import load_extensions
 from zipline.pipeline.loaders import EquityPricingLoader
 from zipline.pipeline.data import USEquityPricing
+from zipline.pipeline.factors import Returns
 from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.algorithm import _DEFAULT_DOMAINS
@@ -62,14 +64,14 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
 
     Examples
     --------
-    Get a pipeline of 1-day returns:
+    Get a pipeline of 1-year returns:
 
     >>> from zipline.pipeline.factors import Returns
-    >>> pipe = Pipeline(
+    >>> pipeline = Pipeline(
             columns={
-                '1D': Returns(window_length=2),
+                '1Y': Returns(window_length=252),
             })
-    >>> returns_data = run_pipeline(pipe, '2018-01-01', '2019-02-01', bundle="usstock-1min")
+    >>> factor = run_pipeline(pipeline, '2018-01-01', '2019-02-01', bundle="usstock-1min")
     """
 
     if not bundle:
@@ -141,3 +143,67 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
         calendar_domain)
 
     return engine.run_pipeline(pipeline, start_date, end_date)
+
+def get_forward_returns(factor, periods=None, bundle=None):
+    """
+    Get forward returns for the dates and assets in ``factor``, calculated
+    over the given periods.
+
+    Parameters
+    ----------
+    factor : pd.Series
+        The factor whose dates and assets to use. The Series should have a
+        MultiIndex of (date, asset), as returned by ``run_pipeline``.
+
+    periods : int or list of int
+        The periods over which to calculate the forward returns.
+        Example: [1, 5, 10]. Defaults to [1].
+
+    bundle : str, optional
+        the bundle code. If omitted, the default bundle will be used (and must be set).
+
+    Returns
+    -------
+    result : pd.DataFrame
+        A dataframe of computed forward returns containing one column per
+        requested period. It is indexed first by date, then by asset.
+
+    Examples
+    --------
+    Run a pipeline, then get forward returns for the factor:
+
+    >>> factor = run_pipeline(pipeline, '2018-01-01', '2019-02-01', bundle="usstock-1min")
+    >>> forward_returns = get_forward_returns(factor, bundle="usstock-1min")
+    """
+
+    if not bundle:
+        bundle = get_default_bundle()
+        if not bundle:
+            raise ValidationError("you must specify a bundle or set a default bundle")
+        bundle = bundle["default_bundle"]
+
+    if not periods:
+        periods = [1]
+
+    if not isinstance(periods, (list, tuple)):
+        periods = [periods]
+
+    columns = {}
+    for window_length in periods:
+        columns[f"{window_length}D"] = Returns(window_length=window_length+1)
+
+    pipeline = Pipeline(columns=columns)
+    returns_data = run_pipeline(
+        pipeline,
+        factor.index.get_level_values(0).min(),
+        factor.index.get_level_values(0).max(),
+        bundle=bundle)
+
+    for window_length in periods:
+        colname = f"{window_length}D"
+        returns_data[colname] = returns_data[colname].unstack().shift(-window_length).stack()
+
+    returns_data = returns_data.reindex(index=factor.index)
+    returns_data.index.set_names(["date", "asset"], inplace=True)
+
+    return returns_data
