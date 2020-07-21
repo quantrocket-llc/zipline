@@ -683,7 +683,7 @@ cdef class BarData:
         Get the previous session's closing price for a single asset:
 
         >>> spy = algo.sid("FIBBG000BDTBL9")
-        >>> spy_prior_close = data.history(spy, "price", 1, "1d").iloc[-1]
+        >>> spy_prior_close = data.history(spy, "close", 2, "1d").iloc[0]
         """
         if isinstance(fields, string_types):
             single_asset = isinstance(assets, PricingDataAssociable)

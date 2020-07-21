@@ -174,8 +174,9 @@ class Portfolio(object):
 
     Attributes
     ----------
-    positions : dict-like of :class:`zipline.protocol.Position`
-        Dict-like object containing information about currently-held positions.
+    positions : dict-like of :class:`zipline.assets.Asset` to :class:`zipline.protocol.Position`
+        Dict-like object where the keys are assets and the values contain information about the
+        currently-held position for that asset.
     cash : float
         Amount of cash currently held in portfolio.
     portfolio_value : float
