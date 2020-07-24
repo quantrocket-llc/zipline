@@ -51,7 +51,7 @@ class QuantRocketPipelineLoaderRouter:
 
         # Default
         self.default_loader = default_loader
-        self.default_loader_columns = default_loader_columns
+        self.default_loader_columns = [col.unspecialize() for col in default_loader_columns]
 
         # Reuters financials
         self.reuters_annual_financials_loader = ReutersFinancialsPipelineLoader(
@@ -93,7 +93,7 @@ class QuantRocketPipelineLoaderRouter:
         return column in dataset.columns or column.unspecialize() in dataset.columns
 
     def __call__(self, column):
-        if column in self.default_loader_columns:
+        if column.unspecialize() in self.default_loader_columns:
             return self.default_loader
         elif self.isin(column, SecuritiesMaster):
             return self.securities_master_loader
@@ -133,6 +133,12 @@ class QuantRocketPipelineLoaderRouter:
             real_sid
         FROM
             equities
+        UNION
+        SELECT
+            sid,
+            real_sid
+        FROM
+            futures_contracts
         """
         result = self.asset_db_conn.execute(sql)
         zipline_sids_to_real_sids = dict([(row[0], row[1]) for row in result.fetchall()])

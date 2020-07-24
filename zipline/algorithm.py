@@ -2527,7 +2527,7 @@ class TradingAlgorithm(object):
         This will be used to infer a domain for pipelines that only use generic
         datasets when running in the context of a TradingAlgorithm.
         """
-        return _DEFAULT_DOMAINS.get(calendar.name, domain.GENERIC)
+        return domain.get_domain_from_calendar(calendar)
 
     @staticmethod
     def default_fetch_csv_country_code(calendar):

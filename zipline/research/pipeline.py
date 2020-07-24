@@ -20,11 +20,10 @@ import zipline.pipeline.domain as domain
 from zipline.pipeline import Pipeline
 from zipline.utils.extensions import load_extensions
 from zipline.pipeline.loaders import EquityPricingLoader
-from zipline.pipeline.data import USEquityPricing
+from zipline.pipeline.data import EquityPricing
 from zipline.pipeline.factors import Returns
 from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
-from zipline.algorithm import _DEFAULT_DOMAINS
 from zipline.research.exceptions import ValidationError
 from quantrocket.zipline import get_default_bundle
 from quantrocket_trading_calendars import get_calendar
@@ -132,10 +131,10 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
         asset_db_conn=bundle_data.asset_finder.engine,
         calendar=trading_calendar,
         default_loader=default_pipeline_loader,
-        default_loader_columns=USEquityPricing.columns
+        default_loader_columns=EquityPricing.columns
     )
 
-    calendar_domain = _DEFAULT_DOMAINS.get(calendar_name, domain.GENERIC)
+    calendar_domain = domain.get_domain_from_calendar(trading_calendar)
 
     engine = SimplePipelineEngine(
         pipeline_loader,

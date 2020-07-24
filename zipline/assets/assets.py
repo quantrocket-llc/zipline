@@ -1422,15 +1422,25 @@ class AssetFinder(object):
         """
         sids = starts = ends = []
         equities_cols = self.equities.c
+        futures_cols = self.futures_contracts.c
         if country_codes:
-            results = sa.select((
+            equities_query = sa.select((
                 equities_cols.sid,
                 equities_cols.start_date,
                 equities_cols.end_date,
             )).where(
                 (self.exchanges.c.exchange == equities_cols.exchange) &
                 (self.exchanges.c.country_code.in_(country_codes))
-            ).execute().fetchall()
+            )
+            futures_query = sa.select((
+                futures_cols.sid,
+                futures_cols.start_date,
+                futures_cols.end_date,
+            )).where(
+                (self.exchanges.c.exchange == futures_cols.exchange) &
+                (self.exchanges.c.country_code.in_(country_codes))
+            )
+            results = equities_query.union(futures_query).execute().fetchall()
             if results:
                 sids, starts, ends = zip(*results)
 
