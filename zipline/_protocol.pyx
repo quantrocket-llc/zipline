@@ -255,7 +255,7 @@ cdef class BarData:
         return dt
 
     @check_parameters(('assets', 'fields'),
-                      ((Asset, ContinuousFuture) + string_types, string_types))
+                      ((Asset, ContinuousFuture), string_types))
     def current(self, assets, fields):
         """
         Returns the "current" value of the given fields for the given assets
@@ -610,7 +610,7 @@ cdef class BarData:
 
     @check_parameters(('assets', 'fields', 'bar_count',
                        'frequency'),
-                      ((Asset, ContinuousFuture) + string_types, string_types,
+                      ((Asset, ContinuousFuture), string_types,
                        int,
                        string_types))
     def history(self, assets, fields, bar_count, frequency):
