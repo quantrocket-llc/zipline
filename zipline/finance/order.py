@@ -66,6 +66,16 @@ class Order(object):
 
         filled : int
             how many shares of the order have been filled so far
+
+        status : int
+            the status of the order. To check for a certain status,
+            compare the status to `zipline.finance.order.ORDER_STATUS`.
+            Possible choices: ORDER_STATUS.OPEN, ORDER_STATUS.FILLED,
+            ORDER_STATUS.CANCELLED, ORDER_STATUS.REJECTED,
+            ORDER_STATUS.HELD.
+
+        open : bool
+            whether the order is currently open
         """
 
         # get a string representation of the uuid.
@@ -101,6 +111,7 @@ class Order(object):
         # Adding 'sid' for backwards compatibility with downstream consumers.
         dct['sid'] = self.asset
         dct['status'] = self.status
+        dct['open'] = self.open
 
         return dct
 
