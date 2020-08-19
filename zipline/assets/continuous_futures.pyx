@@ -215,11 +215,12 @@ cdef class ContinuousFuture:
         """
         return (self.__class__, (self.sid,
                                  self.root_symbol,
-                                 self.start_date,
-                                 self.end_date,
                                  self.offset,
                                  self.roll_style,
-                                 self.exchange))
+                                 self.start_date,
+                                 self.end_date,
+                                 self.exchange_info,
+                                 self.adjustment))
 
     cpdef to_dict(self):
         """
