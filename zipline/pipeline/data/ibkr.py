@@ -24,8 +24,8 @@ class ShortableShares(DataSetFamily):
 
     ShortableShares can be sliced along one dimension:
 
-    * time - the time of day (in the bundle timezone) as of which shortable
-    shares should be returned, formatted as HH:MM:SS, for example 08:45:00.
+    - `time` : the time of day (in the bundle timezone) as of which shortable
+      shares should be returned, formatted as HH:MM:SS, for example 08:45:00.
 
     Attributes
     ----------

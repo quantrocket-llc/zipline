@@ -23,9 +23,10 @@ class Financials(DataSetFamily):
 
     Financials can be sliced along two dimensions:
 
-    * interim - True for interim financials and False for annual financials.
-    * period_offset - must be set to 0. In the future this dimension will
-    allow requesting data from earlier periods.
+    - `interim` : True for interim financials and False for annual financials.
+
+    - `period_offset` : must be set to 0. In the future this dimension will
+      allow requesting data from earlier periods.
 
     Attributes
     ----------
@@ -497,12 +498,14 @@ class Estimates(DataSetFamily):
 
     Estimates can be sliced along three dimensions:
 
-    * period_type - the choices are 'Q' for quarterly or 'A' for annual or
-    'S' for semi-annual.
-    * field - the choices are 'Actual', 'Mean', 'High', 'Low', 'Median', 'NumOfEst',
-    or 'StdDev'. All fields except Actual refer to estimates.
-    * period_offset - must be set to 0. In the future this dimension will
-    allow requesting data from earlier periods.
+    - `period_type` : the choices are 'Q' for quarterly or 'A' for annual or
+      'S' for semi-annual.
+
+    - `field` : the choices are 'Actual', 'Mean', 'High', 'Low', 'Median', 'NumOfEst',
+      or 'StdDev'. All fields except Actual refer to estimates.
+
+    - `period_offset` : must be set to 0. In the future this dimension will
+      allow requesting data from earlier periods.
 
     Attributes
     ----------

@@ -44,11 +44,12 @@ class Fundamentals(DataSetFamily):
 
     Fundamentals can be sliced along two dimensions:
 
-    * dimension - the choices are ARQ, ARY, ART, MRQ, MRY, MRT, where
-    AR=As Reported, MR=Most Recent Reported, Q=Quarterly, Y=Annual, and
-    T=Trailing Twelve Month.
-    * period_offset - must be set to 0. In the future this dimension will
-    allow requesting data from earlier periods.
+    - `dimension` : the choices are ARQ, ARY, ART, MRQ, MRY, MRT, where
+      AR=As Reported, MR=Most Recent Reported, Q=Quarterly, Y=Annual, and
+      T=Trailing Twelve Month.
+
+    - `period_offset` : must be set to 0. In the future this dimension will
+      allow requesting data from earlier periods.
 
     Attributes
     ----------
@@ -742,8 +743,8 @@ class Institutions(DataSetFamily):
 
     Institutions can be sliced along one dimension:
 
-    * period_offset - must be set to 0. In the future this dimension will
-    allow requesting data from earlier quarters.
+    - `period_offset` : must be set to 0. In the future this dimension will
+      allow requesting data from earlier quarters.
 
     Attributes
     ----------
