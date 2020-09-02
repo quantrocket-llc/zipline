@@ -25,9 +25,8 @@ from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
 class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
 
-    def __init__(self, zipline_sids_to_real_sids, interim):
+    def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
-        self.interim = interim
 
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
@@ -36,8 +35,10 @@ class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
+        interim = columns[0].dataset.extra_coords["interim"]
+
         financials = get_reuters_financials_reindexed_like(
-            reindex_like, coa_codes, fields=["Amount"], interim=self.interim
+            reindex_like, coa_codes, fields=["Amount"], interim=interim
         )
 
         out = {}
@@ -54,10 +55,8 @@ class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
 
 class ReutersEstimatesPipelineLoader(implements(PipelineLoader)):
 
-    def __init__(self, zipline_sids_to_real_sids, period_type, field):
+    def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
-        self.period_type = period_type
-        self.field = field
 
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
@@ -66,8 +65,11 @@ class ReutersEstimatesPipelineLoader(implements(PipelineLoader)):
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
+        field = columns[0].dataset.extra_coords["field"]
+        period_type = columns[0].dataset.extra_coords["period_type"]
+
         estimates = get_reuters_estimates_reindexed_like(
-            reindex_like, codes, fields=[self.field], period_types=[self.period_type])
+            reindex_like, codes, fields=[field], period_types=[period_type])
 
         out = {}
 

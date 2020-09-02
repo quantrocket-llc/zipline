@@ -26,9 +26,8 @@ from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
 class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
 
-    def __init__(self, zipline_sids_to_real_sids, dimension):
+    def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
-        self.dimension = dimension
 
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
@@ -37,8 +36,10 @@ class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
+        dimension = columns[0].dataset.extra_coords["dimension"]
+
         fundamentals = get_sharadar_fundamentals_reindexed_like(
-            reindex_like, fields=fields, dimension=self.dimension)
+            reindex_like, fields=fields, dimension=dimension)
 
         out = {}
 
