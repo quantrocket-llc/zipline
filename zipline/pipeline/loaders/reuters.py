@@ -19,7 +19,8 @@ from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
 from quantrocket.fundamental import (
     get_reuters_financials_reindexed_like,
-    get_reuters_estimates_reindexed_like
+    get_reuters_estimates_reindexed_like,
+    NoFundamentalData
 )
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
@@ -37,9 +38,12 @@ class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
 
         interim = columns[0].dataset.extra_coords["interim"]
 
-        financials = get_reuters_financials_reindexed_like(
-            reindex_like, coa_codes, fields=["Amount"], interim=interim
-        )
+        try:
+            financials = get_reuters_financials_reindexed_like(
+                reindex_like, coa_codes, fields=["Amount"], interim=interim
+            )
+        except NoFundamentalData:
+            financials = reindex_like
 
         out = {}
 
@@ -68,8 +72,11 @@ class ReutersEstimatesPipelineLoader(implements(PipelineLoader)):
         field = columns[0].dataset.extra_coords["field"]
         period_type = columns[0].dataset.extra_coords["period_type"]
 
-        estimates = get_reuters_estimates_reindexed_like(
-            reindex_like, codes, fields=[field], period_types=[period_type])
+        try:
+            estimates = get_reuters_estimates_reindexed_like(
+                reindex_like, codes, fields=[field], period_types=[period_type])
+        except NoFundamentalData:
+            estimates = reindex_like
 
         out = {}
 

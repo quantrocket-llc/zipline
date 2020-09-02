@@ -17,7 +17,9 @@ from interface import implements
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
-from quantrocket.fundamental import get_ibkr_shortable_shares_reindexed_like
+from quantrocket.fundamental import (
+    get_ibkr_shortable_shares_reindexed_like,
+    NoFundamentalData)
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
 class IBKRShortableSharesPipelineLoader(implements(PipelineLoader)):
@@ -37,8 +39,11 @@ class IBKRShortableSharesPipelineLoader(implements(PipelineLoader)):
 
         time = columns[0].dataset.extra_coords["time"]
 
-        shortable_shares = get_ibkr_shortable_shares_reindexed_like(
-            reindex_like, time=time + " " + tz)
+        try:
+            shortable_shares = get_ibkr_shortable_shares_reindexed_like(
+                reindex_like, time=time + " " + tz)
+        except NoFundamentalData:
+            shortable_shares = reindex_like
 
         out = {}
 

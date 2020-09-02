@@ -17,7 +17,9 @@ from interface import implements
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
-from quantrocket.fundamental import get_alpaca_etb_reindexed_like
+from quantrocket.fundamental import (
+    get_alpaca_etb_reindexed_like,
+    NoFundamentalData)
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
 class AlpacaETBPipelineLoader(implements(PipelineLoader)):
@@ -28,10 +30,13 @@ class AlpacaETBPipelineLoader(implements(PipelineLoader)):
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
-        reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
+        reindex_like = pd.DataFrame(False, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
-        are_etb = get_alpaca_etb_reindexed_like(reindex_like)
+        try:
+            are_etb = get_alpaca_etb_reindexed_like(reindex_like)
+        except NoFundamentalData:
+            are_etb = reindex_like
 
         out = {}
 

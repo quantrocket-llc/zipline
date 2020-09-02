@@ -21,6 +21,7 @@ from quantrocket.fundamental import (
     get_sharadar_fundamentals_reindexed_like,
     get_sharadar_institutions_reindexed_like,
     get_sharadar_sp500_reindexed_like,
+    NoFundamentalData
 )
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
@@ -38,8 +39,11 @@ class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
 
         dimension = columns[0].dataset.extra_coords["dimension"]
 
-        fundamentals = get_sharadar_fundamentals_reindexed_like(
-            reindex_like, fields=fields, dimension=dimension)
+        try:
+            fundamentals = get_sharadar_fundamentals_reindexed_like(
+                reindex_like, fields=fields, dimension=dimension)
+        except NoFundamentalData:
+            fundamentals = reindex_like
 
         out = {}
 
@@ -65,8 +69,11 @@ class SharadarInstitutionsPipelineLoader(implements(PipelineLoader)):
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
-        institutions = get_sharadar_institutions_reindexed_like(
-            reindex_like, fields=fields)
+        try:
+            institutions = get_sharadar_institutions_reindexed_like(
+                reindex_like, fields=fields)
+        except NoFundamentalData:
+            institutions = reindex_like
 
         out = {}
 
@@ -88,10 +95,13 @@ class SharadarSP500PipelineLoader(implements(PipelineLoader)):
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
-        reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
+        reindex_like = pd.DataFrame(False, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
-        in_sp500 = get_sharadar_sp500_reindexed_like(reindex_like)
+        try:
+            in_sp500 = get_sharadar_sp500_reindexed_like(reindex_like)
+        except NoFundamentalData:
+            in_sp500 = reindex_like
 
         # This dataset has only one column
         column = columns[0]
