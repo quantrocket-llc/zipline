@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from interface import implements
+from collections import defaultdict
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
@@ -31,29 +32,39 @@ class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
 
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
-        coa_codes = [c.name for c in columns]
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
-        interim = columns[0].dataset.extra_coords["interim"]
-
-        try:
-            financials = get_reuters_financials_reindexed_like(
-                reindex_like, coa_codes, fields=["Amount"], interim=interim
-            )
-        except NoFundamentalData:
-            financials = reindex_like
-
         out = {}
 
+        columns_by_interim = defaultdict(list)
         for column in columns:
-            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
-            out[column] = AdjustedArray(
-                financials.loc[column.name].astype(column.dtype).fillna(missing_value).values,
-                adjustments={},
-                missing_value=missing_value
-            )
+            interim = column.dataset.extra_coords["interim"]
+            columns_by_interim[interim].append(column)
+
+        for interim, columns in columns_by_interim.items():
+
+            coa_codes = list({c.name for c in columns})
+
+            try:
+                financials = get_reuters_financials_reindexed_like(
+                    reindex_like, coa_codes, fields=["Amount"], interim=interim
+                )
+            except NoFundamentalData:
+                financials = None
+
+            for column in columns:
+                missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+                if financials is not None:
+                    financials_for_column = financials.loc[column.name].loc["Amount"]
+                else:
+                    financials_for_column = reindex_like
+                out[column] = AdjustedArray(
+                    financials_for_column.astype(column.dtype).fillna(missing_value).values,
+                    adjustments={},
+                    missing_value=missing_value
+                )
 
         return out
 
@@ -64,28 +75,40 @@ class ReutersEstimatesPipelineLoader(implements(PipelineLoader)):
 
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
-        codes = [c.name for c in columns]
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
-        field = columns[0].dataset.extra_coords["field"]
-        period_type = columns[0].dataset.extra_coords["period_type"]
-
-        try:
-            estimates = get_reuters_estimates_reindexed_like(
-                reindex_like, codes, fields=[field], period_types=[period_type])
-        except NoFundamentalData:
-            estimates = reindex_like
-
         out = {}
 
+        columns_by_period_type = defaultdict(list)
         for column in columns:
-            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
-            out[column] = AdjustedArray(
-                estimates.loc[column.name].astype(column.dtype).fillna(missing_value).values,
-                adjustments={},
-                missing_value=missing_value
-            )
+            period_type = column.dataset.extra_coords["period_type"]
+            columns_by_period_type[period_type].append(column)
+
+        for period_type, columns in columns_by_period_type.items():
+
+            codes = list({c.name for c in columns})
+
+            fields = list({c.dataset.extra_coords["field"] for c in columns})
+
+            try:
+                estimates = get_reuters_estimates_reindexed_like(
+                    reindex_like, codes, fields=fields, period_types=[period_type])
+            except NoFundamentalData:
+                estimates = None
+
+            for column in columns:
+                missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+                field = column.dataset.extra_coords["field"]
+                if estimates is not None:
+                    estimates_for_column = estimates.loc[column.name].loc[field]
+                else:
+                    estimates_for_column = reindex_like
+                out[column] = AdjustedArray(
+                    estimates_for_column.astype(column.dtype).fillna(missing_value).values,
+                    adjustments={},
+                    missing_value=missing_value
+                )
 
         return out

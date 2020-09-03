@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from interface import implements
+from collections import defaultdict
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
@@ -32,28 +33,38 @@ class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
 
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
-        fields = [c.name for c in columns]
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
-        dimension = columns[0].dataset.extra_coords["dimension"]
-
-        try:
-            fundamentals = get_sharadar_fundamentals_reindexed_like(
-                reindex_like, fields=fields, dimension=dimension)
-        except NoFundamentalData:
-            fundamentals = reindex_like
-
         out = {}
 
+        columns_by_dimension = defaultdict(list)
         for column in columns:
-            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
-            out[column] = AdjustedArray(
-                fundamentals.loc[column.name].astype(column.dtype).fillna(missing_value).values,
-                adjustments={},
-                missing_value=missing_value
-            )
+            dimension = column.dataset.extra_coords["dimension"]
+            columns_by_dimension[dimension].append(column)
+
+        for dimension, columns in columns_by_dimension.items():
+
+            fields = list({c.name for c in columns})
+
+            try:
+                fundamentals = get_sharadar_fundamentals_reindexed_like(
+                    reindex_like, fields=fields, dimension=dimension)
+            except NoFundamentalData:
+                fundamentals = None
+
+            for column in columns:
+                missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+                if fundamentals is not None:
+                    fundamentals_for_column = fundamentals.loc[column.name]
+                else:
+                    fundamentals_for_column = reindex_like
+                out[column] = AdjustedArray(
+                    fundamentals_for_column.astype(column.dtype).fillna(missing_value).values,
+                    adjustments={},
+                    missing_value=missing_value
+                )
 
         return out
 

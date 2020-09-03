@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from interface import implements
+from collections import defaultdict
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
@@ -33,26 +34,31 @@ class IBKRShortableSharesPipelineLoader(implements(PipelineLoader)):
         # and pass the tz to get_ibkr_shortable_shares_reindexed_like)
         tz = domain.calendar.tz.zone
 
+        out = {}
+
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
         reindex_like = pd.DataFrame(None, index=dates.tz_convert(tz), columns=real_sids)
         reindex_like.index.name = "Date"
 
-        time = columns[0].dataset.extra_coords["time"]
-
-        try:
-            shortable_shares = get_ibkr_shortable_shares_reindexed_like(
-                reindex_like, time=time + " " + tz)
-        except NoFundamentalData:
-            shortable_shares = reindex_like
-
-        out = {}
-
+        columns_by_time = defaultdict(list)
         for column in columns:
-            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
-            out[column] = AdjustedArray(
-                shortable_shares.astype(column.dtype).fillna(missing_value).values,
-                adjustments={},
-                missing_value=missing_value
-            )
+            time = column.dataset.extra_coords["time"]
+            columns_by_time[time].append(column)
+
+        for time, columns in columns_by_time.items():
+
+            try:
+                shortable_shares = get_ibkr_shortable_shares_reindexed_like(
+                    reindex_like, time=time + " " + tz)
+            except NoFundamentalData:
+                shortable_shares = reindex_like
+
+            for column in columns:
+                missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+                out[column] = AdjustedArray(
+                    shortable_shares.astype(column.dtype).fillna(missing_value).values,
+                    adjustments={},
+                    missing_value=missing_value
+                )
 
         return out
