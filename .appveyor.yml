@@ -14,7 +14,7 @@ environment:
     # 2. Generated secure env var below via appveyor's Encrypt data tool at https://ci.appveyor.com/tools/encrypt.
     #   See https://www.appveyor.com/docs/build-configuration/#secure-variables.
     ANACONDA_TOKEN:
-      secure: "caWTijK1gR7gM3026NPkI/QWQTcmz9QzI6sqq2POEVVTDwj2uOJ40kZOOioXqFNb"
+      secure: "kXWRGusUvfZgrrWTTH3Eou2NGy3UTlMz/6vjwY00bWZdbE6LsgByBb8ARMV+BzR4"
 
     CONDA_ROOT_PYTHON_VERSION: "2.7"
 
@@ -91,7 +91,7 @@ install:
   - conda list
   # https://blog.ionelmc.ro/2014/12/21/compiling-python-extensions-on-windows/ for 64bit C compilation
   - ps: copy .\ci\appveyor\vcvars64.bat "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64"
-  - "ECHO APPVEYOR_PULL_REQUEST_NUMBER is: %APPVEYOR_PULL_REQUEST_NUMBER%"
+  - "ECHO APPVEYOR_PULL_REQUEST_NUMBER: %APPVEYOR_PULL_REQUEST_NUMBER% APPVEYOR_REPO_BRANCH: %APPVEYOR_REPO_BRANCH%"
   - "%CMD_IN_ENV% python .\\ci\\make_conda_packages.py"
 
   # test that we can conda install zipline in a new env

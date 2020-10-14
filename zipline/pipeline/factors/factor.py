@@ -40,13 +40,9 @@ from zipline.pipeline.filters import (
     NumExprFilter,
     PercentileFilter,
     MaximumFilter,
-    NotNullFilter,
-    NullFilter,
 )
 from zipline.pipeline.mixins import (
-    AliasedMixin,
     CustomTermMixin,
-    DownsampledMixin,
     LatestMixin,
     PositiveWindowLengthMixin,
     RestrictedDTypeMixin,
@@ -56,12 +52,20 @@ from zipline.pipeline.sentinels import NotSpecified, NotSpecifiedType
 from zipline.pipeline.term import AssetExists, ComputableTerm, Term
 from zipline.utils.functional import with_doc, with_name
 from zipline.utils.input_validation import expect_types
-from zipline.utils.math_utils import nanmean, nanstd
-from zipline.utils.memoize import classlazyval
+from zipline.utils.math_utils import (
+    nanmax,
+    nanmean,
+    nanmedian,
+    nanmin,
+    nanstd,
+    nansum,
+)
 from zipline.utils.numpy_utils import (
+    as_column,
     bool_dtype,
     coerce_to_dtype,
     float64_dtype,
+    is_missing,
 )
 from zipline.utils.sharedoc import templated_docstring
 
@@ -387,6 +391,73 @@ CORRELATION_METHOD_NOTE = dedent(
 )
 
 
+class summary_funcs(object):
+    """Namespace of functions meant to be used with DailySummary.
+    """
+
+    @staticmethod
+    def mean(a, missing_value):
+        return nanmean(a, axis=1)
+
+    @staticmethod
+    def stddev(a, missing_value):
+        return nanstd(a, axis=1)
+
+    @staticmethod
+    def max(a, missing_value):
+        return nanmax(a, axis=1)
+
+    @staticmethod
+    def min(a, missing_value):
+        return nanmin(a, axis=1)
+
+    @staticmethod
+    def median(a, missing_value):
+        return nanmedian(a, axis=1)
+
+    @staticmethod
+    def sum(a, missing_value):
+        return nansum(a, axis=1)
+
+    @staticmethod
+    def notnull_count(a, missing_value):
+        return (~is_missing(a, missing_value)).sum(axis=1)
+
+    names = {k for k in locals() if not k.startswith('_')}
+
+
+def summary_method(name):
+    func = getattr(summary_funcs, name)
+
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def f(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the {} of self, each day.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            func,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    f.__name__ = func.__name__
+    f.__doc__ = f.__doc__.format(f.__name__)
+
+    return f
+
+
 class Factor(RestrictedDTypeMixin, ComputableTerm):
     """
     Pipeline API expression producing a numerical or date-valued output.
@@ -451,6 +522,11 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     __truediv__ = clsdict['__div__']
     __rtruediv__ = clsdict['__rdiv__']
+
+    # Add summary functions.
+    clsdict.update(
+        {name: summary_method(name) for name in summary_funcs.names},
+    )
 
     del clsdict  # don't pollute the class namespace with this.
 
@@ -1195,33 +1271,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             mask=mask,
         )
 
-    def isnull(self):
-        """
-        A Filter producing True for values where this Factor has missing data.
-
-        Equivalent to self.isnan() when ``self.dtype`` is float64.
-        Otherwise equivalent to ``self.eq(self.missing_value)``.
-
-        Returns
-        -------
-        filter : zipline.pipeline.Filter
-        """
-        if self.dtype == float64_dtype:
-            # Using isnan is more efficient when possible because we can fold
-            # the isnan computation with other NumExpr expressions.
-            return self.isnan()
-        else:
-            return NullFilter(self)
-
-    def notnull(self):
-        """
-        A Filter producing True for values where this Factor has complete data.
-
-        Equivalent to ``~self.isnan()` when ``self.dtype`` is float64.
-        Otherwise equivalent to ``(self != self.missing_value)``.
-        """
-        return NotNullFilter(self)
-
     @if_not_float64_tell_caller_to_use_isnull
     def isnan(self):
         """
@@ -1252,13 +1301,48 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         """
         return (-inf < self) & (self < inf)
 
-    @classlazyval
-    def _downsampled_type(self):
-        return DownsampledMixin.make_downsampled_type(Factor)
+    def clip(self, min_bound, max_bound, mask=NotSpecified):
+        """
+        Clip (limit) the values in a factor.
 
-    @classlazyval
-    def _aliased_type(self):
-        return AliasedMixin.make_aliased_type(Factor)
+        Given an interval, values outside the interval are clipped to the
+        interval edges. For example, if an interval of ``[0, 1]`` is specified,
+        values smaller than 0 become 0, and values larger than 1 become 1.
+
+        Parameters
+        ----------
+        min_bound : float
+            The minimum value to use.
+        max_bound : float
+            The maximum value to use.
+        mask : zipline.pipeline.Filter, optional
+            A Filter representing assets to consider when clipping.
+
+        Notes
+        -----
+        To only clip values on one side, ``-np.inf` and ``np.inf`` may be
+        passed.  For example, to only clip the maximum value but not clip a
+        minimum value:
+
+        .. code-block:: python
+
+           factor.clip(min_bound=-np.inf, max_bound=user_provided_max)
+
+        See Also
+        --------
+        numpy.clip
+        """
+        from .basic import Clip
+
+        return Clip(
+            inputs=[self],
+            min_bound=min_bound,
+            max_bound=max_bound,
+        )
+
+    @classmethod
+    def _principal_computable_term_type(cls):
+        return Factor
 
 
 class NumExprFactor(NumericalExpression, Factor):
@@ -1719,6 +1803,51 @@ class Latest(LatestMixin, CustomFactor):
 
     def compute(self, today, assets, out, data):
         out[:] = data[-1]
+
+
+class DailySummary(SingleInputMixin, Factor):
+    """1D Factor that computes a summary statistic across all assets.
+    """
+    ndim = 1
+    window_length = 0
+    params = ('func',)
+
+    def __new__(cls, func, input_, mask, dtype):
+        # TODO: We should be able to support datetime64 as well, but that
+        # requires extra care for handling NaT.
+        if dtype != float64_dtype:
+            raise AssertionError(
+                "DailySummary only supports float64 dtype, got {}"
+                .format(dtype),
+            )
+
+        return super(DailySummary, cls).__new__(
+            cls,
+            inputs=[input_],
+            dtype=dtype,
+            missing_value=nan,
+            window_safe=input_.window_safe,
+            func=func,
+            mask=mask,
+        )
+
+    def _compute(self, arrays, dates, assets, mask):
+        func = self.params['func']
+
+        data = arrays[0]
+        data[~mask] = nan
+        if not isnan(self.inputs[0].missing_value):
+            data[data == self.inputs[0].missing_value] = nan
+
+        return as_column(func(data, self.inputs[0].missing_value))
+
+    def __repr__(self):
+        return "{}.{}()".format(
+            self.inputs[0].recursive_repr(),
+            self.params['func'].__name__,
+        )
+
+    graph_repr = recursive_repr = __repr__
 
 
 # Functions to be passed to GroupedRowTransform.  These aren't defined inline
