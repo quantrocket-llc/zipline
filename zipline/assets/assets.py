@@ -96,6 +96,7 @@ _asset_timestamp_fields = frozenset({
     'notice_date',
     'expiration_date',
     'auto_close_date',
+    'rollover_date',
 })
 
 OwnershipPeriod = namedtuple('OwnershipPeriod', 'start end sid value')

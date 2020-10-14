@@ -168,6 +168,7 @@ futures_contracts = sa.Table(
     sa.Column('notice_date', sa.Integer, nullable=False),
     sa.Column('expiration_date', sa.Integer, nullable=False),
     sa.Column('auto_close_date', sa.Integer, nullable=False),
+    sa.Column('rollover_date', sa.Integer, nullable=False, index=True),
     sa.Column('multiplier', sa.Float),
     sa.Column('price_magnifier', sa.Float),
     sa.Column('tick_size', sa.Float),

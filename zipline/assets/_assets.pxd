@@ -31,6 +31,7 @@ cdef class Future(Asset):
     cdef readonly object root_symbol
     cdef readonly object notice_date
     cdef readonly object expiration_date
+    cdef readonly object rollover_date
 
     cpdef __reduce__(self)
     cpdef to_dict(self)

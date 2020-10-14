@@ -1135,7 +1135,9 @@ class TradingAlgorithm(object):
 
         roll : str, optional
             How rolls are determined. Possible choices: 'volume',
-            'calendar'. Default is 'volume'.
+            (roll when back contract volume exceeds front contract
+            volume), or 'calendar' (roll on rollover date). Default
+            is 'volume'.
 
         adjustment : str, optional
             Method for adjusting lookback prices between rolls. Possible choices:

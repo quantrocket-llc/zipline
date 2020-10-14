@@ -140,7 +140,7 @@ class RollFinder(with_metaclass(ABCMeta, object)):
 class CalendarRollFinder(RollFinder):
     """
     The CalendarRollFinder calculates contract rolls based purely on the
-    contract's auto close date.
+    contract's rollover_date.
     """
 
     def __init__(self, trading_calendar, asset_finder):
@@ -149,9 +149,8 @@ class CalendarRollFinder(RollFinder):
 
     def _active_contract(self, oc, front, back, dt):
         contract = oc.sid_to_contract[front].contract
-        auto_close_date = contract.auto_close_date
-        auto_closed = dt >= auto_close_date
-        return back if auto_closed else front
+        rolled = dt >= contract.rollover_date
+        return back if rolled else front
 
 
 class VolumeRollFinder(RollFinder):

@@ -445,6 +445,21 @@ cdef class BarData:
     @check_parameters(('continuous_future',),
                       (ContinuousFuture,))
     def current_chain(self, continuous_future):
+        """
+        Returns the current futures chain as of the simulation date.
+
+        Parameters
+        ----------
+        continuous_future : `zipline.assets.ContinuousFuture`
+            the continuous future for which to provide the current chain
+
+        Returns
+        -------
+        future_chain : list of `zipline.assets.Future`
+            A list of active futures, where the first index is the current
+            contract specified by the continuous future definition, the second
+            is the next upcoming contract and so on.
+        """
         return self.data_portal.get_current_future_chain(
             continuous_future,
             self.simulation_dt_func())

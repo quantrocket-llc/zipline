@@ -350,6 +350,7 @@ cdef class Future(Asset):
         'notice_date',
         'expiration_date',
         'auto_close_date',
+        'rollover_date',
         'first_traded',
         'exchange_info',
         'tick_size',
@@ -370,6 +371,7 @@ cdef class Future(Asset):
                  object notice_date=None,
                  object expiration_date=None,
                  object auto_close_date=None,
+                 object rollover_date=None,
                  object first_traded=None,
                  object tick_size=0.001,
                  float multiplier=1.0,
@@ -393,6 +395,7 @@ cdef class Future(Asset):
         self.root_symbol = root_symbol
         self.notice_date = notice_date
         self.expiration_date = expiration_date
+        self.rollover_date = rollover_date
 
         if auto_close_date is None:
             if notice_date is None:
@@ -401,6 +404,9 @@ cdef class Future(Asset):
                 self.auto_close_date = notice_date
             else:
                 self.auto_close_date = min(notice_date, expiration_date)
+
+        if rollover_date is None:
+            self.rollover_date = self.auto_close_date
 
     property multiplier:
         """
@@ -432,6 +438,7 @@ cdef class Future(Asset):
                                  self.notice_date,
                                  self.expiration_date,
                                  self.auto_close_date,
+                                 self.rollover_date,
                                  self.first_traded,
                                  self.tick_size,
                                  self.price_multiplier,
@@ -445,6 +452,7 @@ cdef class Future(Asset):
         super_dict['root_symbol'] = self.root_symbol
         super_dict['notice_date'] = self.notice_date
         super_dict['expiration_date'] = self.expiration_date
+        super_dict['rollover_date'] = self.rollover_date
         return super_dict
 
 

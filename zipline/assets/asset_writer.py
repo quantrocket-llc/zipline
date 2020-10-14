@@ -137,6 +137,7 @@ _futures_defaults = {
     'notice_date': _default_none,
     'expiration_date': _default_none,
     'auto_close_date': _default_none,
+    'rollover_date': _default_none,
     'tick_size': _default_none,
     'multiplier': lambda df, col: 1,
     'price_magnifier': lambda df, col: 1,
@@ -575,6 +576,9 @@ class AssetDBWriter(object):
               auto_close_date : datetime
                   The date when the broker will automatically close any
                   positions in this contract.
+              rollover_date : datetime
+                  The date when the contract ceases to be the front-month
+                  contract.
               tick_size : float
                   The minimum price movement of the contract.
               multiplier: float
@@ -729,6 +733,9 @@ class AssetDBWriter(object):
               auto_close_date : datetime
                   The date when the broker will automatically close any
                   positions in this contract.
+              rollover_date : datetime
+                  The date when the contract ceases to be the front-month
+                  contract.
               tick_size : float
                   The minimum price movement of the contract.
               multiplier: float
@@ -957,7 +964,8 @@ class AssetDBWriter(object):
                     'first_traded',
                     'notice_date',
                     'expiration_date',
-                    'auto_close_date'):
+                    'auto_close_date',
+                    'rollover_date'):
             futures_output[col] = _dt_to_epoch_ns(futures_output[col])
 
         return futures_output
