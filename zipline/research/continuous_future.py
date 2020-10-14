@@ -56,7 +56,7 @@ def continuous_future(root_symbol_str, offset=0, roll="volume", adjustment="mul"
     2020-09-18:
 
     >>> es = continuous_future("ES", roll="volume", bundle="es-1min")
-    >>> data = get_data("2020-09-18", bundle="es-1min")
+    >>> data = get_data("2020-09-18 10:00:00", bundle="es-1min")
     >>> print(data.current_chain(es))
     """
     if not bundle:
