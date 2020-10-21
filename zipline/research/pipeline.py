@@ -25,6 +25,7 @@ from zipline.pipeline.factors import Returns
 from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.research.exceptions import ValidationError
+from zipline.research._asset import asset_finder_cache
 from quantrocket.zipline import get_default_bundle
 from quantrocket_trading_calendars import get_calendar
 
@@ -126,9 +127,11 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
         bundle_data.equity_daily_bar_reader,
         bundle_data.adjustment_reader,
     )
+    asset_finder = asset_finder_cache.get(bundle, bundle_data.asset_finder)
+    asset_finder_cache[bundle] = asset_finder
 
     pipeline_loader = QuantRocketPipelineLoaderRouter(
-        asset_db_conn=bundle_data.asset_finder.engine,
+        asset_db_conn=asset_finder.engine,
         calendar=trading_calendar,
         default_loader=default_pipeline_loader,
         default_loader_columns=EquityPricing.columns
@@ -138,7 +141,7 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
 
     engine = SimplePipelineEngine(
         pipeline_loader,
-        bundle_data.asset_finder,
+        asset_finder,
         calendar_domain)
 
     return engine.run_pipeline(pipeline, start_date, end_date)

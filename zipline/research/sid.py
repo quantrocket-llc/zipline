@@ -18,6 +18,7 @@ import pandas as pd
 from zipline.data import bundles
 from zipline.utils.extensions import load_extensions
 from zipline.research.exceptions import ValidationError
+from zipline.research._asset import asset_finder_cache
 from quantrocket.zipline import get_default_bundle
 
 def sid(sid, bundle=None):
@@ -64,7 +65,10 @@ def sid(sid, bundle=None):
         pd.Timestamp.utcnow(),
     )
 
-    zipline_sid = bundle_data.asset_finder.engine.execute(
+    asset_finder = asset_finder_cache.get(bundle, bundle_data.asset_finder)
+    asset_finder_cache[bundle] = asset_finder
+
+    zipline_sid = asset_finder.engine.execute(
         """
         SELECT
             sid
@@ -85,6 +89,6 @@ def sid(sid, bundle=None):
         raise ValidationError(
             f"No such sid {sid} in {bundle} bundle")
 
-    asset = bundle_data.asset_finder.retrieve_asset(zipline_sid)
+    asset = asset_finder.retrieve_asset(zipline_sid)
 
     return asset

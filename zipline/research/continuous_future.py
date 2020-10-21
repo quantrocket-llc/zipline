@@ -18,6 +18,7 @@ import pandas as pd
 from zipline.data import bundles
 from zipline.utils.extensions import load_extensions
 from zipline.research.exceptions import ValidationError
+from zipline.research._asset import asset_finder_cache
 from quantrocket.zipline import get_default_bundle
 
 def continuous_future(root_symbol_str, offset=0, roll="volume", adjustment="mul", bundle=None):
@@ -72,8 +73,10 @@ def continuous_future(root_symbol_str, offset=0, roll="volume", adjustment="mul"
         os.environ,
         pd.Timestamp.utcnow(),
     )
+    asset_finder = asset_finder_cache.get(bundle, bundle_data.asset_finder)
+    asset_finder_cache[bundle] = asset_finder
 
-    continuous_future = bundle_data.asset_finder.create_continuous_future(
+    continuous_future = asset_finder.create_continuous_future(
         root_symbol_str,
         offset,
         roll,

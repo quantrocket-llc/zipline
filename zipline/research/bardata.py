@@ -19,6 +19,7 @@ from zipline.data import bundles
 from zipline.data.data_portal import DataPortal
 from zipline.utils.extensions import load_extensions
 from zipline.research.exceptions import ValidationError
+from zipline.research._asset import asset_finder_cache
 from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.protocol import BarData
 from quantrocket.zipline import get_default_bundle, get_bundle_config
@@ -99,8 +100,11 @@ def get_data(dt, bundle=None, data_frequency=None):
     else:
         equity_minute_reader = future_minute_reader = None
 
+    asset_finder = asset_finder_cache.get(bundle, bundle_data.asset_finder)
+    asset_finder_cache[bundle] = asset_finder
+
     data_portal = DataPortal(
-        bundle_data.asset_finder,
+        asset_finder,
         trading_calendar=trading_calendar,
         first_trading_day=bundle_data.equity_minute_bar_reader.first_trading_day,
         equity_minute_reader=equity_minute_reader,
@@ -115,7 +119,7 @@ def get_data(dt, bundle=None, data_frequency=None):
         data_frequency=data_frequency,
         trading_calendar=trading_calendar,
         restrictions=NoRestrictions(),
-        universe_func=lambda: bundle_data.asset_finder.retrieve_all(bundle_data.asset_finder.sids)
+        universe_func=lambda: asset_finder.retrieve_all(asset_finder.sids)
     )
 
     return data
