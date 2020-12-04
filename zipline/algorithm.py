@@ -836,8 +836,7 @@ class TradingAlgorithm(object):
 
               platform : str
                   The platform that the code is running on. By default this
-                  will be the string 'zipline'. This can allow algorithms to
-                  know if they are running on the Quantopian platform instead.
+                  will be the string 'zipline'.
 
               * : dict[str -> any]
                   Returns all of the fields in a dictionary.

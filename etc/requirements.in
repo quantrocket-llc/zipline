@@ -17,7 +17,7 @@ multipledispatch>=0.6.0
 toolz>=0.8.2
 
 # Scientific Libraries
-numpy>=1.11.3
+numpy>=1.11.3,<=1.19.4 # numpy 1.20.requires Python 3.7
 pandas>=0.18.1,<=0.22
 pandas-datareader>=0.2.1
 scipy>=0.17.1
