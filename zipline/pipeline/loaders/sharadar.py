@@ -24,6 +24,7 @@ from quantrocket.fundamental import (
     get_sharadar_sp500_reindexed_like,
     NoFundamentalData
 )
+from zipline.utils.numpy_utils import datetime64ns_dtype
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
 class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
@@ -58,10 +59,20 @@ class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
                 missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
                 if fundamentals is not None:
                     fundamentals_for_column = fundamentals.loc[column.name]
+                    if column.dtype == datetime64ns_dtype:
+                        # pd.to_datetime handles NaNs in pandas 0.22 while .astype(column.dtype) doesn't
+                        values = fundamentals_for_column.apply(pd.to_datetime).fillna(missing_value).values
+                    else:
+                        values = fundamentals_for_column.astype(column.dtype).fillna(missing_value).values
+
                 else:
-                    fundamentals_for_column = reindex_like
+                    values = pd.DataFrame(
+                        missing_value,
+                        columns=reindex_like.columns,
+                        index=reindex_like.index).values
+
                 out[column] = AdjustedArray(
-                    fundamentals_for_column.astype(column.dtype).fillna(missing_value).values,
+                    values,
                     adjustments={},
                     missing_value=missing_value
                 )

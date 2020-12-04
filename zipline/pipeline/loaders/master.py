@@ -18,6 +18,7 @@ import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
+from zipline.utils.numpy_utils import datetime64ns_dtype
 from quantrocket.master import get_securities_reindexed_like
 
 class SecuritiesMasterPipelineLoader(implements(PipelineLoader)):
@@ -39,8 +40,14 @@ class SecuritiesMasterPipelineLoader(implements(PipelineLoader)):
 
         for column in columns:
             missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+            if column.dtype == datetime64ns_dtype:
+                # pd.to_datetime handles NaNs in pandas 0.22 while .astype(column.dtype) doesn't
+                values = securities.loc[column.name].apply(pd.to_datetime).fillna(missing_value).values
+            else:
+                values = securities.loc[column.name].astype(column.dtype).fillna(missing_value).values
+
             out[column] = AdjustedArray(
-                securities.loc[column.name].astype(column.dtype).fillna(missing_value).values,
+                values,
                 adjustments={},
                 missing_value=missing_value
             )
