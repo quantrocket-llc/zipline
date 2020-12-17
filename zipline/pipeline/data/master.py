@@ -600,8 +600,8 @@ class SecuritiesMaster(DataSet):
     usstock_Mic = Column(object_dtype)
     usstock_Symbol = Column(object_dtype)
     usstock_Name = Column(object_dtype)
-    usstock_Sector = Column(object_dtype),
-    usstock_Industry = Column(object_dtype),
+    usstock_Sector = Column(object_dtype)
+    usstock_Industry = Column(object_dtype)
     usstock_SicCode = Column(object_dtype)
     usstock_Sic = Column(object_dtype)
     usstock_SicIndustryGroup = Column(object_dtype)
@@ -609,8 +609,8 @@ class SecuritiesMaster(DataSet):
     usstock_SicDivision = Column(object_dtype)
     usstock_SecurityType = Column(object_dtype)
     usstock_SecurityType2 = Column(object_dtype)
-    usstock_CIK = Column(object_dtype),
-    usstock_PrimaryShareSid = Column(object_dtype),
+    usstock_CIK = Column(object_dtype)
+    usstock_PrimaryShareSid = Column(object_dtype)
     usstock_DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
     usstock_FirstPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
     usstock_LastPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
