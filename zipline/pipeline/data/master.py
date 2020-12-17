@@ -382,25 +382,50 @@ class SecuritiesMaster(DataSet):
 
     usstock_Name : str
 
+    usstock_Sector : str
+        sector in which company operates. There are 11 possible sectors.
+
+    usstock_Industry : str
+        industry in which company operates. There are 58 possible industries.
+
     usstock_SicCode : str
+        Standard Industrial Classification Code, used in SEC filings
 
     usstock_Sic : str
+        SIC code description, bottom tier in SIC hierarchy, e.g.
+        "Electronic Computers"
 
     usstock_SicIndustryGroup : str
+         3rd-level tier in SIC hierarchy, e.g. "Computer And Office Equipment"
 
     usstock_SicMajorGroup : str
+        2nd-level tier in SIC hierarchy, e.g. "Industrial And Commercial
+        Machinery And Computer Equipment"
 
     usstock_SicDivision : str
+        Top-level tier in SIC hierarchy
 
     usstock_SecurityType : str
+        security type (more detailed than usstock_SecurityType2)
 
     usstock_SecurityType2 : str
+        security type (less detailed than usstock_SecurityType)
+
+    usstock_CIK : str
+        the Central Index Key is the unique company identifier in SEC filings
+
+    usstock_PrimaryShareSid : str
+        the sid of the primary share class, if not this security (for companies with
+        multiple share classes). Filtering to securities where usstock_PrimaryShareSid
+        is null is a way to deduplicate companies with multiple share classes.
 
     usstock_DateDelisted : datetime64D
 
     usstock_FirstPriceDate : datetime64D
+        date of first available price
 
     usstock_LastPriceDate : datetime64D
+        date of last available price
 
     figi_Figi : str
         e.g. BBG000BBBRC7
@@ -575,6 +600,8 @@ class SecuritiesMaster(DataSet):
     usstock_Mic = Column(object_dtype)
     usstock_Symbol = Column(object_dtype)
     usstock_Name = Column(object_dtype)
+    usstock_Sector = Column(object_dtype),
+    usstock_Industry = Column(object_dtype),
     usstock_SicCode = Column(object_dtype)
     usstock_Sic = Column(object_dtype)
     usstock_SicIndustryGroup = Column(object_dtype)
@@ -582,6 +609,8 @@ class SecuritiesMaster(DataSet):
     usstock_SicDivision = Column(object_dtype)
     usstock_SecurityType = Column(object_dtype)
     usstock_SecurityType2 = Column(object_dtype)
+    usstock_CIK = Column(object_dtype),
+    usstock_PrimaryShareSid = Column(object_dtype),
     usstock_DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
     usstock_FirstPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
     usstock_LastPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
