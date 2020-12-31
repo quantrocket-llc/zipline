@@ -474,6 +474,12 @@ class SecuritiesMaster(DataSet):
     Filter NYSE stocks:
 
     >>> are_nyse_stocks = SecuritiesMaster.Exchange.latest.eq("XNYS")
+
+    Filter to primary shares, which can be identified by a null
+    usstock_PrimaryShareSid field (i.e. they have no pointer to another
+    primary share):
+
+    >>> are_primary_shares = master.SecuritiesMaster.usstock_PrimaryShareSid.latest.isnull()
     """
     Sid = Column(object_dtype)
     Symbol = Column(object_dtype)

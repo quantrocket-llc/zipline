@@ -103,7 +103,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
     def __ne__(self, other):
         """
         Construct a Filter returning True for asset/date pairs where the output
-        of ``self`` matches ``other.
+        of ``self`` matches ``other``.
         """
         if isinstance(other, Number) != (self.dtype == int64_dtype):
             raise InvalidClassifierComparison(self, other)

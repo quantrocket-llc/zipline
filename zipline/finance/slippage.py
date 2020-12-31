@@ -255,6 +255,23 @@ class VolumeShareSlippage(SlippageModel):
     where ``price`` is the close price for the bar, and ``volume_share`` is the
     percentage of minutely volume filled, up to a max of ``volume_limit``.
 
+    In the VolumeShareSlippage model, the price you get is a function of your order
+    size relative to the security's actual traded volume. You provide a volume_limit
+    cap (default 0.025), which limits the proportion of volume that your order can
+    take up per bar. For example: if the backtest is running in one-minute bars, and
+    you place an order for 60 shares; then 1000 shares trade in each of the next several
+    minute; and the volume_limit is 0.025; then your trade order will be split into
+    three orders (25 shares, 25 shares, and 10 shares). Setting the volume_limit to
+    1.00 will permit the backtester to use up to 100% of the bar towards filling your
+    order. Using the same example, this will fill 60 shares in the next minute bar.
+
+    The price impact constant (default 0.1) defines how large of an impact your order
+    will have on the backtester's price calculation. The slippage is calculated by
+    multiplying the price impact constant by the square of the ratio of the order to
+    the total volume. In our previous example, for the 25-share orders, the price impact
+    is .1 * (25/1000) * (25/1000), or 0.00625%. For the 10-share order, the price impact
+    is .1 * (10/1000) * (10/1000), or .001%.
+
     Parameters
     ----------
     volume_limit : float, optional
@@ -337,6 +354,18 @@ class VolumeShareSlippage(SlippageModel):
 class FixedSlippage(SlippageModel):
     """
     Simple model assuming a fixed-size spread for all assets.
+
+    When using the FixedSlippage model, the size of your order does not affect the
+    price of your trade execution. You specify a 'spread' that you think is a typical
+    bid/ask spread to use. When you place a buy order, half of the spread is added to
+    the price; when you place a sell order, half of the spread is subtracted from the
+    price.
+
+    Fills under fixed slippage models are not limited to the amount traded in the
+    minute bar. In the first non-zero-volume bar, the order will be completely
+    filled. This requires you to be careful about ordering; naive use of fixed
+    slippage models will lead to unrealistic fills, particularly with large orders
+    and/or illiquid securities.
 
     Parameters
     ----------
