@@ -65,6 +65,7 @@ class DatabasePipelineLoader(implements(PipelineLoader)):
                     lookback_window=dataset.LOOKBACK_WINDOW,
                     timezone=self.calendar.tz.zone,
                     times=dataset.TIMES,
+                    agg=dataset.AGG,
                     cont_fut=dataset.CONT_FUT,
                     data_frequency=dataset.DATA_FREQUENCY)
             except NoData:

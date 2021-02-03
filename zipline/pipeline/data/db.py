@@ -37,7 +37,7 @@ class Database(DataSet):
         bias. Default is 1. Shifting one period implies that data timestamped to
         a particular date is available and actionable on the following date.
 
-    FFILL : boolean, optional
+    FFILL : bool, optional
         forward-fill values in the pipeline output so that each date reflects
         the latest available value as of that date. If False, values appear only
         on the first date they were available, followed by NaNs. Default True.
@@ -82,8 +82,11 @@ class Database(DataSet):
             CODE = "custom-fundamentals"
 
             Revenue = Column(float)
+
             EPS = Column(float)
+
             Currency = Column(object)
+
             TotalAssets = Column(float)
 
     Instantiate a column from the dataset:
