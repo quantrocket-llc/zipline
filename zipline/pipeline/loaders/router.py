@@ -18,6 +18,7 @@ from zipline.pipeline.data import sharadar
 from zipline.pipeline.data import alpaca
 from zipline.pipeline.data import ibkr
 from zipline.pipeline.data.master import SecuritiesMaster
+from zipline.pipeline.data.db import Database
 
 from zipline.pipeline.loaders.reuters import (
     ReutersFinancialsPipelineLoader,
@@ -31,6 +32,7 @@ from zipline.pipeline.loaders.sharadar import (
 from zipline.pipeline.loaders.alpaca import AlpacaETBPipelineLoader
 from zipline.pipeline.loaders.ibkr import IBKRShortableSharesPipelineLoader
 from zipline.pipeline.loaders.master import SecuritiesMasterPipelineLoader
+from zipline.pipeline.loaders.db import DatabasePipelineLoader
 
 class QuantRocketPipelineLoaderRouter:
     """
@@ -72,6 +74,10 @@ class QuantRocketPipelineLoaderRouter:
         # Master
         self.securities_master_loader = SecuritiesMasterPipelineLoader(
             zipline_sids_to_real_sids)
+
+        # Database
+        self.database_loader = DatabasePipelineLoader(
+            zipline_sids_to_real_sids, calendar)
 
     def isin(self, column, dataset):
         """
@@ -118,6 +124,10 @@ class QuantRocketPipelineLoaderRouter:
             hasattr(column.dataset, "dataset_family")
             and column.dataset.dataset_family == ibkr.ShortableShares):
             return self.ibkr_shortable_shares_loader
+
+        # Database
+        elif issubclass(column.dataset, Database):
+            return self.database_loader
 
         raise ValueError(
             "No PipelineLoader registered for column %s." % column.unspecialize()
