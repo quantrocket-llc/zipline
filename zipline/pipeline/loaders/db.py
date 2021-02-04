@@ -44,21 +44,19 @@ class DatabasePipelineLoader(implements(PipelineLoader)):
 
         out = {}
 
-        columns_by_db = defaultdict(list)
+        columns_by_dataset = defaultdict(list)
         for column in columns:
-            db = column.dataset.CODE
-            columns_by_db[db].append(column)
+            dataset = column.dataset
+            columns_by_dataset[dataset].append(column)
 
-        for db, columns in columns_by_db.items():
+        for dataset, columns in columns_by_dataset.items():
 
             fields = list({c.name for c in columns})
-
-            dataset = columns[0].dataset
 
             try:
                 prices = get_prices_reindexed_like(
                     reindex_like,
-                    db,
+                    dataset.CODE,
                     fields=fields,
                     shift=dataset.SHIFT,
                     ffill=dataset.FFILL,
@@ -103,7 +101,7 @@ class DatabasePipelineLoader(implements(PipelineLoader)):
                         # pd.to_datetime handles NaNs in pandas 0.22 while .astype(column.dtype) doesn't
                         values = prices_for_column.apply(pd.to_datetime).fillna(missing_value).values
                     else:
-                        values = prices_for_column.fillna(missing_value).astype(column.dtype).values
+                        values = prices_for_column.astype(column.dtype).fillna(missing_value).values
 
                 else:
                     values = pd.DataFrame(
