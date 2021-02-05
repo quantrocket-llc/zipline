@@ -46,8 +46,10 @@ class CancelPolicy(with_metaclass(abc.ABCMeta)):
 
 
 class EODCancel(CancelPolicy):
-    """This policy cancels open orders at the end of the day.  For now,
-    Zipline will only apply this policy to minutely simulations.
+    """
+    This policy cancels open orders at the end of the day. This is the default
+    policy and does not need to be explicitly set. In live trading, this cancel
+    policy will cause orders to be submitted with a Tif (time-in-force) of DAY.
 
     Parameters
     ----------
@@ -62,7 +64,18 @@ class EODCancel(CancelPolicy):
 
 
 class NeverCancel(CancelPolicy):
-    """Orders are never automatically canceled.
+    """
+    With this policy, orders are never automatically canceled. In live trading, this
+    cancel policy will cause orders to be submitted with a Tif (time-in-force) of GTC
+    (Good-till-canceled).
+
+    Examples
+    --------
+    Set the cancel policy to NeverCancel:
+
+    >>> from zipline.api import set_cancel_policy, cancel_policy
+    >>> def initialize(context):
+            set_cancel_policy(cancel_policy.NeverCancel())
     """
     def __init__(self):
         self.warn_on_cancel = False

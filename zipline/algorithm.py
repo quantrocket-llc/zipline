@@ -1718,7 +1718,9 @@ class TradingAlgorithm(object):
 
     @api_method
     def set_cancel_policy(self, cancel_policy):
-        """Sets the order cancellation policy for the simulation.
+        """
+        Sets the order cancellation policy for the strategy. Cancellation
+        policies can only be set in the initialize() function.
 
         Parameters
         ----------
@@ -1727,7 +1729,7 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        :class:`zipline.api.EODCancel`
+        :class:`zipline.api.EODCancel` (default policy)
         :class:`zipline.api.NeverCancel`
         """
         if not isinstance(cancel_policy, CancelPolicy):
