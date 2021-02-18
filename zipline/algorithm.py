@@ -450,15 +450,21 @@ class TradingAlgorithm(object):
         # Complain if the user is trying to save an Asset in initialize
         new_attrs = list(set(self.__dict__.keys()) - set(orig_attrs))
         for attr in new_attrs:
-            if isinstance(getattr(self, attr), (Asset, ContinuousFuture)):
-                raise CannotStoreAssetInInitialize(
-                msg=(
-                    "cannot set context.{attr} to an Asset object in initialize() because "
-                    "doing so will cause the Asset to become stale in live trading. Please "
-                    "set this context variable in before_trading_start() instead.".format(
-                        attr=attr)
+            obj = getattr(self, attr)
+            if isinstance(obj, dict):
+                obj = list(obj.keys()) + list(obj.values())
+            elif not isinstance(obj, (tuple, list, set)):
+                obj = [obj]
+            for member in obj:
+                if isinstance(member, (Asset, ContinuousFuture)):
+                    raise CannotStoreAssetInInitialize(
+                    msg=(
+                        "cannot set context.{attr} to an Asset object in initialize() because "
+                        "doing so will cause the Asset to become stale in live trading. Please "
+                        "set this context variable in before_trading_start() instead.".format(
+                            attr=attr)
+                    )
                 )
-            )
 
     def before_trading_start(self, data):
         self.compute_eager_pipelines()
