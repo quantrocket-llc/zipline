@@ -213,16 +213,11 @@ def read_requirements(path,
 
         return list(reqs)
 
-
-def install_requires(conda_format=False):
-    return read_requirements('etc/requirements.in', conda_format=conda_format)
-
-
 def extras_requires(conda_format=False):
     extras = {
         extra: read_requirements('etc/requirements_{0}.in'.format(extra),
                                  conda_format=conda_format)
-        for extra in ('dev', 'talib')
+        for extra in ('dev',)
     }
     extras['all'] = [req for reqs in extras.values() for req in reqs]
 
@@ -246,17 +241,6 @@ def setup_requirements(requirements_path, module_names,
 
 conda_build = os.path.basename(sys.argv[0]) in ('conda-build',  # unix
                                                 'conda-build-script.py')  # win
-
-setup_requires = setup_requirements(
-    'etc/requirements_build.in',
-    ('Cython', 'numpy'),
-    conda_format=conda_build,
-)
-
-conditional_arguments = {
-    'setup_requires' if not conda_build else 'build_requires': setup_requires,
-}
-
 setup(
     name='zipline',
     url="http://zipline.io",
@@ -292,7 +276,5 @@ setup(
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: System :: Distributed Computing',
     ],
-    install_requires=install_requires(conda_format=conda_build),
     extras_require=extras_requires(conda_format=conda_build),
-    **conditional_arguments
 )
