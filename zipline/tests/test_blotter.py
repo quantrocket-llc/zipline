@@ -89,6 +89,8 @@ class BlotterTestCase(WithCreateBarData,
                 1000: {
                     'symbol': 'CLF06',
                     'root_symbol': 'CL',
+                    'real_sid': '1000',
+                    'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE,
                     'expiration_date': cls.END_DATE,

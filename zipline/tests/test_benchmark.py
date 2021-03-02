@@ -58,24 +58,32 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE + pd.Timedelta(days=1),
                     "exchange": "TEST",
+                    'real_sid': '1',
+                    'currency': 'USD'
                 },
                 2: {
                     'symbol': 'B',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE + pd.Timedelta(days=1),
                     "exchange": "TEST",
+                    'real_sid': '2',
+                    'currency': 'USD'
                 },
                 3: {
                     'symbol': 'C',
                     'start_date': pd.Timestamp('2006-05-26', tz='utc'),
                     'end_date': pd.Timestamp('2006-08-09', tz='utc'),
                     "exchange": "TEST",
+                    'real_sid': '3',
+                    'currency': 'USD'
                 },
                 4: {
                     'symbol': 'D',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE + pd.Timedelta(days=1),
                     "exchange": "TEST",
+                    'real_sid': '4',
+                    'currency': 'USD'
                 },
             },
             orient='index',
@@ -269,12 +277,16 @@ class BenchmarkSpecTestCase(WithTmpDir,
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE + pd.Timedelta(days=1),
                     "exchange": "TEST",
+                    'real_sid': '1',
+                    'currency': 'USD'
                 },
                 2: {
                     'symbol': 'B',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE + pd.Timedelta(days=1),
                     "exchange": "TEST",
+                    'real_sid': '2',
+                    'currency': 'USD'
                 }
             },
             orient='index',

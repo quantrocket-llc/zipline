@@ -104,6 +104,8 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
                 'start_date': cls.dates[10],
                 'end_date': cls.dates[13],
                 'exchange': 'NYSE',
+                'real_sid': '1',
+                'currency': 'USD'
             },
             {
                 'sid': 2,
@@ -111,6 +113,8 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
                 'start_date': cls.dates[11],
                 'end_date': cls.dates[14],
                 'exchange': 'NYSE',
+                'real_sid': '2',
+                'currency': 'USD'
             },
             {
                 'sid': 3,
@@ -118,6 +122,8 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
                 'start_date': cls.dates[12],
                 'end_date': cls.dates[15],
                 'exchange': 'NYSE',
+                'real_sid': '3',
+                'currency': 'USD'
             },
         ])
         return ret

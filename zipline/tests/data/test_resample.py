@@ -296,9 +296,11 @@ class MinuteToDailyAggregationTestCase(WithBcolzEquityMinuteBarReader,
 
         for future_sid in cls.ASSET_FINDER_FUTURE_SIDS:
             future_dict[future_sid] = {
+                'real_sid': str(future_sid),
                 'multiplier': 1000,
                 'exchange': 'CMES',
-                'root_symbol': "ABC"
+                'root_symbol': "ABC",
+                'currency': "USD"
             }
 
         return pd.DataFrame.from_dict(future_dict, orient='index')
@@ -582,9 +584,11 @@ class TestResampleSessionBars(WithBcolzFutureMinuteBarReader,
 
         for future_sid in cls.ASSET_FINDER_FUTURE_SIDS:
             future_dict[future_sid] = {
+                'real_sid': str(future_sid),
                 'multiplier': 1000,
                 'exchange': 'CMES',
-                'root_symbol': "ABC"
+                'root_symbol': "ABC",
+                'currency': "USD"
             }
 
         return pd.DataFrame.from_dict(future_dict, orient='index')

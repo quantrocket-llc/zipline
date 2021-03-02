@@ -28,6 +28,7 @@ class CommissionUnitTests(WithAssetFinder, ZiplineTestCase):
     def make_futures_info(cls):
         return DataFrame({
             'sid': [1000, 1001],
+            'real_sid': ['1000', '1001'],
             'root_symbol': ['CL', 'FV'],
             'symbol': ['CLF07', 'FVF07'],
             'start_date': [cls.START_DATE, cls.START_DATE],
@@ -36,6 +37,7 @@ class CommissionUnitTests(WithAssetFinder, ZiplineTestCase):
             'expiration_date': [cls.END_DATE, cls.END_DATE],
             'multiplier': [500, 500],
             'exchange': ['CMES', 'CMES'],
+            'currency': ['USD', 'USD'],
         })
 
     def generate_order_and_txns(self, sid, order_amount, fill_amounts):
@@ -330,6 +332,7 @@ class CommissionAlgorithmTests(WithMakeAlgo, ZiplineTestCase):
     def make_futures_info(cls):
         return DataFrame({
             'sid': [1000, 1001],
+            'real_sid': ['1000', '1001'],
             'root_symbol': ['CL', 'FV'],
             'symbol': ['CLF07', 'FVF07'],
             'start_date': [cls.START_DATE, cls.START_DATE],
@@ -338,6 +341,7 @@ class CommissionAlgorithmTests(WithMakeAlgo, ZiplineTestCase):
             'expiration_date': [cls.END_DATE, cls.END_DATE],
             'multiplier': [500, 500],
             'exchange': ['CMES', 'CMES'],
+            'currency': ['USD', 'USD']
         })
 
     @classmethod

@@ -684,6 +684,8 @@ from zipline.api import record, schedule_function, time_rules, date_rules, \
 def initialize(context):
     schedule_function(test_history, date_rules.every_day(),
                       time_rules.market_open(hours=1))
+
+def before_trading_start(context, data):
     context.sid = symbol('TEST')
 
 def test_history(context,data):
@@ -696,6 +698,8 @@ from zipline.api import symbol, set_benchmark
 
 def initialize(context):
     set_benchmark(symbol('TEST'))
+
+def before_trading_start(context, data):
     context.sid = symbol('TEST')
 
 def handle_data(context, data):

@@ -61,43 +61,57 @@ class FetcherTestCase(WithResponses,
                     'start_date': pd.Timestamp('2006-01-01', tz='UTC'),
                     'end_date': pd.Timestamp('2007-01-01', tz='UTC'),
                     'symbol': 'AAPL',
-                    'exchange': 'nasdaq'
+                    'exchange': 'nasdaq',
+                    'real_sid': '24',
+                    'currency': 'USD'
                 },
                 3766: {
                     'start_date': pd.Timestamp('2006-01-01', tz='UTC'),
                     'end_date': pd.Timestamp('2007-01-01', tz='UTC'),
                     'symbol': 'IBM',
-                    'exchange': 'nasdaq'
+                    'exchange': 'nasdaq',
+                    'real_sid': '3766',
+                    'currency': 'USD'
                 },
                 5061: {
                     'start_date': pd.Timestamp('2006-01-01', tz='UTC'),
                     'end_date': pd.Timestamp('2007-01-01', tz='UTC'),
                     'symbol': 'MSFT',
-                    'exchange': 'nasdaq'
+                    'exchange': 'nasdaq',
+                    'real_sid': '5061',
+                    'currency': 'USD'
                 },
                 14848: {
                     'start_date': pd.Timestamp('2006-01-01', tz='UTC'),
                     'end_date': pd.Timestamp('2007-01-01', tz='UTC'),
                     'symbol': 'YHOO',
-                    'exchange': 'nasdaq'
+                    'exchange': 'nasdaq',
+                    'real_sid': '14848',
+                    'currency': 'USD'
                 },
                 25317: {
                     'start_date': pd.Timestamp('2006-01-01', tz='UTC'),
                     'end_date': pd.Timestamp('2007-01-01', tz='UTC'),
                     'symbol': 'DELL',
-                    'exchange': 'nasdaq'
+                    'exchange': 'nasdaq',
+                    'real_sid': '25317',
+                    'currency': 'USD'
                 },
                 13: {
                     'start_date': pd.Timestamp('2006-01-01', tz='UTC'),
                     'end_date': pd.Timestamp('2010-01-01', tz='UTC'),
                     'symbol': 'NFLX',
-                    'exchange': 'nasdaq'
+                    'exchange': 'nasdaq',
+                    'real_sid': '13',
+                    'currency': 'USD'
                 },
                 9999999: {
                     'start_date': pd.Timestamp('2006-01-01', tz='UTC'),
                     'end_date': pd.Timestamp('2007-01-01', tz='UTC'),
                     'symbol': 'AAPL',
-                    'exchange': 'non_us_exchange'
+                    'exchange': 'non_us_exchange',
+                    'real_sid': '9999999',
+                    'currency': 'USD'
                 }
             },
             orient='index',
@@ -198,6 +212,8 @@ from zipline.api import fetch_csv, record, sid
 
 def initialize(context):
     fetch_csv('https://fake.urls.com/multi_signal_csv_data.csv')
+
+def before_trading_start(context, data):
     context.stocks = [sid(3766), sid(25317)]
 
 def handle_data(context, data):
@@ -230,6 +246,8 @@ def initialize(context):
         pre_func=clean,
         date_format='%Y-%m-%d'
         )
+
+def before_trading_start(context, data):
     context.stocks = [sid(3766), sid(25317)]
 
 def handle_data(context, data):
@@ -331,6 +349,8 @@ def initialize(context):
         date_column='Date',
         date_format='%Y-%m-%d',{usecols}
         )
+
+def before_trading_start(context, data):
     context.stocks = [sid(3766), sid(25317)]
 
 def handle_data(context, data):
@@ -370,6 +390,8 @@ def initialize(context):
         post_func=rename_col,
         date_format='%Y-%m-%d'
         )
+
+def before_trading_start(context, data):
     context.stock = sid(24)
 
 def handle_data(context, data):
@@ -413,12 +435,14 @@ def initialize(context):
         'https://dl.dropbox.com/u/16705795/dtoc_history.csv',
         date_format='%m/%d/%Y'{token}
     )
+    context.bar_count = 0
+
+def before_trading_start(context, data):
     context.expected_sids = {{
         Timestamp('2006-01-09 00:00:00+0000', tz='UTC'):[24, 3766, 5061],
         Timestamp('2006-01-10 00:00:00+0000', tz='UTC'):[24, 3766, 5061],
         Timestamp('2006-01-11 00:00:00+0000', tz='UTC'):[24, 3766, 5061, 14848]
     }}
-    context.bar_count = 0
 
 def handle_data(context, data):
     expected = context.expected_sids[normalize_date(get_datetime())]
@@ -497,6 +521,8 @@ def initialize(context):
         post_func=rename_col,
         date_format='%Y-%m-%d'
         )
+
+def before_trading_start(context, data):
     context.stock = sid(24)
 
 def handle_data(context, data):
@@ -527,12 +553,14 @@ def initialize(context):
         'https://fake.urls.com/fetcher_universe_data.csv',
         date_format='%m/%d/%Y'
     )
+    context.bar_count = 0
+
+def before_trading_start(context, data):
     context.expected_sids = {
         Timestamp('2006-01-09 00:00:00+0000', tz='UTC'):[24, 3766, 5061],
         Timestamp('2006-01-10 00:00:00+0000', tz='UTC'):[24, 3766, 5061],
         Timestamp('2006-01-11 00:00:00+0000', tz='UTC'):[24, 3766, 5061, 14848]
     }
-    context.bar_count = 0
 
 def handle_data(context, data):
     expected = context.expected_sids[get_datetime().replace(hour=0, minute=0)]
@@ -573,6 +601,8 @@ def initialize(context):
     fetch_csv('https://fake.urls.com/fetcher_nflx_data.csv',
                date_column = 'Settlement Date',
                date_format = '%m/%d/%y')
+
+def before_trading_start(context, data):
     context.stock = symbol('NFLX')
 
 def before_trading_start(context, data):
@@ -609,6 +639,8 @@ def initialize(context):
     fetch_csv('https://fake.urls.com/fetcher_nflx_data.csv',
                date_column = 'Settlement Date',
                date_format = '%m/%d/%y')
+
+def before_trading_start(context, data):
     context.nflx = symbol('NFLX')
     context.aapl = symbol('AAPL', country_code='US')
 

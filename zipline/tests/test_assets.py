@@ -433,6 +433,8 @@ class TestFuture(WithAssetFinder, ZiplineTestCase):
                 2468: {
                     'symbol': 'OMH15',
                     'root_symbol': 'OM',
+                    'real_sid': '2468',
+                    'currency': 'USD',
                     'notice_date': pd.Timestamp('2014-01-20', tz='UTC'),
                     'expiration_date': pd.Timestamp('2014-02-20', tz='UTC'),
                     'auto_close_date': pd.Timestamp('2014-01-18', tz='UTC'),
@@ -443,6 +445,8 @@ class TestFuture(WithAssetFinder, ZiplineTestCase):
                 0: {
                     'symbol': 'CLG06',
                     'root_symbol': 'CL',
+                    'real_sid': '0',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
                     'notice_date': pd.Timestamp('2005-12-20', tz='UTC'),
                     'expiration_date': pd.Timestamp('2006-01-20', tz='UTC'),
@@ -2250,6 +2254,8 @@ class TestVectorizedSymbolLookup(WithAssetFinder, ZiplineTestCase):
         def asset(sid, symbol, start_date, end_date):
             return dict(
                 sid=sid,
+                real_sid=str(sid),
+                currency='USD',
                 symbol=symbol,
                 start_date=T(start_date),
                 end_date=T(end_date),

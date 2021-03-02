@@ -54,7 +54,9 @@ class TestOrderMethods(zf.WithConstantEquityMinuteBarData,
             2: {
                 'multiplier': 10,
                 'symbol': 'F',
-                'exchange': 'TEST'
+                'exchange': 'TEST',
+                'real_sid': '2',
+                'currency': 'USD',
             }
         }, orient='index')
 
@@ -77,6 +79,9 @@ class TestOrderMethods(zf.WithConstantEquityMinuteBarData,
 from zipline.api import sid, {order_func}
 
 def initialize(context):
+    pass
+
+def before_trading_start(context, data):
     context.asset = sid(1)
 
 def before_trading_start(context, data):
@@ -102,13 +107,14 @@ def initialize(context):
     api.set_slippage(api.slippage.FixedSlippage(spread=0.0))
     api.set_commission(api.commission.PerShare(0))
 
-    context.equity = api.sid(1)
-
     api.schedule_function(
         func=do_order,
         date_rule=api.date_rules.every_day(),
         time_rule=api.time_rules.market_open(),
     )
+
+def before_trading_start(context, data):
+    context.equity = api.sid(1)
 
 def do_order(context, data):
     context.ordered = True
@@ -141,14 +147,14 @@ import zipline.api as api
 def initialize(context):
     api.set_slippage(api.slippage.FixedSlippage(spread=0.0))
     api.set_commission(api.commission.PerShare(0))
-
-    context.equity = api.sid(1)
-
     api.schedule_function(
         func=do_order,
         date_rule=api.date_rules.every_day(),
         time_rule=api.time_rules.market_open(),
     )
+
+def before_trading_start(context, data):
+    context.equity = api.sid(1)
 
 def do_order(context, data):
     context.ordered = True
@@ -182,14 +188,14 @@ import zipline.api as api
 def initialize(context):
     api.set_slippage(us_futures=api.slippage.FixedSlippage(spread=0.0))
     api.set_commission(us_futures=api.commission.PerTrade(0.0))
-
-    context.future = api.sid(2)
-
     api.schedule_function(
         func=do_order,
         date_rule=api.date_rules.every_day(),
         time_rule=api.time_rules.market_open(),
     )
+
+def before_trading_start(context, data):
+    context.future = api.sid(2)
 
 def do_order(context, data):
     context.ordered = True
@@ -224,13 +230,14 @@ def initialize(context):
     api.set_slippage(us_futures=api.slippage.FixedSlippage(spread=0.0))
     api.set_commission(us_futures=api.commission.PerTrade(0.0))
 
-    context.future = api.sid(2)
-
     api.schedule_function(
         func=do_order,
         date_rule=api.date_rules.every_day(),
         time_rule=api.time_rules.market_open(),
     )
+
+def before_trading_start(context, data):
+    context.future = api.sid(2)
 
 def do_order(context, data):
     context.ordered = True

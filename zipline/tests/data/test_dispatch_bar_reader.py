@@ -106,6 +106,7 @@ class AssetDispatchSessionBarTestCase(WithBcolzEquityDailyBarReader,
     def make_futures_info(cls):
         return DataFrame({
             'sid': [10001, 10002, 10003],
+            'real_sid': ['10001', '10002', '10003'],
             'root_symbol': ['FOO', 'BAR', 'BAZ'],
             'symbol': ['FOOA', 'BARA', 'BAZA'],
             'start_date': [cls.START_DATE] * 3,
@@ -115,6 +116,7 @@ class AssetDispatchSessionBarTestCase(WithBcolzEquityDailyBarReader,
             'expiration_date': [cls.END_DATE] * 3,
             'multiplier': [500] * 3,
             'exchange': ['CMES'] * 3,
+            'currency': ['USD'] * 3,
         })
 
     @classmethod
@@ -241,6 +243,7 @@ class AssetDispatchMinuteBarTestCase(WithBcolzEquityMinuteBarReader,
     def make_futures_info(cls):
         return DataFrame({
             'sid': [10001, 10002, 10003],
+            'real_sid': ['10001', '10002', '10003'],
             'root_symbol': ['FOO', 'BAR', 'BAZ'],
             'symbol': ['FOOA', 'BARA', 'BAZA'],
             'start_date': [cls.START_DATE] * 3,
@@ -250,6 +253,7 @@ class AssetDispatchMinuteBarTestCase(WithBcolzEquityMinuteBarReader,
             'expiration_date': [cls.END_DATE] * 3,
             'multiplier': [500] * 3,
             'exchange': ['CMES'] * 3,
+            'currency': ['USD'] * 3
         })
 
     @classmethod

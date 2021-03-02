@@ -8,3 +8,5 @@ recursive-include zipline *.pxd
 recursive-include zipline/resources *.*
 include versioneer.py
 include zipline/_version.py
+include zipline/resources
+include setup.cfg

@@ -71,6 +71,8 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
             'symbol': ['FOF16', 'FOG16', 'FOH16', 'FOJ16', 'FOK16', 'FOF22',
                        'FOG22'],
             'sid': range(0, 7),
+            'real_sid': [str(i) for i in range(0, 7)],
+            'currency': ['USD' for i in range(0, 7)],
             'root_symbol': ['FO'] * 7,
             'asset_name': ['Foo'] * 7,
             'start_date': [Timestamp('2015-01-05', tz='UTC'),
@@ -126,6 +128,8 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
             'root_symbol': ['BZ'] * 3,
             'asset_name': ['Baz'] * 3,
             'sid': range(10, 13),
+            'real_sid': [str(i) for i in range(10, 13)],
+            'currency': ['USD' for i in range(10, 13)],
             'start_date': [Timestamp('2005-01-01', tz='UTC'),
                            Timestamp('2005-01-21', tz='UTC'),
                            Timestamp('2005-01-21', tz='UTC')],
@@ -152,6 +156,8 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
             'root_symbol': ['MA'] * 3,
             'asset_name': ['Most Active'] * 3,
             'sid': range(14, 17),
+            'real_sid': [str(i) for i in range(14, 17)],
+            'currency': ['USD' for i in range(14, 17)],
             'start_date': [Timestamp('2005-01-01', tz='UTC'),
                            Timestamp('2005-01-21', tz='UTC'),
                            Timestamp('2005-01-21', tz='UTC')],
@@ -180,6 +186,8 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
             'root_symbol': ['DF'] * 3,
             'asset_name': ['Double Flip'] * 3,
             'sid': range(17, 20),
+            'real_sid': [str(i) for i in range(17, 20)],
+            'currency': ['USD'] * 3,
             'start_date': [Timestamp('2005-01-01', tz='UTC'),
                            Timestamp('2005-02-01', tz='UTC'),
                            Timestamp('2005-03-01', tz='UTC')],
@@ -514,9 +522,11 @@ from zipline.api import (
 )
 
 def initialize(algo):
+    schedule_function(record_current_contract)
+
+def before_trading_start(algo, data):
     algo.primary_cl = continuous_future('FO', 0, 'calendar', None)
     algo.secondary_cl = continuous_future('FO', 1, 'calendar', None)
-    schedule_function(record_current_contract)
 
 def record_current_contract(algo, data):
     record(datetime=get_datetime())
@@ -563,9 +573,11 @@ from zipline.api import (
 )
 
 def initialize(algo):
+    schedule_function(record_current_contract)
+
+def before_trading_start(algo, data):
     algo.primary_cl = continuous_future('FO', 0, 'calendar', None)
     algo.secondary_cl = continuous_future('FO', 1, 'calendar', None)
-    schedule_function(record_current_contract)
 
 def record_current_contract(algo, data):
     record(datetime=get_datetime())
@@ -1312,6 +1324,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                 1000: {
                     'symbol': 'CLF17',
                     'root_symbol': 'CL',
+                    'real_sid': '1000',
+                    'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.first_end_date,
                     'auto_close_date': cls.first_end_date - two_days,
@@ -1320,6 +1334,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                 1001: {
                     'symbol': 'CLG17',
                     'root_symbol': 'CL',
+                    'real_sid': '1001',
+                    'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.second_end_date,
                     'auto_close_date': cls.second_end_date - two_days,
@@ -1328,6 +1344,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                 1002: {
                     'symbol': 'CLH17',
                     'root_symbol': 'CL',
+                    'real_sid': '1002',
+                    'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.third_end_date,
                     'auto_close_date': cls.third_auto_close_date,
@@ -1336,6 +1354,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                 1003: {
                     'symbol': 'CLJ17',
                     'root_symbol': 'CL',
+                    'real_sid': '1003',
+                    'currency': 'USD',
                     'start_date': cls.fourth_start_date,
                     'end_date': cls.fourth_end_date,
                     'auto_close_date': cls.fourth_auto_close_date,
@@ -1344,6 +1364,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                 1004: {
                     'symbol': 'CLK17',
                     'root_symbol': 'CL',
+                    'real_sid': '1004',
+                    'currency': 'USD',
                     'start_date': cls.fifth_start_date,
                     'end_date': cls.fifth_end_date,
                     'auto_close_date': cls.fifth_auto_close_date,
@@ -1352,6 +1374,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                 1005: {
                     'symbol': 'CLM17',
                     'root_symbol': 'CL',
+                    'real_sid': '1005',
+                    'currency': 'USD',
                     'start_date': cls.last_start_date,
                     'end_date': cls.END_DATE,
                     'auto_close_date': cls.END_DATE + two_days,
@@ -1360,6 +1384,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                 1006: {
                     'symbol': 'CLN17',
                     'root_symbol': 'CL',
+                    'real_sid': '1006',
+                    'currency': 'USD',
                     'start_date': cls.last_start_date,
                     'end_date': cls.END_DATE,
                     'auto_close_date': cls.END_DATE + two_days,
@@ -1370,6 +1396,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                     # first contract in the chain.
                     'symbol': 'FVA17',
                     'root_symbol': 'FV',
+                    'real_sid': '2000',
+                    'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE + end_buffer_days,
                     'auto_close_date': cls.END_DATE + two_days,
@@ -1380,6 +1408,8 @@ class RollFinderTestCase(zf.WithBcolzFutureDailyBarReader,
                     # second contract in the chain.
                     'symbol': 'FVB17',
                     'root_symbol': 'FV',
+                    'real_sid': '2001',
+                    'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE + end_buffer_days,
                     'auto_close_date': cls.END_DATE + end_buffer_days,
@@ -1640,6 +1670,8 @@ class OrderedContractsTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             'asset_name': ['Foo'] * 4,
             'symbol': ['FOF16', 'FOG16', 'FOH16', 'FOJ16'],
             'sid': range(1, 5),
+            'real_sid': [str(i) for i in range(1, 5)],
+            'currency': ['USD'] * 4,
             'start_date': pd.date_range('2015-01-01', periods=4, tz="UTC"),
             'end_date': pd.date_range('2016-01-01', periods=4, tz="UTC"),
             'notice_date': pd.date_range('2016-01-01', periods=4, tz="UTC"),
@@ -1659,6 +1691,8 @@ class OrderedContractsTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             'asset_name': ['Bar'] * 3,
             'symbol': ['BAF16', 'BAG16', 'BAH16'],
             'sid': range(5, 8),
+            'real_sid': [str(i) for i in range(5, 8)],
+            'currency': ['USD'] * 3,
             'start_date': pd.date_range('2015-01-01', periods=3, tz="UTC"),
             'end_date': pd.date_range('2016-01-01', periods=3, tz="UTC"),
             'notice_date': pd.date_range('2016-01-01', periods=3, tz="UTC"),
@@ -1679,6 +1713,8 @@ class OrderedContractsTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             'asset_name': ['Baz'] * 4,
             'symbol': ['BZF15', 'BZG15', 'BZH15', 'BZJ16'],
             'sid': range(8, 12),
+            'real_sid': [str(i) for i in range(8, 12)],
+            'currency': ["USD"] * 4,
             'start_date': [
                 pd.Timestamp('2015-01-02', tz='UTC'),
                 pd.Timestamp('2015-01-03', tz='UTC'),

@@ -186,11 +186,15 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 {3: {'symbol': 'PLAY',
                      'start_date': '2002-01-01',
                      'end_date': '2004-01-01',
-                     'exchange': 'TEST'},
+                     'exchange': 'TEST',
+                     'real_sid': '3',
+                     'currency': 'USD'},
                  4: {'symbol': 'PLAY',
                      'start_date': '2005-01-01',
                      'end_date': '2006-01-01',
-                     'exchange': 'TEST'}},
+                     'exchange': 'TEST',
+                     'real_sid': '4',
+                     'currency': 'USD'}},
                 orient='index',
             ),
         ))
@@ -202,6 +206,8 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 5: {
                     'symbol': 'CLG06',
                     'root_symbol': 'CL',
+                    'real_sid': '5',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
                     'notice_date': pd.Timestamp('2005-12-20', tz='UTC'),
                     'expiration_date': pd.Timestamp('2006-01-20', tz='UTC'),
@@ -210,6 +216,8 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 6: {
                     'root_symbol': 'CL',
                     'symbol': 'CLK06',
+                    'real_sid': '6',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
                     'notice_date': pd.Timestamp('2006-03-20', tz='UTC'),
                     'expiration_date': pd.Timestamp('2006-04-20', tz='UTC'),
@@ -218,6 +226,8 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 7: {
                     'symbol': 'CLQ06',
                     'root_symbol': 'CL',
+                    'real_sid': '7',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
                     'notice_date': pd.Timestamp('2006-06-20', tz='UTC'),
                     'expiration_date': pd.Timestamp('2006-07-20', tz='UTC'),
@@ -226,6 +236,8 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 8: {
                     'symbol': 'CLX06',
                     'root_symbol': 'CL',
+                    'real_sid': '8',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2006-02-01', tz='UTC'),
                     'notice_date': pd.Timestamp('2006-09-20', tz='UTC'),
                     'expiration_date': pd.Timestamp('2006-10-20', tz='UTC'),
@@ -780,16 +792,22 @@ class TestSetSymbolLookupDate(zf.WithMakeAlgo, zf.ZiplineTestCase):
              'start_date': cls.asset_starts[0],
              'end_date': cls.asset_ends[0],
              'exchange': 'TEST',
+            'real_sid': '1',
+            'currency': 'USD',
              'asset_name': 'FIRST'},
             {'symbol': 'DUP',
              'start_date': cls.asset_starts[1],
              'end_date': cls.asset_ends[1],
              'exchange': 'TEST',
+            'real_sid': '2',
+            'currency': 'USD',
              'asset_name': 'SECOND'},
             {'symbol': 'BENCH',
              'start_date': cls.START_DATE,
              'end_date': cls.END_DATE,
              'exchange': 'TEST',
+            'real_sid': '3',
+            'currency': 'USD',
              'asset_name': 'BENCHMARK'},
         ], index=cls.sids)
 
@@ -842,6 +860,8 @@ class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 1000: {
                     'symbol': 'CLF06',
                     'root_symbol': 'CL',
+                    'real_sid': '1000',
+                    'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE,
                     'auto_close_date': cls.END_DATE + cls.trading_calendar.day,
@@ -1377,12 +1397,11 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
     CONTINUOUS_FUTURE_NAME = ContinuousFuture.__name__
     ASSET_OR_STRING_TYPE_NAMES = ', '.join([ASSET_TYPE_NAME] +
                                            STRING_TYPE_NAMES)
-    ASSET_OR_STRING_OR_CF_TYPE_NAMES = ', '.join([ASSET_TYPE_NAME,
-                                                  CONTINUOUS_FUTURE_NAME] +
-                                                 STRING_TYPE_NAMES)
+    ASSET_OR_CF_TYPE_NAMES = ', '.join([ASSET_TYPE_NAME,
+                                                  CONTINUOUS_FUTURE_NAME])
     ARG_TYPE_TEST_CASES = (
         ('history__assets', (bad_type_history_assets,
-                             ASSET_OR_STRING_OR_CF_TYPE_NAMES,
+                             ASSET_OR_CF_TYPE_NAMES,
                              True)),
         ('history__fields', (bad_type_history_fields,
                              STRING_TYPE_NAMES_STRING,
@@ -1392,7 +1411,7 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
                                 STRING_TYPE_NAMES_STRING,
                                 False)),
         ('current__assets', (bad_type_current_assets,
-                             ASSET_OR_STRING_OR_CF_TYPE_NAMES,
+                             ASSET_OR_CF_TYPE_NAMES,
                              True)),
         ('current__fields', (bad_type_current_fields,
                              STRING_TYPE_NAMES_STRING,
@@ -1401,11 +1420,11 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
         ('can_trade__assets', (bad_type_can_trade_assets, 'Asset', True)),
         ('history_kwarg__assets',
          (bad_type_history_assets_kwarg,
-          ASSET_OR_STRING_OR_CF_TYPE_NAMES,
+          ASSET_OR_CF_TYPE_NAMES,
           True)),
         ('history_kwarg_bad_list__assets',
          (bad_type_history_assets_kwarg_list,
-          ASSET_OR_STRING_OR_CF_TYPE_NAMES,
+          ASSET_OR_CF_TYPE_NAMES,
           True)),
         ('history_kwarg__fields',
          (bad_type_history_fields_kwarg, STRING_TYPE_NAMES_STRING, True)),
@@ -1415,7 +1434,7 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
          (bad_type_history_frequency_kwarg, STRING_TYPE_NAMES_STRING, False)),
         ('current_kwarg__assets',
          (bad_type_current_assets_kwarg,
-          ASSET_OR_STRING_OR_CF_TYPE_NAMES,
+          ASSET_OR_CF_TYPE_NAMES,
           True)),
         ('current_kwarg__fields',
          (bad_type_current_fields_kwarg, STRING_TYPE_NAMES_STRING, True)),
@@ -1662,8 +1681,10 @@ def handle_data(context, data):
 
 
                 def initialize(context):
-                    context.assets = [sid(0), sid(3)]
                     context.placed = False
+
+                def before_trading_start(context, data):
+                    context.assets = [sid(0), sid(3)]
 
                 def handle_data(context, data):
                     if not context.placed:
@@ -1688,8 +1709,10 @@ def handle_data(context, data):
 
 
                 def initialize(context):
-                    context.assets = [sid(0), sid(3)]
                     context.placed = False
+
+                def before_trading_start(context, data):
+                    context.assets = [sid(0), sid(3)]
 
                 def handle_data(context, data):
                     if not context.placed:
@@ -1729,8 +1752,10 @@ def handle_data(context, data):
                 from zipline.api import sid, batch_market_order
 
                 def initialize(context):
-                    context.assets = [sid(0), sid(3)]
                     context.placed = False
+
+                def before_trading_start(context, data):
+                    context.assets = [sid(0), sid(3)]
 
                 def handle_data(context, data):
                     if not context.placed:
@@ -3120,16 +3145,22 @@ class TestAssetDateBounds(zf.WithMakeAlgo, zf.ZiplineTestCase):
         return pd.DataFrame.from_records([
             {'sid': 1,
              'symbol': 'OLD',
+            'real_sid': '1',
+            'currency': 'USD',
              'start_date': T('1990'),
              'end_date': T('1991'),
              'exchange': 'TEST'},
             {'sid': 2,
              'symbol': 'NEW',
+            'real_sid': '2',
+            'currency': 'USD',
              'start_date': T('2017'),
              'end_date': T('2018'),
              'exchange': 'TEST'},
             {'sid': 3,
              'symbol': 'GOOD',
+            'real_sid': '3',
+            'currency': 'USD',
              'start_date': cls.START_DATE,
              'end_date': cls.END_DATE,
              'exchange': 'TEST'},
@@ -3291,6 +3322,8 @@ class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 1: {
                     'symbol': 'CLG16',
                     'root_symbol': 'CL',
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2015-12-01', tz='UTC'),
                     'notice_date': pd.Timestamp('2016-01-20', tz='UTC'),
                     'expiration_date': pd.Timestamp('2016-02-19', tz='UTC'),
@@ -4288,6 +4321,8 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'auto_close_date': cls.day_4,
                     'symbol': "ASSET1",
                     'exchange': "TEST",
+                    'real_sid': 1,
+                    'currency': 'USD'
                 },
                 # Asset whose auto close date is before its end date.
                 2: {
@@ -4296,6 +4331,8 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'auto_close_date': cls.day_1,
                     'symbol': 'ASSET2',
                     'exchange': 'TEST',
+                    'real_sid': 2,
+                    'currency': 'USD'
                 },
             },
             orient='index',

@@ -605,12 +605,14 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
     def make_futures_info(cls):
         return pd.DataFrame({
             'sid': [1000],
+            'real_sid': ['1000'],
             'root_symbol': ['CL'],
             'symbol': ['CLF06'],
             'start_date': [cls.ASSET_FINDER_EQUITY_START_DATE],
             'end_date': [cls.ASSET_FINDER_EQUITY_END_DATE],
             'multiplier': [500],
             'exchange': ['CMES'],
+            'currency': ['USD'],
         })
 
     @classmethod
@@ -757,12 +759,14 @@ class VolatilityVolumeShareTestCase(WithCreateBarData,
     def make_futures_info(cls):
         return pd.DataFrame({
             'sid': [1000, 1001],
+            'real_sid': ['1000', '1001'],
             'root_symbol': ['CL', 'FV'],
             'symbol': ['CLF07', 'FVF07'],
             'start_date': [cls.ASSET_START_DATE, cls.START_DATE],
             'end_date': [cls.END_DATE, cls.END_DATE],
             'multiplier': [500, 500],
             'exchange': ['CMES', 'CMES'],
+            'currency': ['USD', 'USD'],
         })
 
     @classmethod

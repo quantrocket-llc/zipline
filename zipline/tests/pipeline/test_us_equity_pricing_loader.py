@@ -96,6 +96,8 @@ EQUITY_INFO = DataFrame(
 ).astype(datetime64)
 EQUITY_INFO['symbol'] = [chr(ord('A') + n) for n in range(len(EQUITY_INFO))]
 EQUITY_INFO['exchange'] = 'TEST'
+EQUITY_INFO['currency'] = 'USD'
+EQUITY_INFO['real_sid'] = [str(i) for i in arange(1, 7)]
 
 TEST_QUERY_SIDS = EQUITY_INFO.index
 

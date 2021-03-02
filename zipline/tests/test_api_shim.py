@@ -36,6 +36,9 @@ history_algo = """
 from zipline.api import sid, history
 
 def initialize(context):
+    pass
+
+def before_trading_start(context, data):
     context.sid1 = sid(1)
 
 def handle_data(context, data):
@@ -46,10 +49,10 @@ history_bts_algo = """
 from zipline.api import sid, history, record
 
 def initialize(context):
-    context.sid3 = sid(3)
     context.num_bts = 0
 
 def before_trading_start(context, data):
+    context.sid3 = sid(3)
     context.num_bts += 1
 
     # Get history at the second BTS (beginning of second day)
@@ -77,6 +80,9 @@ def handle_data(context, data):
 
 manipulation_algo = """
 def initialize(context):
+    pass
+
+def before_trading_start(context, data):
     context.asset1 = sid(1)
     context.asset2 = sid(2)
 
@@ -91,6 +97,9 @@ sid_accessor_algo = """
 from zipline.api import sid
 
 def initialize(context):
+    pass
+
+def before_trading_start(context, data):
     context.asset1 = sid(1)
 
 def handle_data(context,data):
@@ -102,6 +111,9 @@ data_items_algo = """
 from zipline.api import sid
 
 def initialize(context):
+    pass
+
+def before_trading_start(context, data):
     context.asset1 = sid(1)
     context.asset2 = sid(2)
 

@@ -128,6 +128,8 @@ ca_info['exchange'] = 'TSX'
 
 EQUITY_INFO = concat([us_info, ca_info])
 EQUITY_INFO['symbol'] = [chr(ord('A') + x) for x in range(len(EQUITY_INFO))]
+EQUITY_INFO['currency'] = 'USD'
+EQUITY_INFO['real_sid'] = [str(i) for i in arange(1, 24, step=2)]
 
 TEST_QUERY_ASSETS = EQUITY_INFO.index
 assert (TEST_QUERY_ASSETS % 2 == 1).all(), 'All sids should be odd.'

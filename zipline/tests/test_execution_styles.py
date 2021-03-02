@@ -131,19 +131,25 @@ class ExecutionStyleTestCase(WithConstantFutureMinuteBarData,
                 'multiplier': 100,
                 'tick_size': 0.01,
                 'symbol': 'F1',
-                'exchange': 'TEST'
+                'exchange': 'TEST',
+                'real_sid': '1',
+                'currency': 'USD',
             },
             2: {
                 'multiplier': 100,
                 'tick_size': 0.0001,
                 'symbol': 'F2',
-                'exchange': 'TEST'
+                'exchange': 'TEST',
+                'real_sid': '2',
+                'currency': 'USD',
             },
             3: {
                 'multiplier': 100,
                 'tick_size': 0.05,
                 'symbol': 'F3',
-                'exchange': 'TEST'
+                'exchange': 'TEST',
+                'real_sid': '3',
+                'currency': 'USD',
             }
         }, orient='index')
 

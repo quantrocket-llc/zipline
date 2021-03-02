@@ -1743,6 +1743,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'id': wildcard,
             'limit': None,
             'limit_reached': False,
+            'open': False,
             'reason': None,
             'sid': self.equity,
             'status': 1,

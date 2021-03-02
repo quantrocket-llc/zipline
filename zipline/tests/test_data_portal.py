@@ -68,8 +68,10 @@ class DataPortalTestBase(WithDataPortal,
         trading_sessions = cls.trading_sessions['us_futures']
         return pd.DataFrame({
             'sid': [10000, 10001],
+            'real_sid': ['10000', '10001'],
             'root_symbol': ['BAR', 'BUZ'],
             'symbol': ['BARA', 'BUZZ'],
+            'currency': ['USD', 'USD'],
             'start_date': [trading_sessions[1], trading_sessions[0]],
             'end_date': [cls.END_DATE, cls.END_DATE],
             # TODO: Make separate from 'end_date'

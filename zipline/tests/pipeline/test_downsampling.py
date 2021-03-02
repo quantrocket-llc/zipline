@@ -783,16 +783,18 @@ class TestDownsampledRowwiseOperation(WithAssetFinder, ZiplineTestCase):
         end = cls.END_DATE
         early_end = cls.HALF_WAY_POINT
         return pd.DataFrame(
-            [['A',    'Ayy Inc.', start,       end, 'E'],
-             ['B', 'early end',   start, early_end, 'E'],
-             ['C',      'C Inc.', start,       end, 'E']],
+            [['A', 'A',   'Ayy Inc.', start,       end, 'E', 'USD'],
+             ['B', 'B', 'early end',   start, early_end, 'E', 'USD'],
+             ['C', 'C',    'C Inc.', start,       end, 'E', 'USD']],
             index=[ord('A'), ord('B'), ord('C')],
             columns=(
                 'symbol',
+                'real_sid',
                 'asset_name',
                 'start_date',
                 'end_date',
                 'exchange',
+                'currency'
             ),
         )
 
