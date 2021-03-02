@@ -288,5 +288,7 @@ setup(
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: System :: Distributed Computing',
     ],
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     extras_require=extras_requires(conda_format=conda_build),
 )
