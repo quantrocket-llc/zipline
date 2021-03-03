@@ -32,7 +32,7 @@ class SP500(DataSet):
     Examples
     --------
 
-    >>> in_sp500 = sharadar.SP500.in_sp500.latest
+    >>> in_sp500 = sharadar.SP500.in_sp500.latest    # doctest: +SKIP
     """
     domain = US_EQUITIES
     in_sp500 = Column(bool_dtype)
@@ -639,7 +639,7 @@ class Fundamentals(DataSetFamily):
     --------
     Select stocks with low enterprise multiples using quarterly fundamentals:
 
-    >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(dimension='ARQ', period_offset=0).EVEBITDA.latest.percentile_between(0, 20)
+    >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(dimension='ARQ', period_offset=0).EVEBITDA.latest.percentile_between(0, 20)    # doctest: +SKIP
     """
     extra_dims = [
         ('dimension', {'ARQ', 'ART', 'ARY', 'MRQ', 'MRT', 'MRY'}),
@@ -878,7 +878,7 @@ class Institutions(DataSetFamily):
     --------
     Select stocks with large institutional ownership:
 
-    >>> have_inst_own = sharadar.Institutions.slice(period_offset=0).TOTALVALUE.latest.percentile_between(80, 100)
+    >>> have_inst_own = sharadar.Institutions.slice(period_offset=0).TOTALVALUE.latest.percentile_between(80, 100)    # doctest: +SKIP
     """
     extra_dims = [
         ('period_offset', {0}),

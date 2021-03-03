@@ -238,6 +238,21 @@ def setup_requirements(requirements_path, module_names,
         )
     return module_lines
 
+def get_package_data():
+    data = {
+        root.replace(os.sep, '.'):
+        # .csv and .zip are for test fixtures
+        ['*.pyi', '*.pyx', '*.pxi', '*.pxd', '*.csv', '*.zip']
+        for root, dirnames, filenames in os.walk('zipline')
+        if '__pycache__' not in root
+    }
+    data.update({
+        f'zipline.resources.security_lists.leveraged_etf_list.20020103.{directory}':
+        ['add', 'delete']
+        for directory in os.listdir('zipline/resources/security_lists/leveraged_etf_list/20020103/')
+        if '__pycache__' not in directory
+    })
+    return data
 
 conda_build = os.path.basename(sys.argv[0]) in ('conda-build',  # unix
                                                 'conda-build-script.py')  # win
@@ -257,10 +272,7 @@ setup(
     packages=find_packages(include=['zipline', 'zipline.*']),
     ext_modules=ext_modules,
     include_package_data=True,
-    package_data={root.replace(os.sep, '.'):
-                  ['*.pyi', '*.pyx', '*.pxi', '*.pxd', '*.csv', 'add', 'delete']
-                  for root, dirnames, filenames in os.walk('zipline')
-                  if '__pycache__' not in root},
+    package_data=get_package_data(),
     license='Apache 2.0',
     classifiers=[
         'Development Status :: 4 - Beta',

@@ -170,7 +170,9 @@ class SliceTestCase(WithSeededRandomPipelineEngine, ZiplineTestCase):
         """
         my_asset = Asset(
             0,
+            real_sid='0',
             exchange_info=ExchangeInfo('TEST FULL', 'TEST', 'US'),
+            currency='USD'
         )
         returns = Returns(window_length=2, inputs=[self.col])
         returns_slice = returns[my_asset]

@@ -312,27 +312,33 @@ class AssetTestCase(TestCase):
     # Very wow
     asset = Asset(
         1337,
+        real_sid='1337',
+        exchange_info=ExchangeInfo('THE MOON', 'MOON', '??'),
+        currency='USD',
         symbol="DOGE",
         asset_name="DOGECOIN",
         start_date=pd.Timestamp('2013-12-08 9:31', tz='UTC'),
         end_date=pd.Timestamp('2014-06-25 11:21', tz='UTC'),
         first_traded=pd.Timestamp('2013-12-08 9:31', tz='UTC'),
         auto_close_date=pd.Timestamp('2014-06-26 11:21', tz='UTC'),
-        exchange_info=ExchangeInfo('THE MOON', 'MOON', '??'),
     )
 
     test_exchange = ExchangeInfo('test full', 'test', '??')
-    asset3 = Asset(3, exchange_info=test_exchange)
-    asset4 = Asset(4, exchange_info=test_exchange)
+    asset3 = Asset(3, real_sid='3', exchange_info=test_exchange, currency='USD')
+    asset4 = Asset(4, real_sid='4', exchange_info=test_exchange, currency='USD')
     asset5 = Asset(
         5,
+        real_sid='5',
         exchange_info=ExchangeInfo('still testing', 'still testing', '??'),
+        currency='USD'
     )
 
     def test_asset_object(self):
         the_asset = Asset(
             5061,
+            real_sid='5061',
             exchange_info=ExchangeInfo('bar', 'bar', '??'),
+            currency='USD'
         )
 
         self.assertEquals({5061: 'foo'}[the_asset], 'foo')
@@ -360,8 +366,8 @@ class AssetTestCase(TestCase):
 
     def test_asset_comparisons(self):
 
-        s_23 = Asset(23, exchange_info=self.test_exchange)
-        s_24 = Asset(24, exchange_info=self.test_exchange)
+        s_23 = Asset(23, real_sid='23', exchange_info=self.test_exchange, currency='USD')
+        s_24 = Asset(24, real_sid='24', exchange_info=self.test_exchange, currency='USD')
 
         self.assertEqual(s_23, s_23)
         self.assertEqual(s_23, 23)
@@ -545,6 +551,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': sid,
+                    'real_sid': str(sid),
+                    'currency': 'USD',
                     'symbol':  'TEST.%d' % sid,
                     'start_date': as_of.value,
                     'end_date': as_of.value,
@@ -563,6 +571,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': i,
+                    'real_sid': str(i),
+                    'currency': 'USD',
                     'symbol':  'TEST.%d' % i,
                     'company_name': "company%d" % i,
                     'start_date': as_of.value,
@@ -597,9 +607,9 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
 
     def test_lookup_symbol_fuzzy(self):
         metadata = pd.DataFrame.from_records([
-            {'symbol': 'PRTY_HRD', 'exchange': "TEST"},
-            {'symbol': 'BRKA', 'exchange': "TEST"},
-            {'symbol': 'BRK_A', 'exchange': "TEST"},
+            {'symbol': 'PRTY_HRD', 'real_sid': 'PRTY_HRD', 'currency': 'USD', 'exchange': "TEST"},
+            {'symbol': 'BRKA', 'real_sid': 'BRKA', 'currency': 'USD', 'exchange': "TEST"},
+            {'symbol': 'BRK_A', 'real_sid': 'BRK_A', 'currency': 'USD', 'exchange': "TEST"},
         ])
         self.write_assets(equities=metadata)
         finder = self.asset_finder
@@ -640,6 +650,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 # sid 0
                 {
                     'symbol': 'A',
+                    'real_sid': '0',
+                    'currency': 'USD',
                     'asset_name': 'Asset A',
                     'start_date': T('2014-01-01'),
                     'end_date': T('2014-01-05'),
@@ -647,6 +659,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'symbol': 'B',
+                    'real_sid': '0',
+                    'currency': 'USD',
                     'asset_name': 'Asset B',
                     'start_date': T('2014-01-06'),
                     'end_date': T('2014-01-10'),
@@ -656,6 +670,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 # sid 1
                 {
                     'symbol': 'C',
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'asset_name': 'Asset C',
                     'start_date': T('2014-01-01'),
                     'end_date': T('2014-01-05'),
@@ -663,6 +679,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'symbol': 'A',  # claiming the unused symbol 'A'
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'asset_name': 'Asset A',
                     'start_date': T('2014-01-06'),
                     'end_date': T('2014-01-10'),
@@ -756,6 +774,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': i,
+                    'real_sid': str(i),
+                    'currency': 'USD',
                     'symbol':  'existing',
                     'start_date': date.value,
                     'end_date': (date + timedelta(days=1)).value,
@@ -862,6 +882,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': symbol,
                     'start_date': date.value,
                     'end_date': (date + timedelta(days=30)).value,
@@ -894,6 +916,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': 'FOOB',
                     'start_date': date.value,
                     'end_date': date.max.value,
@@ -901,6 +925,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': 'FOO_B',
                     'start_date': (date + timedelta(days=31)).value,
                     'end_date': (date + timedelta(days=60)).value,
@@ -908,6 +934,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 2,
+                    'real_sid': '2',
+                    'currency': 'USD',
                     'symbol': 'FOO_B',
                     'start_date': (date + timedelta(days=61)).value,
                     'end_date': date.max.value,
@@ -933,6 +961,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': 0,
+                    'real_sid': '0',
+                    'currency': 'USD',
                     'symbol': 'real',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -940,6 +970,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': 'also_real',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -949,6 +981,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 # still correctly find it.
                 {
                     'sid': 2,
+                    'real_sid': '2',
+                    'currency': 'USD',
                     'symbol': 'real_but_old',
                     'start_date': pd.Timestamp('2002-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2003-1-1', tz='UTC'),
@@ -958,6 +992,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 # **not** find it.
                 {
                     'sid': 3,
+                    'real_sid': '3',
+                    'currency': 'USD',
                     'symbol': 'real_but_in_the_future',
                     'start_date': pd.Timestamp('2014-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2020-1-1', tz='UTC'),
@@ -990,6 +1026,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': 0,
+                    'real_sid': '0',
+                    'currency': 'USD',
                     'symbol': 'real',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -997,6 +1035,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': 'real',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -1047,7 +1087,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
 
         # Build an asset with an end_date
         eq_end = pd.Timestamp('2012-01-01', tz='UTC')
-        equity_asset = Equity(1, symbol="TESTEQ", end_date=eq_end,
+        equity_asset = Equity(1, real_sid='1', currency='USD', symbol="TESTEQ", end_date=eq_end,
                               exchange_info=ExchangeInfo("TEST", "TEST", "??"))
 
         # Catch all warnings
@@ -1199,6 +1239,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': 0,
+                    'real_sid': '0',
+                    'currency': 'USD',
                     'symbol': 'A',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -1206,6 +1248,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': 'B',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -1213,6 +1257,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 2,
+                    'real_sid': '2',
+                    'currency': 'USD',
                     'symbol': 'C',
                     'start_date': pd.Timestamp('2013-7-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -1309,6 +1355,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': 0,
+                    'real_sid': '0',
+                    'currency': 'USD',
                     'symbol': 'A',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -1316,6 +1364,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': 'B',
                     'start_date': pd.Timestamp('2013-1-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -1323,6 +1373,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': 2,
+                    'real_sid': '2',
+                    'currency': 'USD',
                     'symbol': 'C',
                     'start_date': pd.Timestamp('2013-7-1', tz='UTC'),
                     'end_date': pd.Timestamp('2014-1-1', tz='UTC'),
@@ -1586,6 +1638,8 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': sid,
+                    'real_sid': str(sid),
+                    'currency': 'USD',
                     'symbol':  'TEST.A',
                     'company_name': "company %d" % sid,
                     'start_date': as_of.value,
@@ -1643,7 +1697,11 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
     def test_lookup_symbol_fuzzy(self):
         num_countries = 3
         metadata = pd.DataFrame.from_records([
-            {'symbol': symbol, 'exchange': 'EXCHANGE %d' % n}
+            {'symbol': symbol,
+            'exchange': 'EXCHANGE %d' % n,
+            'real_sid': symbol,
+            'currency': 'USD'
+            }
             for n in range(num_countries)
             for symbol in ('PRTY_HRD', 'BRKA', 'BRK_A')
         ])
@@ -1727,12 +1785,14 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                 # first sid per country
                 {
                     'symbol': 'A',
+                    'currency': 'USD',
                     'asset_name': 'Asset A',
                     'start_date': T('2014-01-01'),
                     'end_date': T('2014-01-05'),
                 },
                 {
                     'symbol': 'B',
+                    'currency': 'USD',
                     'asset_name': 'Asset B',
                     'start_date': T('2014-01-06'),
                     'end_date': T('2014-01-10'),
@@ -1741,12 +1801,14 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                 # second sid per country
                 {
                     'symbol': 'C',
+                    'currency': 'USD',
                     'asset_name': 'Asset C',
                     'start_date': T('2014-01-01'),
                     'end_date': T('2014-01-05'),
                 },
                 {
                     'symbol': 'A',  # claiming the unused symbol 'A'
+                    'currency': 'USD',
                     'asset_name': 'Asset A',
                     'start_date': T('2014-01-06'),
                     'end_date': T('2014-01-10'),
@@ -1754,6 +1816,7 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
             ] * num_countries,
             index=np.repeat(np.arange(num_countries * 2), 2),
         )
+        metadata['real_sid'] = metadata.index.astype(str)
         metadata['exchange'] = np.repeat(
             ['EXCHANGE %d' % n for n in range(num_countries)],
             4,
@@ -1882,6 +1945,8 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': n * len(dates) + i,
+                    'real_sid': str(n * len(dates) + i),
+                    'currency': 'USD',
                     'symbol':  'existing',
                     'start_date': date.value,
                     'end_date': (date + timedelta(days=1)).value,
@@ -2027,6 +2092,8 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': n * 2,
+                    'real_sid': str(n*2),
+                    'currency': 'USD',
                     'symbol': 'FOOB',
                     'start_date': date.value,
                     'end_date': date.max.value,
@@ -2034,6 +2101,8 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': n * 2,
+                    'real_sid': str(n*2),
+                    'currency': 'USD',
                     'symbol': 'FOO_B',
                     'start_date': (date + timedelta(days=31)).value,
                     'end_date': (date + timedelta(days=60)).value,
@@ -2041,6 +2110,8 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                 },
                 {
                     'sid': n * 2 + 1,
+                    'real_sid': str(n*2+1),
+                    'currency': 'USD',
                     'symbol': 'FOO_B',
                     'start_date': (date + timedelta(days=61)).value,
                     'end_date': date.max.value,
@@ -2182,13 +2253,13 @@ class TestAssetDBVersioning(ZiplineTestCase):
     def test_v5_to_v4_selects_most_recent_ticker(self):
         T = pd.Timestamp
         equities = pd.DataFrame(
-            [['A', 'A', T('2014-01-01'), T('2014-01-02')],
-             ['B', 'B', T('2014-01-01'), T('2014-01-02')],
+            [['A', 'A', '0', 'USD', T('2014-01-01'), T('2014-01-02')],
+             ['B', 'B', '1', 'USD', T('2014-01-01'), T('2014-01-02')],
              # these two are both ticker sid 2
-             ['B', 'C', T('2014-01-03'), T('2014-01-04')],
-             ['C', 'C', T('2014-01-01'), T('2014-01-02')]],
+             ['B', 'C', '2', 'USD', T('2014-01-03'), T('2014-01-04')],
+             ['C', 'C', '2', 'USD', T('2014-01-01'), T('2014-01-02')]],
             index=[0, 1, 2, 2],
-            columns=['symbol', 'asset_name', 'start_date', 'end_date'],
+            columns=['symbol', 'asset_name', 'real_sid', 'currency', 'start_date', 'end_date'],
         )
         equities['exchange'] = 'NYSE'
 
@@ -2216,12 +2287,12 @@ class TestAssetDBVersioning(ZiplineTestCase):
     def test_v7_to_v6_only_keeps_US(self):
         T = pd.Timestamp
         equities = pd.DataFrame(
-            [['A', T('2014-01-01'), T('2014-01-02'), 'NYSE'],
-             ['B', T('2014-01-01'), T('2014-01-02'), 'JPX'],
-             ['C', T('2014-01-03'), T('2014-01-04'), 'NYSE'],
-             ['D', T('2014-01-01'), T('2014-01-02'), 'JPX']],
+            [['A', 'A', 'USD', T('2014-01-01'), T('2014-01-02'), 'NYSE'],
+             ['B', 'B', 'USD', T('2014-01-01'), T('2014-01-02'), 'JPX'],
+             ['C', 'C', 'USD', T('2014-01-03'), T('2014-01-04'), 'NYSE'],
+             ['D', 'D', 'USD', T('2014-01-01'), T('2014-01-02'), 'JPX']],
             index=[0, 1, 2, 3],
-            columns=['symbol', 'start_date', 'end_date', 'exchange'],
+            columns=['symbol', 'real_sid', 'currency', 'start_date', 'end_date', 'exchange'],
         )
         exchanges = pd.DataFrame.from_records([
             {'exchange': 'NYSE', 'country_code': 'US'},
@@ -2374,6 +2445,8 @@ class TestExchangeInfo(ZiplineTestCase):
         ]
         equities = pd.DataFrame({
             'sid': sids,
+            'real_sid': [str(sid) for sid in sids],
+            'currency': ['USD'] * len(sids),
             'exchange': exchange_names,
             'symbol': [chr(65 + sid) for sid in sids],
         })
@@ -2433,6 +2506,8 @@ class TestWrite(WithInstanceTmpDir, ZiplineTestCase):
             [
                 {
                     'sid': sid,
+                    'real_sid': str(sid),
+                    'currency': 'USD',
                     'symbol':  str(sid),
                     'start_date': date.value,
                     'end_date': (date + timedelta(days=1)).value,
@@ -2459,6 +2534,8 @@ class TestWrite(WithInstanceTmpDir, ZiplineTestCase):
         # don't include anything with a default to test that those work.
         equities = pd.DataFrame({
             'sid': [0, 1],
+            'real_sid': ['0', '1'],
+            'currency': ['USD', 'CAD'],
             'asset_name': ['Ayy Inc.', 'Lmao LP'],
             # the full exchange name
             'exchange': ['NYSE', 'TSE'],

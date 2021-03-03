@@ -73,7 +73,7 @@ def set_realtime_db(code, fields={}):
     --------
     Set the realtime database and map fields:
 
-    >>> set_realtime_db(
+    >>> set_realtime_db(                         # doctest: +SKIP
             "usa-stk-tick-1min",
             fields={
                 "close": "LastPriceClose",

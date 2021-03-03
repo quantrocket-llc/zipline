@@ -356,6 +356,8 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
         """
         my_asset = Equity(
             0,
+            real_sid='0',
+            currency='USD',
             exchange_info=ExchangeInfo('TEST', 'TEST FULL', 'US'),
         )
         start_date = self.pipeline_start_date
@@ -408,6 +410,8 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
     def test_require_length_greater_than_one(self):
         my_asset = Equity(
             0,
+            real_sid='0',
+            currency='USD',
             exchange_info=ExchangeInfo('TEST', 'TEST FULL', 'US'),
         )
 

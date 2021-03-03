@@ -862,8 +862,8 @@ class TradingAlgorithm(object):
         Only perform a certain action in live trading:
 
         >>> import zipline.api as algo
-        >>> if algo.get_environment("arena") == "trade":
-        >>>     ...
+        >>> if algo.get_environment("arena") == "trade":    # doctest: +SKIP
+        >>>     ...                                         # doctest: +SKIP
         """
         env = {
             'arena': self.sim_params.arena,
@@ -1020,7 +1020,7 @@ class TradingAlgorithm(object):
         after the open:
 
         >>> import zipline.api as algo
-        >>> algo.schedule_function(
+        >>> algo.schedule_function(                          # doctest: +SKIP
                 rebalance,
                 algo.date_rules.every_day(),
                 algo.time_rules.market_open(minutes=30))
@@ -1106,8 +1106,8 @@ class TradingAlgorithm(object):
         Set the benchmark to SPY:
 
         >>> import zipline.api as algo
-        >>> spy = algo.sid("FIBBG000BDTBL9")
-        >>> algo.set_benchmark(spy)
+        >>> spy = algo.sid("FIBBG000BDTBL9")    # doctest: +SKIP
+        >>> algo.set_benchmark(spy)             # doctest: +SKIP
 
         Notes
         -----
@@ -1156,7 +1156,7 @@ class TradingAlgorithm(object):
         Create a continuous future for ES, rolling on volume:
 
         >>> import zipline.api as algo
-        >>> algo.continuous_future("ES", roll="volume")
+        >>> algo.continuous_future("ES", roll="volume")    # doctest: +SKIP
         """
         return self.asset_finder.create_continuous_future(
             root_symbol_str,
@@ -1639,7 +1639,7 @@ class TradingAlgorithm(object):
 
         >>> import zipline.api as algo
         >>> from zipline.finance import slippage
-        >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))
+        >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))    # doctest: +SKIP
 
         Notes
         -----
@@ -1693,7 +1693,7 @@ class TradingAlgorithm(object):
 
         >>> import zipline.api as algo
         >>> from zipline.finance import commission
-        >>> algo.set_commission(commission.PerShare(cost=0.001))
+        >>> algo.set_commission(commission.PerShare(cost=0.001))    # doctest: +SKIP
 
         See Also
         --------
@@ -2575,7 +2575,7 @@ class TradingAlgorithm(object):
         --------
         Set the realtime database and map fields:
 
-        >>> algo.set_realtime_db(
+        >>> algo.set_realtime_db(                 # doctest: +SKIP
                 "us-stk-tick-1min",
                 fields={
                     "close": "LastPriceClose",

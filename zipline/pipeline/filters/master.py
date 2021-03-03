@@ -32,8 +32,8 @@ class Universe(CustomFilter):
     --------
     Limit to a universe of energy stocks:
 
-    >>> from zipline_extensions.pipeline.filters import Universe
-    >>> pipe = Pipeline(screen=Universe("energy-stk"))
+    >>> from zipline.pipeline.filters.master import Universe
+    >>> pipe = Pipeline(screen=Universe("energy-stk"))              # doctest: +SKIP
     """
     inputs = [SecuritiesMaster.Sid]
     window_length = 1

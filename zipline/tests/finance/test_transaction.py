@@ -26,6 +26,8 @@ class TransactionTestCase(TestCase):
 
         asset = Equity(
             1,
+            real_sid='1',
+            currency='USD',
             exchange_info=ExchangeInfo('test', 'test full', 'US'),
         )
         txn = Transaction(asset, amount=100, dt=dt, price=10, order_id=0)

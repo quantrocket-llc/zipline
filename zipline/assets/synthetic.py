@@ -40,7 +40,7 @@ def make_rotating_equity_info(num_assets,
     return pd.DataFrame(
         {
             'symbol': [chr(ord('A') + i) for i in range(num_assets)],
-            'real_sid': [str(i) for i in range(num_assets)],
+            'real_sid': [chr(ord('A') + i) for i in range(num_assets)],
             # Start a new asset every `periods_between_starts` days.
             'start_date': pd.date_range(
                 first_start,

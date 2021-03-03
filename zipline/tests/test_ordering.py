@@ -83,8 +83,6 @@ def initialize(context):
 
 def before_trading_start(context, data):
     context.asset = sid(1)
-
-def before_trading_start(context, data):
     {order_func}(context.asset, {arg})
      """.format(order_func=order_method, arg=amount)
 

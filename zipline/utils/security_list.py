@@ -152,6 +152,8 @@ def load_from_directory(list_name):
             ld_path = os.path.join(kd_path, ld_name)
             for fname in listdir(ld_path):
                 fpath = os.path.join(ld_path, fname)
+                if os.path.isdir(fpath):
+                    continue
                 with open(fpath) as f:
                     symbols = f.read().splitlines()
                     data[kd][ld][fname] = symbols

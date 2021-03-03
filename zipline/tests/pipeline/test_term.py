@@ -345,7 +345,9 @@ class ObjectIdentityTestCase(TestCase):
     def test_instance_caching_of_slices(self):
         my_asset = Asset(
             1,
+            real_sid='1',
             exchange_info=ExchangeInfo('TEST FULL', 'TEST', 'US'),
+            currency='USD'
         )
 
         f = GenericCustomFactor()
