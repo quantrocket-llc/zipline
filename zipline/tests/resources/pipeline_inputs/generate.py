@@ -6,12 +6,14 @@ from os.path import (
     dirname,
     join,
 )
-from pandas_datareader.data import DataReader
 
 here = join(dirname(__file__))
 
 
 def main():
+    # This must be manually installed to use this function
+    from pandas_datareader.data import DataReader
+
     symbols = ['AAPL', 'MSFT', 'BRK-A']
     # Specifically chosen to include the AAPL split on June 9, 2014.
     for symbol in symbols:
