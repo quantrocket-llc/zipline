@@ -120,6 +120,8 @@ def build_lookup_generic_cases():
             # lifetimes.
             {
                 'sid': 0,
+                'real_sid': '0',
+                'currency': 'USD',
                 'symbol': 'duplicated_in_us',
                 'start_date': dupe_old_start.value,
                 'end_date': dupe_old_end.value,
@@ -127,6 +129,8 @@ def build_lookup_generic_cases():
             },
             {
                 'sid': 1,
+                'real_sid': '1',
+                'currency': 'USD',
                 'symbol': 'duplicated_in_us',
                 'start_date': dupe_new_start.value,
                 'end_date': dupe_new_end.value,
@@ -135,6 +139,8 @@ def build_lookup_generic_cases():
             # This asset is unique.
             {
                 'sid': 2,
+                'real_sid': '2',
+                'currency': 'USD',
                 'symbol': 'unique',
                 'start_date': unique_start.value,
                 'end_date': unique_end.value,
@@ -144,6 +150,8 @@ def build_lookup_generic_cases():
             # different countries.
             {
                 'sid': 3,
+                'real_sid': '3',
+                'currency': 'USD',
                 'symbol': 'duplicated_globally',
                 'start_date': unique_start.value,
                 'end_date': unique_start.value,
@@ -151,6 +159,8 @@ def build_lookup_generic_cases():
             },
             {
                 'sid': 4,
+                'real_sid': '4',
+                'currency': 'CAD',
                 'symbol': 'duplicated_globally',
                 'start_date': unique_start.value,
                 'end_date': unique_start.value,
@@ -166,6 +176,8 @@ def build_lookup_generic_cases():
         [
             {
                 'sid': fof14_sid,
+                'real_sid': str(fof14_sid),
+                'currency': 'USD',
                 'symbol': 'FOF14',
                 'root_symbol': 'FO',
                 'start_date': unique_start.value,

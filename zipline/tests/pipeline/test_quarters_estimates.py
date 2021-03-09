@@ -2,8 +2,13 @@ from __future__ import division
 
 from datetime import timedelta
 from functools import partial
+from unittest import skipUnless
 
-import blaze as bz
+try:
+    import blaze as bz
+    blaze_installed = True
+except ImportError:
+    blaze_installed = False
 import itertools
 from nose.tools import assert_true
 from nose_parameterized import parameterized
@@ -644,7 +649,7 @@ class NextEstimate(WithEstimatesTimeZero, ZiplineTestCase):
         return pd.DataFrame(columns=q1_knowledge.columns,
                             index=[comparable_date])
 
-
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeNextEstimateLoaderTestCase(NextEstimate):
     """
     Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
@@ -683,7 +688,7 @@ class PreviousEstimate(WithEstimatesTimeZero, ZiplineTestCase):
         return pd.DataFrame(columns=q1_knowledge.columns,
                             index=[comparable_date])
 
-
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazePreviousEstimateLoaderTestCase(PreviousEstimate):
     """
     Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
@@ -834,7 +839,7 @@ class NextEstimateMultipleQuarters(
 
         return expected
 
-
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeNextEstimateMultipleQuarters(NextEstimateMultipleQuarters):
     @classmethod
     def make_loader(cls, events, columns):
@@ -884,6 +889,7 @@ class PreviousEstimateMultipleQuarters(
         return expected
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazePreviousEstimateMultipleQuarters(PreviousEstimateMultipleQuarters):
     @classmethod
     def make_loader(cls, events, columns):
@@ -980,6 +986,7 @@ class PreviousVaryingNumEstimates(
         return PreviousEarningsEstimatesLoader(events, columns)
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazePreviousVaryingNumEstimates(PreviousVaryingNumEstimates):
     @classmethod
     def make_loader(cls, events, columns):
@@ -1011,6 +1018,7 @@ class NextVaryingNumEstimates(
         return NextEarningsEstimatesLoader(events, columns)
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeNextVaryingNumEstimates(NextVaryingNumEstimates):
     @classmethod
     def make_loader(cls, events, columns):
@@ -1257,6 +1265,7 @@ class PreviousEstimateWindows(WithEstimateWindows, ZiplineTestCase):
         }
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazePreviousEstimateWindows(PreviousEstimateWindows):
     @classmethod
     def make_loader(cls, events, columns):
@@ -1370,6 +1379,7 @@ class NextEstimateWindows(WithEstimateWindows, ZiplineTestCase):
         }
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeNextEstimateWindows(NextEstimateWindows):
     @classmethod
     def make_loader(cls, events, columns):
@@ -1698,6 +1708,7 @@ class PreviousWithSplitAdjustedWindows(WithSplitAdjustedWindows,
         }
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazePreviousWithSplitAdjustedWindows(PreviousWithSplitAdjustedWindows):
     @classmethod
     def make_loader(cls, events, columns):
@@ -1921,6 +1932,7 @@ class NextWithSplitAdjustedWindows(WithSplitAdjustedWindows, ZiplineTestCase):
         }
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeNextWithSplitAdjustedWindows(NextWithSplitAdjustedWindows):
     @classmethod
     def make_loader(cls, events, columns):
@@ -2179,6 +2191,7 @@ class PreviousWithSplitAdjustedMultipleEstimateColumns(
         }
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazePreviousWithMultipleEstimateColumns(
     PreviousWithSplitAdjustedMultipleEstimateColumns
 ):
@@ -2255,6 +2268,7 @@ class NextWithSplitAdjustedMultipleEstimateColumns(
         }
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeNextWithMultipleEstimateColumns(
     NextWithSplitAdjustedMultipleEstimateColumns
 ):
@@ -2573,6 +2587,7 @@ class PreviousWithAdjustmentBoundaries(WithAdjustmentBoundaries,
                 split_adjusted_after_end_boundary}
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazePreviousWithAdjustmentBoundaries(PreviousWithAdjustmentBoundaries):
     @classmethod
     def make_loader(cls, events, columns):
@@ -2682,6 +2697,7 @@ class NextWithAdjustmentBoundaries(WithAdjustmentBoundaries,
                 split_adjusted_after_end_boundary}
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeNextWithAdjustmentBoundaries(NextWithAdjustmentBoundaries):
     @classmethod
     def make_loader(cls, events, columns):

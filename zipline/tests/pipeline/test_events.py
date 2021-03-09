@@ -3,9 +3,14 @@ Tests for setting up an EventsLoader and a BlazeEventsLoader.
 """
 from datetime import time
 from itertools import product
-from unittest import skipIf
+from unittest import skipIf, skipUnless
 
-import blaze as bz
+try:
+    import blaze as bz
+    blaze_installed = True
+except ImportError:
+    blaze_installed = False
+
 import numpy as np
 import pandas as pd
 import pytz
@@ -590,6 +595,7 @@ class EventsLoaderTestCase(WithAssetFinder,
         self.assertEqual(msg, expected)
 
 
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeEventsLoaderTestCase(EventsLoaderTestCase):
     """
     Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.

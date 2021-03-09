@@ -143,7 +143,11 @@ from itertools import count
 import warnings
 from weakref import WeakKeyDictionary
 
-import blaze as bz
+try:
+    import blaze as bz
+    blaze_installed = True
+except ImportError:
+    blaze_installed = False
 from datashape import (
     Date,
     DateTime,
@@ -205,16 +209,18 @@ except ImportError:
     baseline_arrays_from_rows_with_assets = barf
     baseline_arrays_from_rows_without_assets = barf
 
-valid_deltas_node_types = (
-    bz.expr.Field,
-    bz.expr.ReLabel,
-    bz.expr.Symbol,
-)
-traversable_nodes = (
-    bz.expr.Field,
-    bz.expr.Label,
-)
-is_invalid_deltas_node = complement(flip(isinstance, valid_deltas_node_types))
+if blaze_installed:
+    valid_deltas_node_types = (
+        bz.expr.Field,
+        bz.expr.ReLabel,
+        bz.expr.Symbol,
+    )
+    traversable_nodes = (
+        bz.expr.Field,
+        bz.expr.Label,
+    )
+    is_invalid_deltas_node = complement(flip(isinstance, valid_deltas_node_types))
+
 get__name__ = op.attrgetter('__name__')
 
 

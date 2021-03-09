@@ -17,6 +17,7 @@ from nose_parameterized import parameterized
 import pandas as pd
 import numpy as np
 from mock import patch
+from unittest import skip
 
 from zipline.errors import UnsupportedOrderParameters
 from zipline.sources.requests_csv import mask_requests_args
@@ -43,6 +44,7 @@ from .resources.fetcher_inputs.fetcher_test_data import (
 
 
 # XXX: The algorithms in this suite do way more work than they should have to.
+@skip("Fetcher should probably be removed from QuantRocket; it relies on symbol lookups which QuantRocket has disabled")
 class FetcherTestCase(WithResponses,
                       WithMakeAlgo,
                       ZiplineTestCase):

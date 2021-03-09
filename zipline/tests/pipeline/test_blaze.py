@@ -7,10 +7,15 @@ from collections import OrderedDict
 from datetime import timedelta, time
 from functools import partial
 from itertools import product, chain
-from unittest import skipIf
+from unittest import skipIf, skipUnless
 import warnings
 
-import blaze as bz
+try:
+    import blaze as bz
+    blaze_installed = True
+except ImportError:
+    blaze_installed = False
+
 from datashape import dshape, var, Record
 from nose_parameterized import parameterized
 import numpy as np
@@ -77,7 +82,7 @@ def with_ignore_sid():
         product(chain.from_iterable(asset_infos), [True, False])
     )
 
-
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class BlazeToPipelineTestCase(WithAssetFinder, ZiplineTestCase):
     START_DATE = pd.Timestamp(0)
     END_DATE = pd.Timestamp('2015')
@@ -2386,7 +2391,7 @@ class BlazeToPipelineTestCase(WithAssetFinder, ZiplineTestCase):
             dates=dates,
         )
 
-
+@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
 class MiscTestCase(ZiplineTestCase):
     def test_exprdata_repr(self):
         strd = set()
