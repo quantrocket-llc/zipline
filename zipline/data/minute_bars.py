@@ -962,6 +962,21 @@ class BcolzMinuteBarReader(MinuteBarReader):
         # which is the minute epoch of that date.
         self._known_zero_volume_dict = {}
 
+        # Deal with a problem in the usstock dataset on 2020-05-08 14:50:00-04:00.
+        # Background: _open_minute_file opens the bcolz ctable from disk, then
+        # caches the ctable in an LRU cache. When the minute file is opened on or
+        # before the problem date, and then accessed (via the LRU cache) after the
+        # problem date, a segmentation fault (or malloc or other C error) occurs.
+        # Note that the issue only affects calls to _open_minute_file that are made
+        # from get_value. Calls to _open_minute_file from load_raw_arrays or
+        # get_last_traded_dt do not trigger the C errors. The workaround is to reopen
+        # the ctable from disk (not from the cache) the first time the ctable is
+        # accessed after the problem date.
+        self.usstock_problem_dt = pd.Timestamp("2020-05-08 14:50:00-04:00", tz="UTC")
+        # Stores tuples of (field, sid) which have already force reloaded the ctable
+        # after the problem date
+        self.has_force_reloaded_after_usstock_problem_dt = []
+
     def _get_metadata(self):
         return BcolzMinuteBarMetadata.read(self._rootdir)
 
@@ -1067,10 +1082,14 @@ class BcolzMinuteBarReader(MinuteBarReader):
         # carrays are subdirectories of the sid's rootdir
         return os.path.join(self._rootdir, sid_subdir, field)
 
-    def _open_minute_file(self, field, sid):
+    def _open_minute_file(self, field, sid, force_reload=False):
         sid = int(sid)
 
         try:
+            # the force_reload option is to deal with the usstock problem
+            # date. See the comments in __init__ and get_value.
+            if force_reload:
+                raise KeyError()
             carray = self._carrays[field][sid]
         except KeyError:
             try:
@@ -1135,8 +1154,17 @@ class BcolzMinuteBarReader(MinuteBarReader):
             self._last_get_value_dt_value = dt.value
             self._last_get_value_dt_position = minute_pos
 
+        # force reload the minute file if it's after the problem date,
+        # and we haven't yet force reloaded
+        force_reload = (
+            (field, sid) not in self.has_force_reloaded_after_usstock_problem_dt
+            and dt > self.usstock_problem_dt
+        )
+        if force_reload:
+            self.has_force_reloaded_after_usstock_problem_dt.append((field, sid))
+
         try:
-            value = self._open_minute_file(field, sid)[minute_pos]
+            value = self._open_minute_file(field, sid, force_reload=force_reload)[minute_pos]
         except IndexError:
             value = 0
         if value == 0:
