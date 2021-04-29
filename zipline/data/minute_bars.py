@@ -900,11 +900,11 @@ class BcolzMinuteBarReader(MinuteBarReader):
     """
     FIELDS = ('open', 'high', 'low', 'close', 'volume')
     DEFAULT_MINUTELY_SID_CACHE_SIZES = {
-        'close': 3000,
-        'open': 1550,
-        'high': 1550,
-        'low': 1550,
-        'volume': 1550,
+        'close': 1500,
+        'open': 500,
+        'high': 500,
+        'low': 500,
+        'volume': 500,
     }
     assert set(FIELDS) == set(DEFAULT_MINUTELY_SID_CACHE_SIZES), \
         "FIELDS should match DEFAULT_MINUTELY_SID_CACHE_SIZES keys"
