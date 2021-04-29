@@ -490,7 +490,8 @@ def _make_bundle_core():
                 ),
             )
 
-    def load(name, environ=os.environ, timestamp=None):
+    def load(name, environ=os.environ, timestamp=None,
+            daily_bar_reader_kwargs={}, minute_bar_reader_kwargs={}):
         """Loads a previously ingested bundle.
 
         Parameters
@@ -517,9 +518,11 @@ def _make_bundle_core():
             ),
             equity_minute_bar_reader=BcolzMinuteBarReader(
                 minute_equity_path(name, timestr, environ=environ),
+                **minute_bar_reader_kwargs
             ),
             equity_daily_bar_reader=BcolzDailyBarReader(
                 daily_equity_path(name, timestr, environ=environ),
+                **daily_bar_reader_kwargs
             ),
             adjustment_reader=SQLiteAdjustmentReader(
                 adjustment_db_path(name, timestr, environ=environ),
