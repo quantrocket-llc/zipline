@@ -1,4 +1,3 @@
-import click
 import os
 import sys
 import warnings
@@ -34,7 +33,7 @@ from zipline.finance.blotter import Blotter
 log = logbook.Logger(__name__)
 
 
-class _RunAlgoError(click.ClickException, ValueError):
+class _RunAlgoError(ValueError):
     """Signal an error that should have a different message if invoked from
     the cli.
 
@@ -151,7 +150,7 @@ def _run(handle_data,
                 outfile=sys.stdout,
             )
         else:
-            click.echo(algotext)
+            print(algotext)
 
     first_trading_day = \
         bundle_data.equity_minute_bar_reader.first_trading_day
@@ -217,7 +216,7 @@ def _run(handle_data,
     ).run()
 
     if output == '-':
-        click.echo(str(perf))
+        print(str(perf))
     elif output != os.devnull:  # make the zipline magic not write any data
         perf.to_pickle(output)
 

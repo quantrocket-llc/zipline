@@ -131,11 +131,6 @@ setup(
     version=versioneer.get_version(),
     cmdclass=LazyBuildExtCommandClass(versioneer.get_cmdclass()),
     description='A backtester for financial algorithms.',
-    entry_points={
-        'console_scripts': [
-            'zipline = zipline.__main__:main',
-        ],
-    },
     packages=find_packages(include=['zipline', 'zipline.*']),
     ext_modules=ext_modules,
     include_package_data=True,

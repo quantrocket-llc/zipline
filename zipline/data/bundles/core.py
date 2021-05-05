@@ -5,7 +5,6 @@ import shutil
 import warnings
 
 from contextlib2 import ExitStack
-import click
 from logbook import Logger
 import pandas as pd
 from trading_calendars import get_calendar
@@ -153,7 +152,7 @@ BundleCore = namedtuple(
 )
 
 
-class UnknownBundle(click.ClickException, LookupError):
+class UnknownBundle(LookupError):
     """Raised if no bundle with the given name was registered.
     """
     exit_code = 1
@@ -168,7 +167,7 @@ class UnknownBundle(click.ClickException, LookupError):
         return self.message
 
 
-class BadClean(click.ClickException, ValueError):
+class BadClean(ValueError):
     """Exception indicating that an invalid argument set was passed to
     ``clean``.
 
