@@ -141,11 +141,15 @@ def load_from_directory(list_name):
     data = {}
     dir_path = os.path.join(SECURITY_LISTS_DIR, list_name)
     for kd_name in listdir(dir_path):
+        if kd_name.endswith(".py") or kd_name.endswith("__pycache__"):
+            continue
         kd = datetime.strptime(kd_name, DATE_FORMAT).replace(
             tzinfo=pytz.utc)
         data[kd] = {}
         kd_path = os.path.join(dir_path, kd_name)
         for ld_name in listdir(kd_path):
+            if ld_name.endswith(".py") or ld_name.endswith("__pycache__"):
+                continue
             ld = datetime.strptime(ld_name, DATE_FORMAT).replace(
                 tzinfo=pytz.utc)
             data[kd][ld] = {}

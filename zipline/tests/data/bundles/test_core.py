@@ -1,4 +1,5 @@
 import os
+import unittest
 
 from nose_parameterized import parameterized
 import pandas as pd
@@ -265,6 +266,7 @@ class BundleCoreTestCase(WithInstanceTmpDir,
             msg='volume',
         )
 
+    @unittest.skip("downgrading assets version is not supported in QuantRocket")
     def test_ingest_assets_versions(self):
         versions = (1, 2)
 

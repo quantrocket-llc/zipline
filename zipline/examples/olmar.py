@@ -19,20 +19,20 @@ STOCKS = ['AMD', 'CERN', 'COST', 'DELL', 'GPS', 'INTC', 'MMM']
 # More info can be found in the corresponding paper:
 # http://icml.cc/2012/papers/168.pdf
 def initialize(algo, eps=1, window_length=5):
+    algo.set_commission(commission.PerShare(cost=0, min_trade_cost=1.0))
+    algo.set_slippage(slippage.VolumeShareSlippage())
+    algo.eps = eps
+    algo.window_length = window_length
+    algo.init = True
+    algo.days = 0
+
+def before_trading_start(algo, data):
     algo.stocks = STOCKS
     algo.sids = [algo.symbol(symbol) for symbol in algo.stocks]
     algo.m = len(algo.stocks)
     algo.price = {}
     algo.b_t = np.ones(algo.m) / algo.m
     algo.last_desired_port = np.ones(algo.m) / algo.m
-    algo.eps = eps
-    algo.init = True
-    algo.days = 0
-    algo.window_length = window_length
-
-    algo.set_commission(commission.PerShare(cost=0, min_trade_cost=1.0))
-    algo.set_slippage(slippage.VolumeShareSlippage())
-
 
 def handle_data(algo, data):
     algo.days += 1

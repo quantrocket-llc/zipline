@@ -595,16 +595,16 @@ class EventsLoaderTestCase(WithAssetFinder,
         self.assertEqual(msg, expected)
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeEventsLoaderTestCase(EventsLoaderTestCase):
-    """
-    Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
-    """
+if blaze_installed:
+    class BlazeEventsLoaderTestCase(EventsLoaderTestCase):
+        """
+        Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
+        """
 
-    @classmethod
-    def make_loader(cls, events, next_value_columns, previous_value_columns):
-        return BlazeEventsLoader(
-            bz.data(events),
-            next_value_columns,
-            previous_value_columns,
-        )
+        @classmethod
+        def make_loader(cls, events, next_value_columns, previous_value_columns):
+            return BlazeEventsLoader(
+                bz.data(events),
+                next_value_columns,
+                previous_value_columns,
+            )

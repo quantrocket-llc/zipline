@@ -524,11 +524,9 @@ from zipline.api import (
 def initialize(algo):
     schedule_function(record_current_contract)
 
-def before_trading_start(algo, data):
+def record_current_contract(algo, data):
     algo.primary_cl = continuous_future('FO', 0, 'calendar', None)
     algo.secondary_cl = continuous_future('FO', 1, 'calendar', None)
-
-def record_current_contract(algo, data):
     record(datetime=get_datetime())
     record(primary=data.current(algo.primary_cl, 'contract'))
     record(secondary=data.current(algo.secondary_cl, 'contract'))
@@ -574,12 +572,11 @@ from zipline.api import (
 
 def initialize(algo):
     schedule_function(record_current_contract)
-
-def before_trading_start(algo, data):
-    algo.primary_cl = continuous_future('FO', 0, 'calendar', None)
-    algo.secondary_cl = continuous_future('FO', 1, 'calendar', None)
+    print('in initialize')
 
 def record_current_contract(algo, data):
+    algo.primary_cl = continuous_future('FO', 0, 'calendar', None)
+    algo.secondary_cl = continuous_future('FO', 1, 'calendar', None)
     record(datetime=get_datetime())
     primary_chain = data.current_chain(algo.primary_cl)
     secondary_chain = data.current_chain(algo.secondary_cl)

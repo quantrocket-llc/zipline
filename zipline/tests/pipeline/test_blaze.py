@@ -16,11 +16,13 @@ try:
 except ImportError:
     blaze_installed = False
 
-from datashape import dshape, var, Record
+if blaze_installed:
+    from datashape import dshape, var, Record
+    from odo import odo
+
 from nose_parameterized import parameterized
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
-from odo import odo
 import pandas as pd
 import pytz
 from toolz import keymap, valmap, concatv
@@ -90,6 +92,9 @@ class BlazeToPipelineTestCase(WithAssetFinder, ZiplineTestCase):
     @classmethod
     def init_class_fixtures(cls):
         super(BlazeToPipelineTestCase, cls).init_class_fixtures()
+        if not blaze_installed:
+            return
+
         cls.dates = dates = pd.date_range('2014-01-01', '2014-01-03')
         cls.asof_dates = asof_dates = dates - pd.Timedelta(days=1)
         cls.timestamps = timestamps = dates - pd.Timedelta(hours=1)

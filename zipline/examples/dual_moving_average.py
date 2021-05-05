@@ -27,7 +27,6 @@ from zipline.finance import commission, slippage
 
 
 def initialize(context):
-    context.sym = symbol('AAPL')
     context.i = 0
 
     # Explicitly set the commission/slippage to the "old" value until we can
@@ -37,6 +36,8 @@ def initialize(context):
     context.set_commission(commission.PerShare(cost=.0075, min_trade_cost=1.0))
     context.set_slippage(slippage.VolumeShareSlippage())
 
+def before_trading_start(context, data):
+    context.sym = symbol('AAPL')
 
 def handle_data(context, data):
     # Skip first 300 days to get full windows

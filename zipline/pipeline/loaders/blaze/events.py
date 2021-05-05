@@ -1,5 +1,4 @@
 from interface import implements
-from datashape import istabular
 
 from .core import (
     bind_expression_to_resources,

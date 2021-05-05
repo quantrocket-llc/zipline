@@ -205,6 +205,8 @@ class InternationalEquityTestCase(WithInternationalPricingPipelineEngine,
             ],
             ignore_index=True,
         )
+        # make all real sids unique
+        out["real_sid"] = out.index.astype(str)
         assert_equal(out.end_date.max(), cls.END_DATE)
         return out
 

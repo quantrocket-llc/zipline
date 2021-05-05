@@ -183,6 +183,8 @@ def security_list_copy():
     new_dir = tempfile.mkdtemp()
     try:
         for subdir in os.listdir(old_dir):
+            if not os.path.isdir(subdir):
+                continue
             shutil.copytree(os.path.join(old_dir, subdir),
                             os.path.join(new_dir, subdir))
             with patch.object(security_list, 'SECURITY_LISTS_DIR', new_dir), \
@@ -1380,7 +1382,7 @@ zipline_git_root = abspath(
 
 @nottest
 def test_resource_path(*path_parts):
-    return os.path.join(zipline_git_root, 'tests', 'resources', *path_parts)
+    return os.path.join(zipline_git_root, 'zipline', 'tests', 'resources', *path_parts)
 
 
 @contextmanager

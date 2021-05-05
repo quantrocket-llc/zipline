@@ -148,18 +148,20 @@ try:
     blaze_installed = True
 except ImportError:
     blaze_installed = False
-from datashape import (
-    Date,
-    DateTime,
-    Option,
-    String,
-    isrecord,
-    isscalar,
-    integral,
-)
+
+if blaze_installed:
+    from datashape import (
+        Date,
+        DateTime,
+        Option,
+        String,
+        isrecord,
+        isscalar,
+        integral)
+    from odo import odo
+
 from interface import implements
 import numpy as np
-from odo import odo
 import pandas as pd
 from six import with_metaclass, PY2, itervalues, iteritems
 from toolz import (

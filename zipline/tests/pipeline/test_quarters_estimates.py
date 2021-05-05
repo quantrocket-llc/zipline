@@ -649,18 +649,18 @@ class NextEstimate(WithEstimatesTimeZero, ZiplineTestCase):
         return pd.DataFrame(columns=q1_knowledge.columns,
                             index=[comparable_date])
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeNextEstimateLoaderTestCase(NextEstimate):
-    """
-    Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
-    """
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazeNextEstimateLoaderTestCase(NextEstimate):
+        """
+        Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
+        """
 
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazeNextEstimatesLoader(
-            bz.data(events),
-            columns,
-        )
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazeNextEstimatesLoader(
+                bz.data(events),
+                columns,
+            )
 
 
 class PreviousEstimate(WithEstimatesTimeZero, ZiplineTestCase):
@@ -688,18 +688,18 @@ class PreviousEstimate(WithEstimatesTimeZero, ZiplineTestCase):
         return pd.DataFrame(columns=q1_knowledge.columns,
                             index=[comparable_date])
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazePreviousEstimateLoaderTestCase(PreviousEstimate):
-    """
-    Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
-    """
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazePreviousEstimateLoaderTestCase(PreviousEstimate):
+        """
+        Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
+        """
 
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazePreviousEstimatesLoader(
-            bz.data(events),
-            columns,
-        )
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazePreviousEstimatesLoader(
+                bz.data(events),
+                columns,
+            )
 
 
 class WithEstimateMultipleQuarters(WithEstimates):
@@ -839,14 +839,14 @@ class NextEstimateMultipleQuarters(
 
         return expected
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeNextEstimateMultipleQuarters(NextEstimateMultipleQuarters):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazeNextEstimatesLoader(
-            bz.data(events),
-            columns,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazeNextEstimateMultipleQuarters(NextEstimateMultipleQuarters):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazeNextEstimatesLoader(
+                bz.data(events),
+                columns,
+            )
 
 
 class PreviousEstimateMultipleQuarters(
@@ -889,14 +889,14 @@ class PreviousEstimateMultipleQuarters(
         return expected
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazePreviousEstimateMultipleQuarters(PreviousEstimateMultipleQuarters):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazePreviousEstimatesLoader(
-            bz.data(events),
-            columns,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazePreviousEstimateMultipleQuarters(PreviousEstimateMultipleQuarters):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazePreviousEstimatesLoader(
+                bz.data(events),
+                columns,
+            )
 
 
 class WithVaryingNumEstimates(WithEstimates):
@@ -986,14 +986,14 @@ class PreviousVaryingNumEstimates(
         return PreviousEarningsEstimatesLoader(events, columns)
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazePreviousVaryingNumEstimates(PreviousVaryingNumEstimates):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazePreviousEstimatesLoader(
-            bz.data(events),
-            columns,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazePreviousVaryingNumEstimates(PreviousVaryingNumEstimates):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazePreviousEstimatesLoader(
+                bz.data(events),
+                columns,
+            )
 
 
 class NextVaryingNumEstimates(
@@ -1018,14 +1018,14 @@ class NextVaryingNumEstimates(
         return NextEarningsEstimatesLoader(events, columns)
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeNextVaryingNumEstimates(NextVaryingNumEstimates):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazeNextEstimatesLoader(
-            bz.data(events),
-            columns,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazeNextVaryingNumEstimates(NextVaryingNumEstimates):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazeNextEstimatesLoader(
+                bz.data(events),
+                columns,
+            )
 
 
 class WithEstimateWindows(WithEstimates):
@@ -1265,11 +1265,11 @@ class PreviousEstimateWindows(WithEstimateWindows, ZiplineTestCase):
         }
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazePreviousEstimateWindows(PreviousEstimateWindows):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazePreviousEstimatesLoader(bz.data(events), columns)
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazePreviousEstimateWindows(PreviousEstimateWindows):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazePreviousEstimatesLoader(bz.data(events), columns)
 
 
 class NextEstimateWindows(WithEstimateWindows, ZiplineTestCase):
@@ -1379,11 +1379,11 @@ class NextEstimateWindows(WithEstimateWindows, ZiplineTestCase):
         }
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeNextEstimateWindows(NextEstimateWindows):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazeNextEstimatesLoader(bz.data(events), columns)
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazeNextEstimateWindows(NextEstimateWindows):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazeNextEstimatesLoader(bz.data(events), columns)
 
 
 class WithSplitAdjustedWindows(WithEstimateWindows):
@@ -1708,17 +1708,17 @@ class PreviousWithSplitAdjustedWindows(WithSplitAdjustedWindows,
         }
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazePreviousWithSplitAdjustedWindows(PreviousWithSplitAdjustedWindows):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazePreviousSplitAdjustedEstimatesLoader(
-            bz.data(events),
-            columns,
-            split_adjustments_loader=cls.adjustment_reader,
-            split_adjusted_column_names=['estimate'],
-            split_adjusted_asof=cls.split_adjusted_asof_date,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazePreviousWithSplitAdjustedWindows(PreviousWithSplitAdjustedWindows):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazePreviousSplitAdjustedEstimatesLoader(
+                bz.data(events),
+                columns,
+                split_adjustments_loader=cls.adjustment_reader,
+                split_adjusted_column_names=['estimate'],
+                split_adjusted_asof=cls.split_adjusted_asof_date,
+            )
 
 
 class NextWithSplitAdjustedWindows(WithSplitAdjustedWindows, ZiplineTestCase):
@@ -1932,17 +1932,17 @@ class NextWithSplitAdjustedWindows(WithSplitAdjustedWindows, ZiplineTestCase):
         }
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeNextWithSplitAdjustedWindows(NextWithSplitAdjustedWindows):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazeNextSplitAdjustedEstimatesLoader(
-            bz.data(events),
-            columns,
-            split_adjustments_loader=cls.adjustment_reader,
-            split_adjusted_column_names=['estimate'],
-            split_adjusted_asof=cls.split_adjusted_asof_date,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazeNextWithSplitAdjustedWindows(NextWithSplitAdjustedWindows):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazeNextSplitAdjustedEstimatesLoader(
+                bz.data(events),
+                columns,
+                split_adjustments_loader=cls.adjustment_reader,
+                split_adjusted_column_names=['estimate'],
+                split_adjusted_asof=cls.split_adjusted_asof_date,
+            )
 
 
 class WithSplitAdjustedMultipleEstimateColumns(WithEstimates):
@@ -2191,19 +2191,19 @@ class PreviousWithSplitAdjustedMultipleEstimateColumns(
         }
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazePreviousWithMultipleEstimateColumns(
-    PreviousWithSplitAdjustedMultipleEstimateColumns
-):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazePreviousSplitAdjustedEstimatesLoader(
-            bz.data(events),
-            columns,
-            split_adjustments_loader=cls.adjustment_reader,
-            split_adjusted_column_names=['estimate1', 'estimate2'],
-            split_adjusted_asof=cls.split_adjusted_asof,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazePreviousWithMultipleEstimateColumns(
+        PreviousWithSplitAdjustedMultipleEstimateColumns
+    ):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazePreviousSplitAdjustedEstimatesLoader(
+                bz.data(events),
+                columns,
+                split_adjustments_loader=cls.adjustment_reader,
+                split_adjusted_column_names=['estimate1', 'estimate2'],
+                split_adjusted_asof=cls.split_adjusted_asof,
+            )
 
 
 class NextWithSplitAdjustedMultipleEstimateColumns(
@@ -2268,19 +2268,19 @@ class NextWithSplitAdjustedMultipleEstimateColumns(
         }
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeNextWithMultipleEstimateColumns(
-    NextWithSplitAdjustedMultipleEstimateColumns
-):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return BlazeNextSplitAdjustedEstimatesLoader(
-            bz.data(events),
-            columns,
-            split_adjustments_loader=cls.adjustment_reader,
-            split_adjusted_column_names=['estimate1', 'estimate2'],
-            split_adjusted_asof=cls.split_adjusted_asof,
-        )
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazeNextWithMultipleEstimateColumns(
+        NextWithSplitAdjustedMultipleEstimateColumns
+    ):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return BlazeNextSplitAdjustedEstimatesLoader(
+                bz.data(events),
+                columns,
+                split_adjustments_loader=cls.adjustment_reader,
+                split_adjusted_column_names=['estimate1', 'estimate2'],
+                split_adjusted_asof=cls.split_adjusted_asof,
+            )
 
 
 class WithAdjustmentBoundaries(WithEstimates):
@@ -2587,15 +2587,15 @@ class PreviousWithAdjustmentBoundaries(WithAdjustmentBoundaries,
                 split_adjusted_after_end_boundary}
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazePreviousWithAdjustmentBoundaries(PreviousWithAdjustmentBoundaries):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return partial(BlazePreviousSplitAdjustedEstimatesLoader,
-                       bz.data(events),
-                       columns,
-                       split_adjustments_loader=cls.adjustment_reader,
-                       split_adjusted_column_names=['estimate'])
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazePreviousWithAdjustmentBoundaries(PreviousWithAdjustmentBoundaries):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return partial(BlazePreviousSplitAdjustedEstimatesLoader,
+                        bz.data(events),
+                        columns,
+                        split_adjustments_loader=cls.adjustment_reader,
+                        split_adjusted_column_names=['estimate'])
 
 
 class NextWithAdjustmentBoundaries(WithAdjustmentBoundaries,
@@ -2697,15 +2697,15 @@ class NextWithAdjustmentBoundaries(WithAdjustmentBoundaries,
                 split_adjusted_after_end_boundary}
 
 
-@skipUnless(blaze_installed, "blaze is not installed; moreover, blaze is a dead project and should be removed from Zipline")
-class BlazeNextWithAdjustmentBoundaries(NextWithAdjustmentBoundaries):
-    @classmethod
-    def make_loader(cls, events, columns):
-        return partial(BlazeNextSplitAdjustedEstimatesLoader,
-                       bz.data(events),
-                       columns,
-                       split_adjustments_loader=cls.adjustment_reader,
-                       split_adjusted_column_names=['estimate'])
+if blaze_installed: # blaze is a dead project and should be removed from Zipline
+    class BlazeNextWithAdjustmentBoundaries(NextWithAdjustmentBoundaries):
+        @classmethod
+        def make_loader(cls, events, columns):
+            return partial(BlazeNextSplitAdjustedEstimatesLoader,
+                        bz.data(events),
+                        columns,
+                        split_adjustments_loader=cls.adjustment_reader,
+                        split_adjusted_column_names=['estimate'])
 
 
 class QuarterShiftTestCase(ZiplineTestCase):

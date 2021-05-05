@@ -24,8 +24,9 @@ from zipline.testing.predicates import (
     assert_equal,
 )
 from zipline.utils.functional import apply
+from unittest import skip
 
-
+@skip("quandl bundles are not supported in QuantRocket")
 class QuandlBundleTestCase(WithResponses,
                            ZiplineTestCase):
     symbols = 'AAPL', 'BRK_A', 'MSFT', 'ZEN'

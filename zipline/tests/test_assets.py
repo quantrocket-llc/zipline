@@ -25,6 +25,7 @@ import string
 import sys
 from types import GetSetDescriptorType
 from unittest import TestCase
+import unittest
 import uuid
 import warnings
 
@@ -229,8 +230,6 @@ def build_lookup_generic_cases():
         for asset in list(equities) + [fof14, cf]:
             # Looking up an asset object directly should yield itself.
             yield case(asset, None, None, asset)
-            # Looking up an asset by sid should yield the asset.
-            yield case(asset.sid, None, None, asset)
 
         # Duplicated US equity symbol with resolution date.
         for country in ('US', None):
@@ -263,10 +262,6 @@ def build_lookup_generic_cases():
         yield case(all_assets, None, None, all_assets)
         yield case(iter(all_assets), None, None, all_assets)
 
-        # Iterables of ints
-        yield case((0, 1), None, None, equities[:2])
-        yield case(iter((0, 1)), None, None, equities[:2])
-
         # Iterables of symbols.
         yield case(
             inputs=('DUPLICATED_IN_US', 'UNIQUE', 'DUPLICATED_GLOBALLY'),
@@ -286,14 +281,13 @@ def build_lookup_generic_cases():
             inputs=(
                 'DUPLICATED_IN_US',     # dupe_old b/c of as_of
                 dupe_new,               # dupe_new
-                2,                      # unique
                 'UNIQUE',               # unique
                 'DUPLICATED_GLOBALLY',  # dupe_us b/c of country_code
                 dupe_ca,                # dupe_ca
             ),
             as_of=dupe_old_start,
             country_code='US',
-            expected=[dupe_old, dupe_new, unique, unique, dupe_us, dupe_ca],
+            expected=[dupe_old, dupe_new, unique, dupe_us, dupe_ca],
         )
 
         # Futures and Equities
@@ -817,6 +811,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             [
                 {
                     'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
                     'symbol': 'multiple',
                     'start_date': pd.Timestamp('2010-01-01'),
                     'end_date': pd.Timestamp('2012-01-01'),
@@ -825,6 +821,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 # Same as asset 1, but with a later end date.
                 {
                     'sid': 2,
+                    'real_sid': '2',
+                    'currency': 'USD',
                     'symbol': 'multiple',
                     'start_date': pd.Timestamp('2010-01-01'),
                     'end_date': pd.Timestamp('2013-01-01'),
@@ -833,6 +831,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 # Same as asset 1, but with a later start_date
                 {
                     'sid': 3,
+                    'real_sid': '3',
+                    'currency': 'USD',
                     'symbol': 'multiple',
                     'start_date': pd.Timestamp('2011-01-01'),
                     'end_date': pd.Timestamp('2012-01-01'),
@@ -858,6 +858,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         )
         self.assertEqual(str(e.exception), expected_error_msg)
 
+    @unittest.skip("Generic lookups are to be disabled in QuantRocket")
     def test_lookup_generic(self):
         """
         Ensure that lookup_generic works with various permutations of inputs.
@@ -1033,6 +1034,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         self.assertEqual(missing[0], 'FAKE')
         self.assertEqual(missing[1], 'REAL_BUT_IN_THE_FUTURE')
 
+    @unittest.skip("symbol lookups are to be removed from QuantRocket")
     def test_lookup_generic_multiple_symbols_across_countries(self):
         data = pd.DataFrame.from_records(
             [
@@ -1141,6 +1143,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         )
         # make every symbol unique
         equities['symbol'] = list(string.ascii_uppercase[:len(equities)])
+        equities['real_sid'] = equities['symbol']
 
         # shuffle up the sids so they are not contiguous per exchange
         sids = np.arange(len(equities))
@@ -1161,6 +1164,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             ],
             'JP': equities.index[3 * assets_per_exchange:],
         }
+
         self.write_assets(equities=equities, exchanges=exchanges)
         finder = self.asset_finder
 
@@ -1706,6 +1710,7 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                         self.country_code(n),
                     )
 
+    @unittest.skip("symbol lookups are to be removed from QuantRocket")
     def test_lookup_symbol_fuzzy(self):
         num_countries = 3
         metadata = pd.DataFrame.from_records([
@@ -2021,6 +2026,7 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                 {
                     'sid': n * 3,
                     'symbol': 'multiple',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2010-01-01'),
                     'end_date': pd.Timestamp('2012-01-01'),
                     'exchange': 'EXCHANGE %d' % n,
@@ -2029,6 +2035,7 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                 {
                     'sid': n * 3 + 1,
                     'symbol': 'multiple',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2010-01-01'),
                     'end_date': pd.Timestamp('2013-01-01'),
                     'exchange': 'EXCHANGE %d' % n,
@@ -2037,6 +2044,7 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
                 {
                     'sid': n * 3 + 2,
                     'symbol': 'multiple',
+                    'currency': 'USD',
                     'start_date': pd.Timestamp('2011-01-01'),
                     'end_date': pd.Timestamp('2012-01-01'),
                     'exchange': 'EXCHANGE %d' % n,
@@ -2044,6 +2052,8 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
             ]
             for n in range(num_countries)
         ))
+        df['real_sid'] = df.sid.astype(str)
+
         exchanges = pd.DataFrame({
             'exchange': ['EXCHANGE %d' % n for n in range(num_countries)],
             'country_code': [
@@ -2053,6 +2063,8 @@ class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
 
         with self.assertRaises(ValueError) as e:
             self.write_assets(equities=df, exchanges=exchanges)
+
+        self.maxDiff = None
 
         expected_error_msg = (
             "Ambiguous ownership for 3 symbols, multiple assets held the"
@@ -2228,6 +2240,7 @@ class TestAssetDBVersioning(ZiplineTestCase):
         # Now that the versions match, this Finder should succeed
         AssetFinder(engine=self.engine)
 
+    @unittest.skip("Downgrading the assets db is to be removed from QuantRocket")
     def test_downgrade(self):
         # Attempt to downgrade a current assets db all the way down to v0
         conn = self.engine.connect()
@@ -2262,6 +2275,7 @@ class TestAssetDBVersioning(ZiplineTestCase):
         with self.assertRaises(AssetDBImpossibleDowngrade):
             downgrade(self.engine, ASSET_DB_VERSION + 5)
 
+    @unittest.skip("Downgrading the assets db is to be removed from QuantRocket")
     def test_v5_to_v4_selects_most_recent_ticker(self):
         T = pd.Timestamp
         equities = pd.DataFrame(
@@ -2296,6 +2310,7 @@ class TestAssetDBVersioning(ZiplineTestCase):
 
         assert_equal(expected_data, actual_data)
 
+    @unittest.skip("Downgrading the assets db is to be removed from QuantRocket")
     def test_v7_to_v6_only_keeps_US(self):
         T = pd.Timestamp
         equities = pd.DataFrame(
@@ -2581,7 +2596,9 @@ class TestWrite(WithInstanceTmpDir, ZiplineTestCase):
         expected_equities = [
             Equity(
                 0,
+                '0',
                 ExchangeInfo('NYSE', 'NYSE', 'US'),
+                currency='USD',
                 symbol='AYY',
                 asset_name='Ayy Inc.',
                 start_date=pd.Timestamp(0, tz='UTC'),
@@ -2593,7 +2610,9 @@ class TestWrite(WithInstanceTmpDir, ZiplineTestCase):
             ),
             Equity(
                 1,
+                '1',
                 ExchangeInfo('TSE', 'TSE', 'JP'),
+                currency='CAD',
                 symbol='LMAO',
                 asset_name='Lmao LP',
                 start_date=pd.Timestamp(0, tz='UTC'),

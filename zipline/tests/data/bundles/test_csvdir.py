@@ -9,8 +9,9 @@ from zipline.testing import test_resource_path
 from zipline.testing.fixtures import ZiplineTestCase
 from zipline.testing.predicates import assert_equal
 from zipline.utils.functional import apply
+from unittest import skip
 
-
+@skip("CSV dir bundles are not supported in QuantRocket")
 class CSVDIRBundleTestCase(ZiplineTestCase):
     symbols = 'AAPL', 'IBM', 'KO', 'MSFT'
     asset_start = pd.Timestamp('2012-01-03', tz='utc')

@@ -1,4 +1,5 @@
 from datetime import timedelta
+import unittest
 
 import pandas as pd
 from nose_parameterized import parameterized
@@ -77,6 +78,7 @@ class IterateRLAlgo(TradingAlgorithm):
                 self.found = True
 
 
+@unittest.skip("Security lists are to be removed from QuantRocket")
 class SecurityListTestCase(WithMakeAlgo, ZiplineTestCase):
     # XXX: This suite uses way more than it probably needs.
     START_DATE = pd.Timestamp('2002-01-03', tz='UTC')

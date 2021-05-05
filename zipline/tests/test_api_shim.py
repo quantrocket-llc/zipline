@@ -426,7 +426,7 @@ class TestAPIShim(WithCreateBarData,
             self.assertEqual(1, len(w))
             self.assertEqual(ZiplineDeprecationWarning, w[0].category)
             self.assertEqual("<string>", w[0].filename)
-            self.assertEqual(8, w[0].lineno)
+            self.assertEqual(11, w[0].lineno)
             self.assertEqual("The `history` method is deprecated.  Use "
                              "`data.history` instead.", str(w[0].message))
 

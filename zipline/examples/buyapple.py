@@ -19,7 +19,6 @@ from zipline.finance import commission, slippage
 
 
 def initialize(context):
-    context.asset = symbol('AAPL')
 
     # Explicitly set the commission/slippage to the "old" value until we can
     # rebuild example data.
@@ -28,6 +27,8 @@ def initialize(context):
     context.set_commission(commission.PerShare(cost=.0075, min_trade_cost=1.0))
     context.set_slippage(slippage.VolumeShareSlippage())
 
+def before_trading_start(context, data):
+    context.asset = symbol('AAPL')
 
 def handle_data(context, data):
     order(context.asset, 10)

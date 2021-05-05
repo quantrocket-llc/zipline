@@ -39,7 +39,6 @@ matplotlib.use('Agg')
 
 EXAMPLE_MODULES = examples.load_example_modules()
 
-
 class ExamplesTests(WithTmpDir, ZiplineTestCase):
     # some columns contain values with unique ids that will not be the same
 
