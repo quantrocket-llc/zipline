@@ -257,8 +257,6 @@ def _make_bundle_core():
                   This should be used to cache intermediates in case the load
                   fails. This will be automatically cleaned up after a
                   successful load.
-              show_progress : bool
-                  Show the progress for the current load where possible.
         calendar_name : str, optional
             The name of a calendar used to align bundle data.
             Default is 'NYSE'.
@@ -336,8 +334,7 @@ def _make_bundle_core():
     def ingest(name,
                environ=os.environ,
                timestamp=None,
-               assets_versions=(),
-               show_progress=False):
+               assets_versions=()):
         """Ingest data for a given bundle.
 
         Parameters
@@ -351,8 +348,6 @@ def _make_bundle_core():
             By default this is the current time.
         assets_versions : Iterable[int], optional
             Versions of the assets db to which to downgrade.
-        show_progress : bool, optional
-            Tell the ingest function to display the progress where possible.
         """
         try:
             bundle = bundles[name]
@@ -438,7 +433,6 @@ def _make_bundle_core():
                 start_session,
                 end_session,
                 cache,
-                show_progress,
                 pth.data_path([name, timestr], environ=environ),
             )
 

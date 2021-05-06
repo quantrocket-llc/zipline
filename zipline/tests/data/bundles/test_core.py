@@ -113,7 +113,6 @@ class BundleCoreTestCase(WithInstanceTmpDir,
                           start_session,
                           end_session,
                           cache,
-                          show_progress,
                           output_dir):
             assert_is_none(asset_db_writer)
             assert_is_none(minute_bar_writer)
@@ -170,7 +169,6 @@ class BundleCoreTestCase(WithInstanceTmpDir,
                           start_session,
                           end_session,
                           cache,
-                          show_progress,
                           output_dir):
             assert_is(environ, self.environ)
 
@@ -181,7 +179,6 @@ class BundleCoreTestCase(WithInstanceTmpDir,
 
             assert_is_instance(calendar, TradingCalendar)
             assert_is_instance(cache, dataframe_cache)
-            assert_is_instance(show_progress, bool)
 
         self.ingest('bundle', environ=self.environ)
         bundle = self.load('bundle', environ=self.environ)
@@ -297,7 +294,6 @@ class BundleCoreTestCase(WithInstanceTmpDir,
                 start_session,
                 end_session,
                 cache,
-                show_progress,
                 output_dir):
             self.assertIsNotNone(asset_db_writer)
             self.assertIsNotNone(minute_bar_writer)
@@ -386,7 +382,6 @@ class BundleCoreTestCase(WithInstanceTmpDir,
                   start_session,
                   end_session,
                   cache,
-                  show_progress,
                   output_dir):
                 _wrote_to.append(output_dir)
 
