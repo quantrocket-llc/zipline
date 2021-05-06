@@ -1,15 +1,9 @@
 """
-Tests for setting up an EventsLoader and a BlazeEventsLoader.
+Tests for setting up an EventsLoader.
 """
 from datetime import time
 from itertools import product
 from unittest import skipIf, skipUnless
-
-try:
-    import blaze as bz
-    blaze_installed = True
-except ImportError:
-    blaze_installed = False
 
 import numpy as np
 import pandas as pd
@@ -24,7 +18,6 @@ from zipline.pipeline.common import (
 from zipline.pipeline.data import DataSet, Column
 from zipline.pipeline.domain import US_EQUITIES, EquitySessionDomain
 from zipline.pipeline.loaders.events import EventsLoader
-from zipline.pipeline.loaders.blaze.events import BlazeEventsLoader
 from zipline.pipeline.loaders.utils import (
     next_event_indexer,
     previous_event_indexer,
@@ -407,10 +400,10 @@ class EventsLoaderTestCase(WithAssetFinder,
             EventDataSet_US.previous_string: 'string',
             EventDataSet_US.previous_string_custom_missing: 'string'
         }
-        cls.loader = cls.make_loader(
-            events=cls.raw_events,
-            next_value_columns=cls.next_value_columns,
-            previous_value_columns=cls.previous_value_columns,
+        cls.loader = EventsLoader(
+            cls.raw_events,
+            cls.next_value_columns,
+            cls.previous_value_columns,
         )
         cls.ASSET_FINDER_EQUITY_SIDS = list(cls.raw_events['sid'].unique())
         cls.ASSET_FINDER_EQUITY_SYMBOLS = [
@@ -423,11 +416,6 @@ class EventsLoaderTestCase(WithAssetFinder,
             asset_finder=cls.asset_finder,
             default_domain=US_EQUITIES,
         )
-
-    @classmethod
-    def make_loader(cls, events, next_value_columns, previous_value_columns):
-        # This method exists to be overridden by BlazeEventsLoaderTestCase
-        return EventsLoader(events, next_value_columns, previous_value_columns)
 
     @skipIf(new_pandas, skip_pipeline_new_pandas)
     def test_load_with_trading_calendar(self):
@@ -593,18 +581,3 @@ class EventsLoaderTestCase(WithAssetFinder,
             "Expected Columns: ['d', 'event_date', 'sid', 'timestamp']"
         )
         self.assertEqual(msg, expected)
-
-
-if blaze_installed:
-    class BlazeEventsLoaderTestCase(EventsLoaderTestCase):
-        """
-        Run the same tests as EventsLoaderTestCase, but using a BlazeEventsLoader.
-        """
-
-        @classmethod
-        def make_loader(cls, events, next_value_columns, previous_value_columns):
-            return BlazeEventsLoader(
-                bz.data(events),
-                next_value_columns,
-                previous_value_columns,
-            )

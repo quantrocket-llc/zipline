@@ -103,11 +103,6 @@ ext_modules = [
         'zipline.data._resample',
         ['zipline/data/_resample.pyx']
     ),
-    Extension(
-        'zipline.pipeline.loaders.blaze._core',
-        ['zipline/pipeline/loaders/blaze/_core.pyx'],
-        depends=['zipline/lib/adjustment.pxd'],
-    ),
 ]
 
 def get_package_data():
