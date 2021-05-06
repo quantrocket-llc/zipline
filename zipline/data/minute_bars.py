@@ -41,7 +41,6 @@ from zipline.data._minute_bar_internal import (
 from zipline.gens.sim_engine import NANOS_IN_MINUTE
 from zipline.data.bar_reader import BarReader, NoDataForSid, NoDataOnDate
 from zipline.data.bcolz_daily_bars import check_uint32_safe
-from zipline.utils.cli import maybe_show_progress
 from zipline.utils.compat import mappingproxy
 from zipline.utils.memoize import lazyval
 
@@ -666,7 +665,7 @@ class BcolzMinuteBarWriter(object):
         for k, v in kwargs.items():
             table.attrs[k] = v
 
-    def write(self, data, show_progress=False, invalid_data_behavior='warn'):
+    def write(self, data, invalid_data_behavior='warn'):
         """Write a stream of minute data.
 
         Parameters
@@ -683,19 +682,10 @@ class BcolzMinuteBarWriter(object):
               index : DatetimeIndex of market minutes.
             A given sid may appear more than once in ``data``; however,
             the dates must be strictly increasing.
-        show_progress : bool, optional
-            Whether or not to show a progress bar while writing.
         """
-        ctx = maybe_show_progress(
-            data,
-            show_progress=show_progress,
-            item_show_func=lambda e: e if e is None else str(e[0]),
-            label="Merging minute equity files:",
-        )
         write_sid = self.write_sid
-        with ctx as it:
-            for e in it:
-                write_sid(*e, invalid_data_behavior=invalid_data_behavior)
+        for e in data:
+            write_sid(*e, invalid_data_behavior=invalid_data_behavior)
 
     def write_sid(self, sid, df, invalid_data_behavior='warn'):
         """
