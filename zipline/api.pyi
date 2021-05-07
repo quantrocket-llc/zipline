@@ -586,15 +586,6 @@ def set_commission(us_equities=None, us_futures=None):
     :class:`zipline.finance.commission.PerDollar`
     """
 
-def set_do_not_order_list(restricted_list, on_error='fail'):
-    """Set a restriction on which assets can be ordered.
-
-    Parameters
-    ----------
-    restricted_list : container[Asset], SecurityList
-        The assets that cannot be ordered.
-    """
-
 def set_long_only(on_error='fail'):
     """Set a rule specifying that this algorithm cannot take short
     positions.

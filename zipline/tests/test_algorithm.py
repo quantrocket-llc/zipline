@@ -2893,27 +2893,6 @@ class TestTradingControls(zf.WithMakeAlgo,
         self.assertFalse(algo.could_trade1)
         self.assertFalse(algo.could_trade2)
 
-    def test_set_do_not_order_list(self):
-
-        def initialize(self, restricted_list):
-            self.order_count = 0
-            self.set_do_not_order_list(restricted_list, on_error='fail')
-
-        def handle_data(algo, data):
-            algo.could_trade = data.can_trade(algo.sid(self.sid))
-            algo.order(algo.sid(self.sid), 100)
-            algo.order_count += 1
-
-        rlm = [self.sid]
-        algo = self.make_algo(
-            restricted_list=rlm,
-            initialize=initialize,
-            handle_data=handle_data,
-        )
-
-        self.check_algo_fails(algo, 0)
-        self.assertFalse(algo.could_trade)
-
     def test_set_max_order_size(self):
 
         def initialize(algo, asset, max_shares, max_notional):

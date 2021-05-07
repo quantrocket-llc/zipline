@@ -50,19 +50,6 @@ class RestrictedAlgoWithoutCheck(TradingAlgorithm):
         self.order(self.sid, 100)
         self.order_count += 1
 
-
-class RestrictedAlgoWithoutCheckSetDoNotOrderList(TradingAlgorithm):
-    def initialize(self, symbol):
-        self.rl = SecurityListSet(self.get_datetime, self.asset_finder)
-        self.set_do_not_order_list(self.rl.leveraged_etf_list)
-        self.order_count = 0
-        self.sid = self.symbol(symbol)
-
-    def handle_data(self, data):
-        self.order(self.sid, 100)
-        self.order_count += 1
-
-
 class IterateRLAlgo(TradingAlgorithm):
     def initialize(self, symbol):
         self.rl = SecurityListSet(self.get_datetime, self.asset_finder)
@@ -179,8 +166,6 @@ class SecurityListTestCase(WithMakeAlgo, ZiplineTestCase):
         )
 
     @parameterized.expand([
-        ('using_set_do_not_order_list',
-         RestrictedAlgoWithoutCheckSetDoNotOrderList),
         ('using_set_restrictions', RestrictedAlgoWithoutCheck),
     ])
     def test_algo_with_rl_violation(self, name, algo_class):

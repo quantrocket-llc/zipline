@@ -77,11 +77,7 @@ from zipline.finance.execution import (
 )
 from zipline.finance.asset_restrictions import Restrictions
 from zipline.finance.cancel_policy import NeverCancel, CancelPolicy
-from zipline.finance.asset_restrictions import (
-    NoRestrictions,
-    StaticRestrictions,
-    SecurityListRestrictions,
-)
+from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.assets import Asset, Equity, Future, ContinuousFuture
 from zipline.gens.tradesimulation import AlgorithmSimulator
 from zipline.finance.metrics import MetricsTracker, load as load_metrics_set
@@ -126,7 +122,6 @@ from zipline.utils.math_utils import (
     round_if_near_integer,
 )
 from zipline.utils.preprocess import preprocess
-from zipline.utils.security_list import SecurityList
 
 import zipline.protocol
 
@@ -2225,38 +2220,6 @@ class TradingAlgorithm(object):
         """
         control = MaxOrderCount(on_error, max_count)
         self.register_trading_control(control)
-
-    @api_method
-    def set_do_not_order_list(self, restricted_list, on_error='fail'):
-        """Set a restriction on which assets can be ordered.
-
-        Parameters
-        ----------
-        restricted_list : container[Asset], SecurityList
-            The assets that cannot be ordered.
-        """
-        if isinstance(restricted_list, SecurityList):
-            warnings.warn(
-                "`set_do_not_order_list(security_lists.leveraged_etf_list)` "
-                "is deprecated. Use `set_asset_restrictions("
-                "security_lists.restrict_leveraged_etfs)` instead.",
-                category=ZiplineDeprecationWarning,
-                stacklevel=2
-            )
-            restrictions = SecurityListRestrictions(restricted_list)
-        else:
-            warnings.warn(
-                "`set_do_not_order_list(container_of_assets)` is deprecated. "
-                "Create a zipline.finance.asset_restrictions."
-                "StaticRestrictions object with a container of assets and use "
-                "`set_asset_restrictions(StaticRestrictions("
-                "container_of_assets))` instead.",
-                category=ZiplineDeprecationWarning,
-                stacklevel=2
-            )
-            restrictions = StaticRestrictions(restricted_list)
-
-        self.set_asset_restrictions(restrictions, on_error)
 
     @api_method
     @expect_types(
