@@ -212,11 +212,7 @@ cdef class BarData:
                             "`data.current`.")
             view = self._views[asset]
         except KeyError:
-            try:
-                asset = self.data_portal.asset_finder.retrieve_asset(asset)
-            except ValueError:
-                # assume fetcher
-                pass
+            asset = self.data_portal.asset_finder.retrieve_asset(asset)
             view = self._views[asset] = self._create_sid_view(asset)
 
         return view
@@ -802,10 +798,6 @@ cdef class BarData:
     property current_dt:
         def __get__(self):
             return self.simulation_dt_func()
-
-    @property
-    def fetcher_assets(self):
-        return self.data_portal.get_fetcher_assets(self.simulation_dt_func())
 
     property _handle_non_market_minutes:
         def __set__(self, val):

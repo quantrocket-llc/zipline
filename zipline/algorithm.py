@@ -129,7 +129,6 @@ from zipline.utils.preprocess import preprocess
 from zipline.utils.security_list import SecurityList
 
 import zipline.protocol
-from zipline.sources.requests_csv import PandasRequestsCSV
 
 from zipline.gens.sim_engine import MinuteSimulationClock
 from zipline.sources.benchmark_source import BenchmarkSource
@@ -882,96 +881,6 @@ class TradingAlgorithm(object):
                 raise ValueError(
                     '%r is not a valid field for get_environment' % field,
                 )
-
-    @api_method
-    def fetch_csv(self,
-                  url,
-                  pre_func=None,
-                  post_func=None,
-                  date_column='date',
-                  date_format=None,
-                  timezone=pytz.utc.zone,
-                  symbol=None,
-                  mask=True,
-                  symbol_column=None,
-                  special_params_checker=None,
-                  country_code=None,
-                  **kwargs):
-        """Fetch a csv from a remote url and register the data so that it is
-        queryable from the ``data`` object.
-
-        Parameters
-        ----------
-        url : str
-            The url of the csv file to load.
-        pre_func : callable[pd.DataFrame -> pd.DataFrame], optional
-            A callback to allow preprocessing the raw data returned from
-            fetch_csv before dates are paresed or symbols are mapped.
-        post_func : callable[pd.DataFrame -> pd.DataFrame], optional
-            A callback to allow postprocessing of the data after dates and
-            symbols have been mapped.
-        date_column : str, optional
-            The name of the column in the preprocessed dataframe containing
-            datetime information to map the data.
-        date_format : str, optional
-            The format of the dates in the ``date_column``. If not provided
-            ``fetch_csv`` will attempt to infer the format. For information
-            about the format of this string, see :func:`pandas.read_csv`.
-        timezone : tzinfo or str, optional
-            The timezone for the datetime in the ``date_column``.
-        symbol : str, optional
-            If the data is about a new asset or index then this string will
-            be the name used to identify the values in ``data``. For example,
-            one may use ``fetch_csv`` to load data for VIX, then this field
-            could be the string ``'VIX'``.
-        mask : bool, optional
-            Drop any rows which cannot be symbol mapped.
-        symbol_column : str
-            If the data is attaching some new attribute to each asset then this
-            argument is the name of the column in the preprocessed dataframe
-            containing the symbols. This will be used along with the date
-            information to map the sids in the asset finder.
-        country_code : str, optional
-            Country code to use to disambiguate symbol lookups.
-        **kwargs
-            Forwarded to :func:`pandas.read_csv`.
-
-        Returns
-        -------
-        csv_data_source : zipline.sources.requests_csv.PandasRequestsCSV
-            A requests source that will pull data from the url specified.
-        """
-        if country_code is None:
-            country_code = self.default_fetch_csv_country_code(
-                self.trading_calendar,
-            )
-
-        # Show all the logs every time fetcher is used.
-        csv_data_source = PandasRequestsCSV(
-            url,
-            pre_func,
-            post_func,
-            self.asset_finder,
-            self.trading_calendar.day,
-            self.sim_params.start_session,
-            self.sim_params.end_session,
-            date_column,
-            date_format,
-            timezone,
-            symbol,
-            mask,
-            symbol_column,
-            data_frequency=self.data_frequency,
-            country_code=country_code,
-            special_params_checker=special_params_checker,
-            **kwargs
-        )
-
-        # ingest this into dataportal
-        self.data_portal.handle_extra_source(csv_data_source.df,
-                                             self.sim_params)
-
-        return csv_data_source
 
     def add_event(self, rule, callback):
         """Adds an event to the algorithm's EventManager.
@@ -2536,17 +2445,6 @@ class TradingAlgorithm(object):
         """
         return domain.get_domain_from_calendar(calendar)
 
-    @staticmethod
-    def default_fetch_csv_country_code(calendar):
-        """
-        Get a default country_code to use for fetch_csv symbol lookups.
-
-        This will be used to disambiguate symbol lookups for fetch_csv calls if
-        our asset db contains entries with the same ticker spread across
-        multiple
-        """
-        return _DEFAULT_FETCH_CSV_COUNTRY_CODES.get(calendar.name)
-
     ##################
     # End Pipeline API
     ##################
@@ -2600,9 +2498,3 @@ class TradingAlgorithm(object):
 
 # Map from calendar name to default domain for that calendar.
 _DEFAULT_DOMAINS = {d.calendar_name: d for d in domain.BUILT_IN_DOMAINS}
-# Map from calendar name to default country code for that calendar.
-_DEFAULT_FETCH_CSV_COUNTRY_CODES = {
-    d.calendar_name: d.country_code for d in domain.BUILT_IN_DOMAINS
-}
-# Include us_futures, which doesn't have a pipeline domain.
-_DEFAULT_FETCH_CSV_COUNTRY_CODES['us_futures'] = 'US'

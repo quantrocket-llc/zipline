@@ -4,7 +4,6 @@ from .core import (  # noqa
     EPOCH,
     ExplodingObject,
     FakeDataPortal,
-    FetcherDataPortal,
     MockDailyBarReader,
     OpenPrice,
     RecordBatchBlotter,

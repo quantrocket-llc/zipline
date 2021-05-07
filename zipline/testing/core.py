@@ -745,36 +745,6 @@ class FakeDataPortal(DataPortal):
 
         return df
 
-
-class FetcherDataPortal(DataPortal):
-    """
-    Mock dataportal that returns fake data for history and non-fetcher
-    spot value.
-    """
-    def __init__(self, asset_finder, trading_calendar, first_trading_day=None):
-        super(FetcherDataPortal, self).__init__(asset_finder, trading_calendar,
-                                                first_trading_day)
-
-    def get_spot_value(self, asset, field, dt, data_frequency):
-        # if this is a fetcher field, exercise the regular code path
-        if self._is_extra_source(asset, field, self._augmented_sources_map):
-            return super(FetcherDataPortal, self).get_spot_value(
-                asset, field, dt, data_frequency)
-
-        # otherwise just return a fixed value
-        return int(asset)
-
-    # XXX: These aren't actually the methods that are used by the superclasses,
-    # so these don't do anything, and this class will likely produce unexpected
-    # results for history().
-    def _get_daily_window_for_sid(self, asset, field, days_in_window,
-                                  extra_slot=True):
-        return np.arange(days_in_window, dtype=np.float64)
-
-    def _get_minute_window_for_asset(self, asset, field, minutes_for_window):
-        return np.arange(minutes_for_window, dtype=np.float64)
-
-
 class tmp_assets_db(object):
     """Create a temporary assets sqlite database.
     This is meant to be used as a context manager.

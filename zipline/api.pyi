@@ -85,50 +85,6 @@ def continuous_future(root_symbol_str, offset=0, roll='volume', adjustment='mul'
         The continuous future specifier.
     """
 
-def fetch_csv(url, pre_func=None, post_func=None, date_column='date', date_format=None, timezone='UTC', symbol=None, mask=True, symbol_column=None, special_params_checker=None, **kwargs):
-    """Fetch a csv from a remote url and register the data so that it is
-    queryable from the ``data`` object.
-
-    Parameters
-    ----------
-    url : str
-        The url of the csv file to load.
-    pre_func : callable[pd.DataFrame -> pd.DataFrame], optional
-        A callback to allow preprocessing the raw data returned from
-        fetch_csv before dates are paresed or symbols are mapped.
-    post_func : callable[pd.DataFrame -> pd.DataFrame], optional
-        A callback to allow postprocessing of the data after dates and
-        symbols have been mapped.
-    date_column : str, optional
-        The name of the column in the preprocessed dataframe containing
-        datetime information to map the data.
-    date_format : str, optional
-        The format of the dates in the ``date_column``. If not provided
-        ``fetch_csv`` will attempt to infer the format. For information
-        about the format of this string, see :func:`pandas.read_csv`.
-    timezone : tzinfo or str, optional
-        The timezone for the datetime in the ``date_column``.
-    symbol : str, optional
-        If the data is about a new asset or index then this string will
-        be the name used to identify the values in ``data``. For example,
-        one may use ``fetch_csv`` to load data for VIX, then this field
-        could be the string ``'VIX'``.
-    mask : bool, optional
-        Drop any rows which cannot be symbol mapped.
-    symbol_column : str
-        If the data is attaching some new attribute to each asset then this
-        argument is the name of the column in the preprocessed dataframe
-        containing the symbols. This will be used along with the date
-        information to map the sids in the asset finder.
-    **kwargs
-        Forwarded to :func:`pandas.read_csv`.
-
-    Returns
-    -------
-    csv_data_source : zipline.sources.requests_csv.PandasRequestsCSV
-        A requests source that will pull data from the url specified.
-    """
-
 def future_symbol(symbol):
     """Lookup a futures contract with a given symbol.
 
