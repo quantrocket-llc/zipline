@@ -19,7 +19,6 @@ from collections import namedtuple, OrderedDict
 from functools import partial
 from math import isnan
 
-import logbook
 import numpy as np
 import pandas as pd
 from six import iteritems, itervalues, PY2
@@ -34,9 +33,6 @@ from ._finance_ext import (
     calculate_position_tracker_stats,
     update_position_last_sale_prices,
 )
-
-log = logbook.Logger('Performance')
-
 
 class PositionTracker(object):
     """The current state of the positions held.

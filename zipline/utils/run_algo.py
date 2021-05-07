@@ -10,7 +10,6 @@ try:
     PYGMENTS = True
 except ImportError:
     PYGMENTS = False
-import logbook
 import pandas as pd
 import six
 from toolz import concatv
@@ -29,9 +28,6 @@ from zipline.extensions import load
 from zipline.errors import SymbolNotFound
 from zipline.algorithm import TradingAlgorithm
 from zipline.finance.blotter import Blotter
-
-log = logbook.Logger(__name__)
-
 
 class _RunAlgoError(ValueError):
     """Signal an error that should have a different message if invoked from
@@ -507,18 +503,6 @@ class BenchmarkSpec(object):
                 end_date=end_date,
             )
         else:
-            log.warn(
-                "No benchmark configured. "
-                "Assuming algorithm calls set_benchmark."
-            )
-            log.warn(
-                "Pass --benchmark-sid, --benchmark-symbol, or"
-                " --benchmark-file to set a source of benchmark returns."
-            )
-            log.warn(
-                "Pass --no-benchmark to use a dummy benchmark "
-                "of zero returns.",
-            )
             benchmark_sid = None
             benchmark_returns = None
 

@@ -1,7 +1,6 @@
-import logbook
 import numpy as np
 import pandas as pd
-
+import warnings
 from zipline.data.adjustments import (
     SQLiteAdjustmentReader,
     SQLiteAdjustmentWriter,
@@ -12,7 +11,6 @@ from zipline.testing.predicates import assert_equal
 from zipline.testing.fixtures import (
     WithInstanceTmpDir,
     WithTradingCalendars,
-    WithLogger,
     ZiplineTestCase,
 )
 
@@ -22,9 +20,7 @@ nat = pd.Timestamp('nat')
 
 class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
                                   WithInstanceTmpDir,
-                                  WithLogger,
                                   ZiplineTestCase):
-    make_log_handler = logbook.TestHandler
 
     def init_instance_fixtures(self):
         super(TestSQLiteAdjustmentsWriter, self).init_instance_fixtures()
@@ -156,7 +152,8 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
             ix += len(dividends)
             dividends[col] = extra_dates
 
-        self.writer_from_close(close).write(dividends=dividends)
+        with warnings.catch_warnings(record=True) as captured_warnings:
+            self.writer_from_close(close).write(dividends=dividends)
         dfs = self.component_dataframes()
         dividend_payouts = dfs.pop('dividend_payouts')
         dividend_ratios = dfs.pop('dividends')
@@ -185,26 +182,23 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
         dividend_ratios = dividend_ratios.reset_index(drop=True)
         assert_equal(dividend_ratios, expected_dividend_ratios)
 
-        self.assertTrue(self.log_handler.has_warning(
+        captured_warnings = [str(w.message) for w in captured_warnings]
+
+        self.assertIn(
             "Couldn't compute ratio for dividend sid=2, ex_date=1990-10-18,"
-            " amount=10.000",
-        ))
-        self.assertTrue(self.log_handler.has_warning(
+            " amount=10.000", captured_warnings)
+        self.assertIn(
             "Couldn't compute ratio for dividend sid=2, ex_date=1990-10-19,"
-            " amount=0.100",
-        ))
-        self.assertTrue(self.log_handler.has_warning(
+            " amount=0.100", captured_warnings)
+        self.assertIn(
             "Couldn't compute ratio for dividend sid=2, ex_date=1990-11-01,"
-            " amount=0.100",
-        ))
-        self.assertTrue(self.log_handler.has_warning(
+            " amount=0.100", captured_warnings)
+        self.assertIn(
             'Dividend ratio <= 0 for dividend sid=1, ex_date=1990-10-17,'
-            ' amount=0.510',
-        ))
-        self.assertTrue(self.log_handler.has_warning(
+            ' amount=0.510', captured_warnings)
+        self.assertIn(
             'Dividend ratio <= 0 for dividend sid=1, ex_date=1990-10-18,'
-            ' amount=0.400',
-        ))
+            ' amount=0.400', captured_warnings)
 
     def _test_identity(self, name):
         sids = np.arange(5)

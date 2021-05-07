@@ -5,7 +5,6 @@ import shutil
 import warnings
 
 from contextlib2 import ExitStack
-from logbook import Logger
 import pandas as pd
 from trading_calendars import get_calendar
 from toolz import curry, complement, take
@@ -27,9 +26,6 @@ from zipline.utils.compat import mappingproxy
 from zipline.utils.input_validation import ensure_timestamp, optionally
 import zipline.utils.paths as pth
 from zipline.utils.preprocess import preprocess
-
-log = Logger(__name__)
-
 
 def asset_db_path(bundle_name, timestr, environ=None, db_version=None):
     return pth.data_path(
@@ -422,7 +418,6 @@ def _make_bundle_core():
                     raise ValueError('Need to ingest a bundle that creates '
                                      'writers in order to downgrade the assets'
                                      ' db.')
-            log.info("Ingesting {}.", name)
             bundle.ingest(
                 environ,
                 asset_db_writer,
@@ -598,7 +593,7 @@ def _make_bundle_core():
         cleaned = set()
         for run in all_runs:
             if should_clean(run):
-                log.info("Cleaning {}.", run)
+                print("Cleaning {}.", run)
                 path = pth.data_path([name, run], environ=environ)
                 shutil.rmtree(path)
                 cleaned.add(path)

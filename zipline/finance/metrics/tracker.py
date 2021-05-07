@@ -14,14 +14,8 @@
 # limitations under the License.
 from __future__ import division
 
-import logbook
-
 from ..ledger import Ledger
 from zipline.utils.exploding_object import NamedExplodingObject
-
-
-log = logbook.Logger(__name__)
-
 
 class MetricsTracker(object):
     """The algorithm's interface to the registered risk and performance
@@ -332,15 +326,6 @@ class MetricsTracker(object):
         When the simulation is complete, run the full period risk report
         and send it out on the results socket.
         """
-        log.info(
-            'Simulated {} trading days\n'
-            'first open: {}\n'
-            'last close: {}',
-            self._session_count,
-            self._trading_calendar.session_open(self._first_session),
-            self._trading_calendar.session_close(self._last_session),
-        )
-
         packet = {}
         self.end_of_simulation(
             packet,

@@ -24,7 +24,6 @@ from zipline.finance.execution import (
     StopOrder,
 )
 from zipline.testing.fixtures import (
-    WithLogger,
     ZiplineTestCase,
     WithConstantFutureMinuteBarData
 )
@@ -33,7 +32,6 @@ from zipline.testing.predicates import assert_equal
 
 
 class ExecutionStyleTestCase(WithConstantFutureMinuteBarData,
-                             WithLogger,
                              ZiplineTestCase):
     """
     Tests for zipline ExecutionStyle classes.

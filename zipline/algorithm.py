@@ -16,7 +16,6 @@ from collections import Iterable, namedtuple
 from copy import copy
 import warnings
 from datetime import tzinfo, time
-import logbook
 import logging
 import pytz
 import pandas as pd
@@ -132,8 +131,6 @@ from zipline.zipline_warnings import ZiplineDeprecationWarning
 logger = logging.getLogger("quantrocket.zipline")
 logger.setLevel(logging.DEBUG)
 
-log = logbook.Logger("ZiplineLog")
-
 # For creating and storing pipeline instances
 AttachedPipeline = namedtuple('AttachedPipeline', 'pipe chunks eager')
 
@@ -247,7 +244,6 @@ class TradingAlgorithm(object):
         self.namespace = namespace or {}
 
         self._platform = platform
-        self.logger = None
 
         # XXX: This is kind of a mess.
         # We support passing a data_portal in `run`, but we need an asset
@@ -786,18 +782,17 @@ class TradingAlgorithm(object):
                 )
             )
 
-            log.info('Processing capital change to target %s at %s. Capital '
+            print('Processing capital change to target %s at %s. Capital '
                      'change delta is %s' % (target, dt,
                                              capital_change_amount))
         elif capital_change['type'] == 'delta':
             target = None
             capital_change_amount = capital_change['value']
-            log.info('Processing capital change of delta %s at %s'
+            print('Processing capital change of delta %s at %s'
                      % (capital_change_amount, dt))
         else:
-            log.error("Capital change %s does not indicate a valid type "
-                      "('target' or 'delta')" % capital_change)
-            return
+            raise ValueError("Capital change %s does not indicate a valid type "
+                            "('target' or 'delta')" % capital_change)
 
         self.capital_change_deltas.update({dt: capital_change_amount})
         self.metrics_tracker.capital_change(capital_change_amount)
@@ -1222,8 +1217,7 @@ class TradingAlgorithm(object):
             zero_message = "Price of 0 for {psid}; can't infer value".format(
                 psid=asset
             )
-            if self.logger:
-                self.logger.debug(zero_message)
+            print(zero_message)
             # Don't place any order
             return 0
 
@@ -1245,10 +1239,10 @@ class TradingAlgorithm(object):
                 # If we are after the asset's end date or auto close date, warn
                 # the user that they can't place an order for this asset, and
                 # return None.
-                log.warn("Cannot place order for {0}, as it has de-listed. "
-                         "Any existing positions for this asset will be "
-                         "liquidated on "
-                         "{1}.".format(asset.symbol, asset.auto_close_date))
+                warnings.warn("Cannot place order for {0}, as it has de-listed. "
+                               "Any existing positions for this asset will be "
+                               "liquidated on "
+                               "{1}.".format(asset.symbol, asset.auto_close_date))
 
                 return False
 
@@ -1487,9 +1481,6 @@ class TradingAlgorithm(object):
     def account(self):
         self._sync_last_sale_prices()
         return self.metrics_tracker.account
-
-    def set_logger(self, logger):
-        self.logger = logger
 
     def on_dt_changed(self, dt):
         """

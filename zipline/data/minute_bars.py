@@ -23,7 +23,6 @@ import bcolz
 from bcolz import ctable
 import h5py
 from intervaltree import IntervalTree
-import logbook
 import numpy as np
 import pandas as pd
 from pandas import HDFStore
@@ -43,9 +42,6 @@ from zipline.data.bar_reader import BarReader, NoDataForSid, NoDataOnDate
 from zipline.data.bcolz_daily_bars import check_uint32_safe
 from zipline.utils.compat import mappingproxy
 from zipline.utils.memoize import lazyval
-
-
-logger = logbook.Logger('MinuteBars')
 
 US_EQUITIES_MINUTES_PER_DAY = 390
 FUTURES_MINUTES_PER_DAY = 1440
@@ -153,7 +149,7 @@ def convert_cols(cols, scale_factor, sid, invalid_data_behavior):
                 raise
 
             if invalid_data_behavior == 'warn':
-                logger.warn(
+                print(
                     'Values for sid={}, col={} contain some too large for '
                     'uint32 (max={}), filtering them out',
                     sid, col_name, max_val,
@@ -859,10 +855,10 @@ class BcolzMinuteBarWriter(object):
             except IOError:
                 continue
             if table.len <= truncate_slice_end:
-                logger.info("{0} not past truncate date={1}.", file_name, date)
+                print("{0} not past truncate date={1}.", file_name, date)
                 continue
 
-            logger.info(
+            print(
                 "Truncating {0} at end_date={1}", file_name, date.date()
             )
 

@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logbook
 import numpy as np
 import pandas as pd
 from pandas.util.testing import assert_series_equal
@@ -41,8 +40,6 @@ from zipline.testing.fixtures import (
     WithTradingCalendars,
     ZiplineTestCase,
 )
-from zipline.testing.core import make_test_handler
-
 
 class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
                     ZiplineTestCase):
@@ -264,10 +261,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         )
         cls.zero_returns = pd.Series(index=zero_returns_index, data=0.0)
 
-    def init_instance_fixtures(self):
-        super(BenchmarkSpecTestCase, self).init_instance_fixtures()
-        self.log_handler = self.enter_instance_context(make_test_handler(self))
-
     @classmethod
     def make_equity_info(cls):
         return pd.DataFrame.from_dict(
@@ -292,11 +285,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
             orient='index',
         )
 
-    def logs_at_level(self, level):
-        return [
-            r.message for r in self.log_handler.records if r.level == level
-        ]
-
     def resolve_spec(self, spec):
         return spec.resolve(self.asset_finder, self.START_DATE, self.END_DATE)
 
@@ -317,14 +305,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         self.assertIs(sid, None)
         self.assertIs(returns, None)
 
-        warnings = self.logs_at_level(logbook.WARNING)
-        expected = [
-            'No benchmark configured. Assuming algorithm calls set_benchmark.',
-            'Pass --benchmark-sid, --benchmark-symbol, or --benchmark-file to set a source of benchmark returns.',  # noqa
-            "Pass --no-benchmark to use a dummy benchmark of zero returns.",
-        ]
-        assert_equal(warnings, expected)
-
     def test_no_benchmark_explicitly_disabled(self):
         """Test running with no benchmark provided, with no_benchmark flag.
         """
@@ -339,10 +319,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
 
         self.assertIs(sid, None)
         assert_series_equal(returns, self.zero_returns)
-
-        warnings = self.logs_at_level(logbook.WARNING)
-        expected = []
-        assert_equal(warnings, expected)
 
     @parameter_space(case=[('A', 1), ('B', 2)])
     def test_benchmark_symbol(self, case):
@@ -362,10 +338,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         assert_equal(sid, expected_sid)
         self.assertIs(returns, None)
 
-        warnings = self.logs_at_level(logbook.WARNING)
-        expected = []
-        assert_equal(warnings, expected)
-
     @parameter_space(input_sid=[1, 2])
     def test_benchmark_sid(self, input_sid):
         """Test running with no benchmark provided, with no_benchmark flag.
@@ -381,10 +353,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
 
         assert_equal(sid, input_sid)
         self.assertIs(returns, None)
-
-        warnings = self.logs_at_level(logbook.WARNING)
-        expected = []
-        assert_equal(warnings, expected)
 
     def test_benchmark_file(self):
         """Test running with a benchmark file.
@@ -419,7 +387,3 @@ class BenchmarkSpecTestCase(WithTmpDir,
                                      data=expected_values)
 
         assert_series_equal(returns, expected_returns, check_names=False)
-
-        warnings = self.logs_at_level(logbook.WARNING)
-        expected = []
-        assert_equal(warnings, expected)

@@ -34,13 +34,9 @@ Position Tracking
 from __future__ import division
 from math import copysign
 import numpy as np
-import logbook
 
 from zipline.assets import Future
 import zipline.protocol as zp
-
-log = logbook.Logger('Performance')
-
 
 class Position(object):
     __slots__ = 'inner_position', 'protocol_position'
@@ -121,8 +117,8 @@ class Position(object):
 
         return_cash = round(float(fractional_share_count * new_cost_basis), 2)
 
-        log.info("after split: " + str(self))
-        log.info("returning cash: " + str(return_cash))
+        print("after split: " + str(self))
+        print("returning cash: " + str(return_cash))
 
         # return the leftover cash, which will be converted into cash
         # (rounded to the nearest cent)

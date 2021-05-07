@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import abc
-import logbook
 from datetime import datetime
-
+import warnings
 import pandas as pd
 
 from six import with_metaclass
@@ -28,10 +27,6 @@ from zipline.utils.input_validation import (
     expect_bounded,
     expect_types,
 )
-
-
-log = logbook.Logger('TradingControl')
-
 
 class TradingControl(with_metaclass(abc.ABCMeta)):
     """
@@ -93,10 +88,10 @@ class TradingControl(with_metaclass(abc.ABCMeta)):
                 datetime=datetime,
                 constraint=constraint)
         elif self.on_error == 'log':
-            log.error("Order for {amount} shares of {asset} at {dt} "
-                      "violates trading constraint {constraint}",
+            warnings.warn("Order for {amount} shares of {asset} at {dt} "
+                      "violates trading constraint {constraint}".format(
                       amount=amount, asset=asset, dt=datetime,
-                      constraint=constraint)
+                      constraint=constraint))
 
     def __repr__(self):
         return "{name}({attrs})".format(name=self.__class__.__name__,

@@ -14,8 +14,6 @@
 # limitations under the License.
 from operator import mul
 
-from logbook import Logger
-
 import numpy as np
 from numpy import float64, int64, nan
 import pandas as pd
@@ -64,9 +62,6 @@ from zipline.utils.pandas_utils import (
     timedelta_to_integral_minutes,
 )
 from zipline.errors import HistoryWindowStartsBeforeData
-
-
-log = Logger('DataPortal')
 
 BASE_FIELDS = frozenset([
     "open",

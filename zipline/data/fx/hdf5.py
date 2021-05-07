@@ -94,7 +94,6 @@ for column i in a data node is the ith element of /index/dts.
 """
 from interface import implements
 import h5py
-from logbook import Logger
 import numpy as np
 import pandas as pd
 
@@ -112,9 +111,6 @@ DATA = 'data'
 CURRENCIES = 'currencies'
 DTS = 'dts'
 RATES = 'rates'
-
-log = Logger(__name__)
-
 
 class HDF5FXRateReader(implements(FXRateReader)):
     """An FXRateReader backed by HDF5.
@@ -324,4 +320,4 @@ class HDF5FXRateWriter(object):
                                   shuffle=True)
 
     def _log_writing(self, *path):
-        log.debug("Writing {}", '/'.join(path))
+        print("Writing {}", '/'.join(path))

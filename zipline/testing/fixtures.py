@@ -4,7 +4,6 @@ from unittest import TestCase
 import warnings
 
 from contextlib2 import ExitStack
-from logbook import NullHandler, Logger
 import numpy as np
 import pandas as pd
 from six import with_metaclass, iteritems, itervalues, PY2
@@ -308,32 +307,6 @@ class WithDefaultDateBounds(with_metaclass(DebugMROMeta, object)):
     """
     START_DATE = pd.Timestamp('2006-01-03', tz='utc')
     END_DATE = pd.Timestamp('2006-12-29', tz='utc')
-
-
-class WithLogger(object):
-    """
-    ZiplineTestCase mixin providing cls.log_handler as an instance-level
-    fixture.
-
-    After init_instance_fixtures has been called `self.log_handler` will be a
-    new ``logbook.NullHandler``.
-
-    Methods
-    -------
-    make_log_handler() -> logbook.LogHandler
-        A class method which constructs the new log handler object. By default
-        this will construct a ``NullHandler``.
-    """
-    make_log_handler = NullHandler
-
-    @classmethod
-    def init_class_fixtures(cls):
-        super(WithLogger, cls).init_class_fixtures()
-        cls.log = Logger()
-        cls.log_handler = cls.enter_class_context(
-            cls.make_log_handler().applicationbound(),
-        )
-
 
 class WithAssetFinder(WithDefaultDateBounds):
     """
@@ -1974,7 +1947,6 @@ class WithCreateBarData(WithDataPortal):
 
 class WithMakeAlgo(WithBenchmarkReturns,
                    WithSimParams,
-                   WithLogger,
                    WithDataPortal):
     """
     ZiplineTestCase mixin that provides a ``make_algo`` method.

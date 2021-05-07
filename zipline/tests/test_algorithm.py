@@ -19,9 +19,7 @@ from functools import partial
 from textwrap import dedent
 from copy import deepcopy
 
-import logbook
 import toolz
-from logbook import TestHandler, WARNING
 from nose_parameterized import parameterized
 from six import iteritems, itervalues, string_types
 from six.moves import range
@@ -71,7 +69,6 @@ from zipline.testing import (
     create_daily_df_for_asset,
     create_data_portal_from_trade_history,
     create_minute_df_for_asset,
-    make_test_handler,
     make_trade_data_for_asset_info,
     parameter_space,
     str_to_seconds,
@@ -2838,12 +2835,12 @@ class TestTradingControls(zf.WithMakeAlgo,
             initialize=initialize,
             handle_data=handle_data,
         )
-        with make_test_handler(self) as log_catcher:
+        with warnings.catch_warnings(record=True) as captured_warnings:
             self.check_algo_succeeds(algo)
-        logs = [r.message for r in log_catcher.records]
+        captured_warnings = [str(w.message) for w in captured_warnings]
         self.assertIn("Order for 100 shares of Equity(133 [A]) at "
                       "2006-01-03 21:00:00+00:00 violates trading constraint "
-                      "RestrictedListOrder({})", logs)
+                      "RestrictedListOrder({})", captured_warnings)
         self.assertFalse(algo.could_trade)
 
         # set the restricted list to exclude the sid, and succeed
@@ -3606,71 +3603,68 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
             minute_emission=minute_emission
         )
 
-        log_catcher = TestHandler()
-        with log_catcher:
+        with warnings.catch_warnings(record=True) as captured_warnings:
             results = algo.run()
 
-            for daily_positions in results.positions:
-                self.assertEqual(1, len(daily_positions))
-                self.assertEqual(
-                    np.copysign(389, direction),
-                    daily_positions[0]["amount"],
-                )
-                self.assertEqual(1, results.positions[0][0]["sid"])
+        for daily_positions in results.positions:
+            self.assertEqual(1, len(daily_positions))
+            self.assertEqual(
+                np.copysign(389, direction),
+                daily_positions[0]["amount"],
+            )
+            self.assertEqual(1, results.positions[0][0]["sid"])
 
-            # should be an order on day1, but no more orders afterwards
-            np.testing.assert_array_equal([1, 0, 0],
-                                          list(map(len, results.orders)))
+        # should be an order on day1, but no more orders afterwards
+        np.testing.assert_array_equal([1, 0, 0],
+                                        list(map(len, results.orders)))
 
-            # should be 389 txns on day 1, but no more afterwards
-            np.testing.assert_array_equal([389, 0, 0],
-                                          list(map(len, results.transactions)))
+        # should be 389 txns on day 1, but no more afterwards
+        np.testing.assert_array_equal([389, 0, 0],
+                                        list(map(len, results.transactions)))
 
-            the_order = results.orders[0][0]
+        the_order = results.orders[0][0]
 
-            self.assertEqual(ORDER_STATUS.CANCELLED, the_order["status"])
-            self.assertEqual(np.copysign(389, direction), the_order["filled"])
+        self.assertEqual(ORDER_STATUS.CANCELLED, the_order["status"])
+        self.assertEqual(np.copysign(389, direction), the_order["filled"])
 
-            warnings = [record for record in log_catcher.records if
-                        record.level == WARNING]
+        captured_warnings = [str(w.message) for w in captured_warnings]
 
-            self.assertEqual(1, len(warnings))
+        self.assertEqual(1, len(captured_warnings))
 
-            if direction == 1:
-                self.assertEqual(
-                    "Your order for 1000 shares of ASSET1 has been partially "
-                    "filled. 389 shares were successfully purchased. "
-                    "611 shares were not filled by the end of day and "
-                    "were canceled.",
-                    str(warnings[0].message)
-                )
-            elif direction == -1:
-                self.assertEqual(
-                    "Your order for -1000 shares of ASSET1 has been partially "
-                    "filled. 389 shares were successfully sold. "
-                    "611 shares were not filled by the end of day and "
-                    "were canceled.",
-                    str(warnings[0].message)
-                )
+        if direction == 1:
+            self.assertEqual(
+                "Your order for 1000 shares of ASSET1 has been partially "
+                "filled. 389 shares were successfully purchased. "
+                "611 shares were not filled by the end of day and "
+                "were canceled.",
+                captured_warnings[0]
+            )
+        elif direction == -1:
+            self.assertEqual(
+                "Your order for -1000 shares of ASSET1 has been partially "
+                "filled. 389 shares were successfully sold. "
+                "611 shares were not filled by the end of day and "
+                "were canceled.",
+                captured_warnings[0]
+            )
 
     def test_default_cancelation_policy(self):
         algo = self.prep_algo("")
 
-        log_catcher = TestHandler()
-        with log_catcher:
+        with warnings.catch_warnings(record=True) as captured_warnings:
             results = algo.run()
 
-            # order stays open throughout simulation
-            np.testing.assert_array_equal([1, 1, 1],
-                                          list(map(len, results.orders)))
+        # order stays open throughout simulation
+        np.testing.assert_array_equal([1, 1, 1],
+                                        list(map(len, results.orders)))
 
-            # one txn per minute.  389 the first day (since no order until the
-            # end of the first minute).  390 on the second day.  221 on the
-            # the last day, sum = 1000.
-            np.testing.assert_array_equal([389, 390, 221],
-                                          list(map(len, results.transactions)))
+        # one txn per minute.  389 the first day (since no order until the
+        # end of the first minute).  390 on the second day.  221 on the
+        # the last day, sum = 1000.
+        np.testing.assert_array_equal([389, 390, 221],
+                                        list(map(len, results.transactions)))
 
-            self.assertFalse(log_catcher.has_warnings)
+        self.assertFalse(bool(captured_warnings))
 
     def test_eod_order_cancel_daily(self):
         # in daily mode, EODCancel does nothing.
@@ -3679,19 +3673,18 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
             "daily"
         )
 
-        log_catcher = TestHandler()
-        with log_catcher:
+        with warnings.catch_warnings(record=True) as captured_warnings:
             results = algo.run()
 
-            # order stays open throughout simulation
-            np.testing.assert_array_equal([1, 1, 1],
-                                          list(map(len, results.orders)))
+        # order stays open throughout simulation
+        np.testing.assert_array_equal([1, 1, 1],
+                                        list(map(len, results.orders)))
 
-            # one txn per day
-            np.testing.assert_array_equal([0, 1, 1],
-                                          list(map(len, results.transactions)))
+        # one txn per day
+        np.testing.assert_array_equal([0, 1, 1],
+                                        list(map(len, results.transactions)))
 
-            self.assertFalse(log_catcher.has_warnings)
+        self.assertFalse(bool(captured_warnings))
 
 
 class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
@@ -4363,22 +4356,18 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 data_frequency="minute"
             )
         )
-        with make_test_handler(self) as log_catcher:
+        with warnings.catch_warnings(record=True) as captured_warnings:
             algo.run()
 
-            warnings = [r for r in log_catcher.records
-                        if r.level == logbook.WARNING]
+        captured_warnings = [str(w.message) for w in captured_warnings]
 
-            # one warning per order on the second day
-            self.assertEqual(6 * 390, len(warnings))
-
-            for w in warnings:
-                expected_message = (
-                    'Cannot place order for ASSET{sid}, as it has de-listed. '
-                    'Any existing positions for this asset will be liquidated '
-                    'on {date}.'.format(sid=sid, date=asset.auto_close_date)
-                )
-                self.assertEqual(expected_message, w.message)
+        for msg in captured_warnings:
+            expected_message = (
+                'Cannot place order for ASSET{sid}, as it has de-listed. '
+                'Any existing positions for this asset will be liquidated '
+                'on {date}.'.format(sid=sid, date=asset.auto_close_date)
+            )
+            self.assertEqual(expected_message, msg)
 
 
 class AlgoInputValidationTestCase(zf.WithMakeAlgo,

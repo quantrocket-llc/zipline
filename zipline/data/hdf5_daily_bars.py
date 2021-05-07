@@ -101,7 +101,6 @@ Sample layout of the full file with multiple countries.
 from functools import partial
 
 import h5py
-import logbook
 import numpy as np
 import pandas as pd
 from six import iteritems, raise_from, viewkeys
@@ -117,9 +116,6 @@ from zipline.data.session_bars import CurrencyAwareSessionBarReader
 from zipline.utils.memoize import lazyval
 from zipline.utils.numpy_utils import bytes_array_to_native_str_object_array
 from zipline.utils.pandas_utils import check_indexes_all_same
-
-
-log = logbook.Logger('HDF5DailyBars')
 
 VERSION = 0
 
@@ -440,13 +436,13 @@ class HDF5DailyBarWriter(object):
 
             dataset.attrs[SCALING_FACTOR] = scaling_factors[field]
 
-            log.debug(
+            print(
                 'Writing dataset {} to file {}',
                 dataset.name, self._filename
             )
 
     def _log_writing_dataset(self, dataset):
-        log.debug("Writing {} to file {}", dataset.name, self._filename)
+        print("Writing {} to file {}", dataset.name, self._filename)
 
 
 def compute_asset_lifetimes(frames):
