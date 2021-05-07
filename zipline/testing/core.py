@@ -48,7 +48,6 @@ from zipline.pipeline.domain import EquitySessionDomain
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.loaders.testing import make_seeded_random_loader
-from zipline.utils import security_list
 from zipline.utils.input_validation import expect_dimensions
 from zipline.utils.numpy_utils import as_column, isnat
 from zipline.utils.pandas_utils import timedelta_to_integral_seconds
@@ -175,47 +174,6 @@ def assert_single_position(test, zipline):
     )
 
     return output, transaction_count
-
-
-@contextmanager
-def security_list_copy():
-    old_dir = security_list.SECURITY_LISTS_DIR
-    new_dir = tempfile.mkdtemp()
-    try:
-        for subdir in os.listdir(old_dir):
-            if not os.path.isdir(subdir):
-                continue
-            shutil.copytree(os.path.join(old_dir, subdir),
-                            os.path.join(new_dir, subdir))
-            with patch.object(security_list, 'SECURITY_LISTS_DIR', new_dir), \
-                    patch.object(security_list, 'using_copy', True,
-                                 create=True):
-                yield
-    finally:
-        shutil.rmtree(new_dir, True)
-
-
-def add_security_data(adds, deletes):
-    if not hasattr(security_list, 'using_copy'):
-        raise Exception('add_security_data must be used within '
-                        'security_list_copy context')
-    directory = os.path.join(
-        security_list.SECURITY_LISTS_DIR,
-        "leveraged_etf_list/20150127/20150125"
-    )
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    del_path = os.path.join(directory, "delete")
-    with open(del_path, 'w') as f:
-        for sym in deletes:
-            f.write(sym)
-            f.write('\n')
-    add_path = os.path.join(directory, "add")
-    with open(add_path, 'w') as f:
-        for sym in adds:
-            f.write(sym)
-            f.write('\n')
-
 
 def all_pairs_matching_predicate(values, pred):
     """

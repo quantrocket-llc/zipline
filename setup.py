@@ -113,12 +113,6 @@ def get_package_data():
         for root, dirnames, filenames in os.walk('zipline')
         if '__pycache__' not in root
     }
-    data.update({
-        f'zipline.resources.security_lists.leveraged_etf_list.20020103.{directory}':
-        ['add', 'delete']
-        for directory in os.listdir('zipline/resources/security_lists/leveraged_etf_list/20020103/')
-        if '__pycache__' not in directory
-    })
     return data
 
 setup(
