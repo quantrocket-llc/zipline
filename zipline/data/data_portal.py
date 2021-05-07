@@ -103,7 +103,7 @@ class DataPortal(object):
     ----------
     asset_finder : zipline.assets.assets.AssetFinder
         The AssetFinder instance used to resolve assets.
-    trading_calendar: zipline.utils.calendar.exchange_calendar.TradingCalendar
+    trading_calendar: trading_calendars.TradingCalendar
         The calendar instance used to provide minute->session information.
     first_trading_day : pd.Timestamp
         The first trading day for the simulation.

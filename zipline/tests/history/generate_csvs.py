@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from zipline.data.us_equity_minutes import BcolzMinuteBarWriter
-from zipline.utils.calendars import get_calendar
+from trading_calendars import get_calendar
 
 
 def generate_daily_test_data(first_day,

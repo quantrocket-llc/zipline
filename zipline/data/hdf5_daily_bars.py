@@ -734,7 +734,7 @@ class HDF5DailyBarReader(CurrencyAwareSessionBarReader):
     @property
     def trading_calendar(self):
         """
-        Returns the zipline.utils.calendar.trading_calendar used to read
+        Returns the trading_calendar used to read
         the data.  Can be None (if the writer didn't specify it).
         """
         raise NotImplementedError(
@@ -964,7 +964,7 @@ class MultiCountryDailyBarReader(CurrencyAwareSessionBarReader):
     @property
     def trading_calendar(self):
         """
-        Returns the zipline.utils.calendar.trading_calendar used to read
+        Returns the trading_calendar used to read
         the data.  Can be None (if the writer didn't specify it).
         """
         raise NotImplementedError(

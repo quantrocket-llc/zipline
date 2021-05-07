@@ -611,7 +611,7 @@ class ReindexBarReader(with_metaclass(ABCMeta)):
     Parameters
     ----------
 
-    - trading_calendar : zipline.utils.trading_calendar.TradingCalendar
+    - trading_calendar : trading_calendars.TradingCalendar
        The calendar to use when indexing results from the reader.
     - reader : MinuteBarReader|SessionBarReader
        The reader which has a calendar that is a subset of the desired

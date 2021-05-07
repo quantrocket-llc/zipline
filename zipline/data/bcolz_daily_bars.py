@@ -118,7 +118,7 @@ class BcolzDailyBarWriter(object):
     ----------
     filename : str
         The location at which we should write our output.
-    calendar : zipline.utils.calendar.trading_calendar
+    calendar : trading_calendars.TradingCalendar
         Calendar to use to compute asset calendar offsets.
     start_session: pd.Timestamp
         Midnight UTC session label.
