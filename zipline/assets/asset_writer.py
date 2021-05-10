@@ -268,77 +268,6 @@ def _check_asset_group(group):
     row.drop(list(symbol_columns), inplace=True)
     return row
 
-
-def _format_range(r):
-    return (
-        str(pd.Timestamp(r.start, unit='ns')),
-        str(pd.Timestamp(r.stop, unit='ns')),
-    )
-
-
-def _check_symbol_mappings(df, exchanges, asset_exchange):
-    """Check that there are no cases where multiple symbols resolve to the same
-    asset at the same time in the same country.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The equity symbol mappings table.
-    exchanges : pd.DataFrame
-        The exchanges table.
-    asset_exchange : pd.Series
-        A series that maps sids to the exchange the asset is in.
-
-    Raises
-    ------
-    ValueError
-        Raised when there are ambiguous symbol mappings.
-    """
-    mappings = df.set_index('sid')[list(mapping_columns)].copy()
-    mappings['country_code'] = exchanges['country_code'][
-        asset_exchange.loc[df['sid']]
-    ].values
-    ambigious = {}
-
-    def check_intersections(persymbol):
-        intersections = list(intersecting_ranges(map(
-            from_tuple,
-            zip(persymbol.start_date, persymbol.end_date),
-        )))
-        if intersections:
-            data = persymbol[
-                ['start_date', 'end_date']
-            ].astype('datetime64[ns]')
-            # indent the dataframe string, also compute this early because
-            # ``persymbol`` is a view and ``astype`` doesn't copy the index
-            # correctly in pandas 0.22
-            msg_component = '\n  '.join(str(data).splitlines())
-            ambigious[persymbol.name] = intersections, msg_component
-
-    mappings.groupby(['symbol', 'country_code']).apply(check_intersections)
-
-    if ambigious:
-        raise ValueError(
-            'Ambiguous ownership for %d symbol%s, multiple assets held the'
-            ' following symbols:\n%s' % (
-                len(ambigious),
-                '' if len(ambigious) == 1 else 's',
-                '\n'.join(
-                    '%s (%s):\n  intersections: %s\n  %s' % (
-                        symbol,
-                        country_code,
-                        tuple(map(_format_range, intersections)),
-                        cs,
-                    )
-                    for (symbol, country_code), (intersections, cs) in sorted(
-                        ambigious.items(),
-                        key=first,
-                    )
-                ),
-            )
-        )
-
-
 def _split_symbol_mappings(df, exchanges):
     """Split out the symbol: sid mappings from the raw data.
 
@@ -363,12 +292,6 @@ def _split_symbol_mappings(df, exchanges):
         mappings['sid'] = mappings.index
     mappings.reset_index(drop=True, inplace=True)
 
-    # take the most recent sid->exchange mapping based on end date
-    asset_exchange = df[
-        ['exchange', 'end_date']
-    ].sort_values('end_date').groupby(level=0)['exchange'].nth(-1)
-
-    _check_symbol_mappings(mappings, exchanges, asset_exchange)
     return (
         df.groupby(level=0).apply(_check_asset_group),
         mappings,
@@ -630,11 +553,6 @@ class AssetDBWriter(object):
             equity_symbol_mappings = _generate_output_dataframe(
                 equity_symbol_mappings,
                 _equity_symbol_mappings_defaults,
-            )
-            _check_symbol_mappings(
-                equity_symbol_mappings,
-                exchanges,
-                equities['exchange'],
             )
 
         if equity_supplementary_mappings is not None:

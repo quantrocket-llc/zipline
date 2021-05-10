@@ -296,7 +296,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         spec = BenchmarkSpec.from_cli_params(
             no_benchmark=False,
             benchmark_sid=None,
-            benchmark_symbol=None,
             benchmark_file=None,
         )
 
@@ -311,7 +310,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         spec = BenchmarkSpec.from_cli_params(
             no_benchmark=True,
             benchmark_sid=None,
-            benchmark_symbol=None,
             benchmark_file=None,
         )
 
@@ -320,24 +318,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         self.assertIs(sid, None)
         assert_series_equal(returns, self.zero_returns)
 
-    @parameter_space(case=[('A', 1), ('B', 2)])
-    def test_benchmark_symbol(self, case):
-        """Test running with no benchmark provided, with no_benchmark flag.
-        """
-        symbol, expected_sid = case
-
-        spec = BenchmarkSpec.from_cli_params(
-            no_benchmark=False,
-            benchmark_sid=None,
-            benchmark_symbol=symbol,
-            benchmark_file=None,
-        )
-
-        sid, returns = self.resolve_spec(spec)
-
-        assert_equal(sid, expected_sid)
-        self.assertIs(returns, None)
-
     @parameter_space(input_sid=[1, 2])
     def test_benchmark_sid(self, input_sid):
         """Test running with no benchmark provided, with no_benchmark flag.
@@ -345,7 +325,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         spec = BenchmarkSpec.from_cli_params(
             no_benchmark=False,
             benchmark_sid=input_sid,
-            benchmark_symbol=None,
             benchmark_file=None,
         )
 
@@ -369,7 +348,6 @@ class BenchmarkSpecTestCase(WithTmpDir,
         spec = BenchmarkSpec.from_cli_params(
             no_benchmark=False,
             benchmark_sid=None,
-            benchmark_symbol=None,
             benchmark_file=csv_file_path,
         )
 

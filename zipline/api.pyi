@@ -677,17 +677,6 @@ def set_slippage(us_equities=None, us_futures=None):
     :class:`zipline.finance.slippage.SlippageModel`
     """
 
-def set_symbol_lookup_date(dt):
-    """Set the date for which symbols will be resolved to their assets
-    (symbols may map to different firms or underlying assets at
-    different times)
-
-    Parameters
-    ----------
-    dt : datetime
-        The new symbol lookup date.
-    """
-
 def sid(sid):
     """Lookup an Asset by its unique asset identifier.
 
@@ -705,53 +694,4 @@ def sid(sid):
     ------
     SidsNotFound
         When a requested ``sid`` does not map to any asset.
-    """
-
-def symbol(symbol_str):
-    """Lookup an Equity by its ticker symbol.
-
-    Parameters
-    ----------
-    symbol_str : str
-        The ticker symbol for the equity to lookup.
-
-    Returns
-    -------
-    equity : Equity
-        The equity that held the ticker symbol on the current
-        symbol lookup date.
-
-    Raises
-    ------
-    SymbolNotFound
-        Raised when the symbols was not held on the current lookup date.
-
-    See Also
-    --------
-    :func:`zipline.api.set_symbol_lookup_date`
-    """
-
-def symbols(*args):
-    """Lookup multuple Equities as a list.
-
-    Parameters
-    ----------
-    *args : iterable[str]
-        The ticker symbols to lookup.
-
-    Returns
-    -------
-    equities : list[Equity]
-        The equities that held the given ticker symbols on the current
-        symbol lookup date.
-
-    Raises
-    ------
-    SymbolNotFound
-        Raised when one of the symbols was not held on the current
-        lookup date.
-
-    See Also
-    --------
-    :func:`zipline.api.set_symbol_lookup_date`
     """

@@ -315,10 +315,6 @@ class TradingAlgorithm(object):
             blotter_class = blotter_class or SimulationBlotter
             self.blotter = blotter_class(cancel_policy=cancel_policy)
 
-        # The symbol lookup date specifies the date to use when resolving
-        # symbols to sids, and can be set using set_symbol_lookup_date()
-        self._symbol_lookup_date = None
-
         # If string is passed in, execute and get reference to
         # functions.
         self.algoscript = script
@@ -1065,77 +1061,6 @@ class TradingAlgorithm(object):
         )
 
     @api_method
-    @preprocess(
-        symbol_str=ensure_upper_case,
-        country_code=optionally(ensure_upper_case),
-    )
-    def symbol(self, symbol_str, country_code=None):
-        """Lookup an Equity by its ticker symbol.
-
-        Parameters
-        ----------
-        symbol_str : str
-            The ticker symbol for the equity to lookup.
-        country_code : str or None, optional
-            A country to limit symbol searches to.
-
-        Returns
-        -------
-        equity : zipline.assets.Equity
-            The equity that held the ticker symbol on the current
-            symbol lookup date.
-
-        Raises
-        ------
-        SymbolNotFound
-            Raised when the symbols was not held on the current lookup date.
-
-        See Also
-        --------
-        :func:`zipline.api.set_symbol_lookup_date`
-        """
-        # If the user has not set the symbol lookup date,
-        # use the end_session as the date for symbol->sid resolution.
-        _lookup_date = self._symbol_lookup_date \
-            if self._symbol_lookup_date is not None \
-            else self.sim_params.end_session
-
-        return self.asset_finder.lookup_symbol(
-            symbol_str,
-            as_of_date=_lookup_date,
-            country_code=country_code,
-        )
-
-    @api_method
-    def symbols(self, *args, **kwargs):
-        """Lookup multuple Equities as a list.
-
-        Parameters
-        ----------
-        *args : iterable[str]
-            The ticker symbols to lookup.
-        country_code : str or None, optional
-            A country to limit symbol searches to.
-
-        Returns
-        -------
-        equities : list[zipline.assets.Equity]
-            The equities that held the given ticker symbols on the current
-            symbol lookup date.
-
-        Raises
-        ------
-        SymbolNotFound
-            Raised when one of the symbols was not held on the current
-            lookup date.
-
-        See Also
-        --------
-        :func:`zipline.api.set_symbol_lookup_date`
-        """
-        return [self.symbol(identifier, **kwargs) for identifier in args]
-
-    @api_method
     def sid(self, sid):
         """Lookup an Asset by its unique asset identifier.
 
@@ -1640,23 +1565,6 @@ class TradingAlgorithm(object):
             raise SetCancelPolicyPostInit()
 
         self.blotter.cancel_policy = cancel_policy
-
-    @api_method
-    def set_symbol_lookup_date(self, dt):
-        """Set the date for which symbols will be resolved to their assets
-        (symbols may map to different firms or underlying assets at
-        different times)
-
-        Parameters
-        ----------
-        dt : datetime
-            The new symbol lookup date.
-        """
-        try:
-            self._symbol_lookup_date = pd.Timestamp(dt, tz='UTC')
-        except ValueError:
-            raise UnsupportedDatetimeFormat(input=dt,
-                                            method='set_symbol_lookup_date')
 
     # Remain backwards compatibility
     @property

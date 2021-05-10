@@ -399,7 +399,7 @@ def handle_data(context, data):
 """
 
 api_get_environment_algo = """
-from zipline.api import get_environment, order, symbol
+from zipline.api import get_environment, order
 
 
 def initialize(context):
@@ -409,15 +409,15 @@ def handle_data(context, data):
     pass
 """
 
-api_symbol_algo = """
+api_sid_algo = """
 from zipline.api import (order,
-                         symbol)
+                         sid)
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    order(symbol('TEST'), 1)
+    order(sid(3), 1)
 """
 
 access_portfolio_in_init = """
@@ -463,49 +463,49 @@ def handle_data(context, data):
 """
 
 call_with_kwargs = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    price_history = data.history(assets=symbol('TEST'), fields="price",
+    price_history = data.history(assets=sid(3), fields="price",
                                  bar_count=5, frequency="1d")
-    current = data.current(assets=symbol('TEST'), fields="price")
+    current = data.current(assets=sid(3), fields="price")
 """
 
 call_without_kwargs = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    price_history = data.history(symbol('TEST'), "price", 5, "1d")
-    current = data.current(symbol('TEST'), "price")
-    is_stale = data.is_stale(symbol('TEST'))
-    can_trade = data.can_trade(symbol('TEST'))
+    price_history = data.history(sid(3), "price", 5, "1d")
+    current = data.current(sid(3), "price")
+    is_stale = data.is_stale(sid(3))
+    can_trade = data.can_trade(sid(3))
 """
 
 call_with_bad_kwargs_history = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    price_history = data.history(assets=symbol('TEST'), fields="price",
+    price_history = data.history(assets=sid(3), fields="price",
                                  blahblah=5, frequency="1d")
 """
 
 call_with_bad_kwargs_current = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    current = data.current(assets=symbol('TEST'), blahblah="price")
+    current = data.current(assets=sid(3), blahblah="price")
 """
 
 bad_type_history_assets = """
@@ -517,33 +517,33 @@ def handle_data(context, data):
 """
 
 bad_type_history_fields = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(symbol('TEST'), 10 , 5, '1d')
+    data.history(sid(3), 10 , 5, '1d')
 """
 
 bad_type_history_bar_count = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(symbol('TEST'), 'price', '5', '1d')
+    data.history(sid(3), 'price', '5', '1d')
 """
 
 bad_type_history_frequency = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(symbol('TEST'), 'price', 5, 1)
+    data.history(sid(3), 'price', 5, 1)
 """
 
 bad_type_current_assets = """
@@ -555,13 +555,13 @@ def handle_data(context, data):
 """
 
 bad_type_current_fields = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.current(symbol('TEST'), 10)
+    data.current(sid(3), 10)
 """
 
 bad_type_is_stale_assets = """
@@ -589,35 +589,35 @@ def handle_data(context, data):
 """
 
 bad_type_history_fields_kwarg = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(frequency='1d', fields=10, assets=symbol('TEST'),
+    data.history(frequency='1d', fields=10, assets=sid(3),
                  bar_count=5)
 """
 
 bad_type_history_bar_count_kwarg = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(frequency='1d', fields='price', assets=symbol('TEST'),
+    data.history(frequency='1d', fields='price', assets=sid(3),
                  bar_count='5')
 """
 
 bad_type_history_frequency_kwarg = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(frequency=1, fields='price', assets=symbol('TEST'),
+    data.history(frequency=1, fields='price', assets=sid(3),
                  bar_count=5)
 """
 
@@ -630,13 +630,13 @@ def handle_data(context, data):
 """
 
 bad_type_current_fields_kwarg = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.current(fields=10, assets=symbol('TEST'))
+    data.current(fields=10, assets=sid(3))
 """
 
 bad_type_history_assets_kwarg_list = """
@@ -648,59 +648,58 @@ def handle_data(context, data):
 """
 
 call_with_bad_kwargs_get_open_orders = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    context.get_open_orders(sid=symbol('TEST'))
+    context.get_open_orders(sid=sid(3))
 """
 
 call_with_good_kwargs_get_open_orders = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    context.get_open_orders(asset=symbol('TEST'))
+    context.get_open_orders(asset=sid(3))
 """
 
 call_with_no_kwargs_get_open_orders = """
-from zipline.api import symbol
+from zipline.api import sid
 
 def initialize(context):
     pass
 
 def handle_data(context, data):
-    context.get_open_orders(symbol('TEST'))
+    context.get_open_orders(sid(3))
 """
 
 empty_positions = """
-from zipline.api import record, schedule_function, time_rules, date_rules, \
-    symbol
+from zipline.api import record, schedule_function, time_rules, date_rules, sid
 
 def initialize(context):
     schedule_function(test_history, date_rules.every_day(),
                       time_rules.market_open(hours=1))
 
 def before_trading_start(context, data):
-    context.sid = symbol('TEST')
+    context.asset = sid(3)
 
 def test_history(context,data):
-    record(amounts=context.portfolio.positions[context.sid].amount)
+    record(amounts=context.portfolio.positions[context.asset].amount)
     record(num_positions=len(context.portfolio.positions))
 """
 
 set_benchmark_algo = """
-from zipline.api import symbol, set_benchmark
+from zipline.api import sid, set_benchmark
 
 def initialize(context):
-    set_benchmark(symbol('TEST'))
+    set_benchmark(sid(3))
 
 def before_trading_start(context, data):
-    context.sid = symbol('TEST')
+    context.asset = sid(3)
 
 def handle_data(context, data):
     pass

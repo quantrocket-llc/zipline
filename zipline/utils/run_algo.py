@@ -25,7 +25,6 @@ from zipline.pipeline.loaders import USEquityPricingLoader
 
 import zipline.utils.paths as pth
 from zipline.extensions import load
-from zipline.errors import SymbolNotFound
 from zipline.algorithm import TradingAlgorithm
 from zipline.finance.blotter import Blotter
 
@@ -403,9 +402,6 @@ class BenchmarkSpec(object):
         the benchmark.
     benchmark_sid : int, optional
         Sid of the asset to use as a benchmark.
-    benchmark_symbol : str, optional
-        Symbol of the asset to use as a benchmark. Symbol will be looked up as
-        of the end date of the backtest.
     no_benchmark : bool
         Flag indicating that no benchmark is configured. Benchmark-dependent
         metrics will be calculated using a dummy benchmark of all-zero returns.
@@ -415,26 +411,22 @@ class BenchmarkSpec(object):
                  benchmark_returns,
                  benchmark_file,
                  benchmark_sid,
-                 benchmark_symbol,
                  no_benchmark):
 
         self.benchmark_returns = benchmark_returns
         self.benchmark_file = benchmark_file
         self.benchmark_sid = benchmark_sid
-        self.benchmark_symbol = benchmark_symbol
         self.no_benchmark = no_benchmark
 
     @classmethod
     def from_cli_params(cls,
                         benchmark_sid,
-                        benchmark_symbol,
                         benchmark_file,
                         no_benchmark):
 
         return cls(
             benchmark_returns=None,
             benchmark_sid=benchmark_sid,
-            benchmark_symbol=benchmark_symbol,
             benchmark_file=benchmark_file,
             no_benchmark=no_benchmark,
         )
@@ -445,7 +437,6 @@ class BenchmarkSpec(object):
             benchmark_returns=benchmark_returns,
             benchmark_file=None,
             benchmark_sid=None,
-            benchmark_symbol=None,
             no_benchmark=benchmark_returns is not None,
         )
 
@@ -484,18 +475,6 @@ class BenchmarkSpec(object):
         elif self.benchmark_sid is not None:
             benchmark_sid = self.benchmark_sid
             benchmark_returns = None
-        elif self.benchmark_symbol is not None:
-            try:
-                asset = asset_finder.lookup_symbol(
-                    self.benchmark_symbol,
-                    as_of_date=end_date,
-                )
-                benchmark_sid = asset.sid
-                benchmark_returns = None
-            except SymbolNotFound:
-                raise _RunAlgoError(
-                    "Symbol %s as a benchmark not found in this bundle."
-                )
         elif self.no_benchmark:
             benchmark_sid = None
             benchmark_returns = self._zero_benchmark_returns(

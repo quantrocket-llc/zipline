@@ -81,7 +81,7 @@ from zipline.test_algorithms import (
     access_portfolio_in_init,
     api_algo,
     api_get_environment_algo,
-    api_symbol_algo,
+    api_sid_algo,
     handle_data_api,
     handle_data_noop,
     initialize_api,
@@ -648,74 +648,6 @@ def log_nyse_close(context, data):
 
         self.assertIs(composer, ComposedRule.lazy_and)
 
-    def test_asset_lookup(self):
-        algo = self.make_algo()
-
-        # this date doesn't matter
-        start_session = pd.Timestamp("2000-01-01", tz="UTC")
-
-        # Test before either PLAY existed
-        algo.sim_params = algo.sim_params.create_new(
-            start_session,
-            pd.Timestamp('2001-12-01', tz='UTC')
-        )
-        with self.assertRaises(SymbolNotFound):
-            algo.symbol('PLAY')
-        with self.assertRaises(SymbolNotFound):
-            algo.symbols('PLAY')
-
-        # Test when first PLAY exists
-        algo.sim_params = algo.sim_params.create_new(
-            start_session,
-            pd.Timestamp('2002-12-01', tz='UTC')
-        )
-        list_result = algo.symbols('PLAY')
-        self.assertEqual(3, list_result[0])
-
-        # Test after first PLAY ends
-        algo.sim_params = algo.sim_params.create_new(
-            start_session,
-            pd.Timestamp('2004-12-01', tz='UTC')
-        )
-        self.assertEqual(3, algo.symbol('PLAY'))
-
-        # Test after second PLAY begins
-        algo.sim_params = algo.sim_params.create_new(
-            start_session,
-            pd.Timestamp('2005-12-01', tz='UTC')
-        )
-        self.assertEqual(4, algo.symbol('PLAY'))
-
-        # Test after second PLAY ends
-        algo.sim_params = algo.sim_params.create_new(
-            start_session,
-            pd.Timestamp('2006-12-01', tz='UTC')
-        )
-        self.assertEqual(4, algo.symbol('PLAY'))
-        list_result = algo.symbols('PLAY')
-        self.assertEqual(4, list_result[0])
-
-        # Test lookup SID
-        self.assertIsInstance(algo.sid(3), Equity)
-        self.assertIsInstance(algo.sid(4), Equity)
-
-        # Supplying a non-string argument to symbol()
-        # should result in a TypeError.
-        with self.assertRaises(TypeError):
-            algo.symbol(1)
-
-        with self.assertRaises(TypeError):
-            algo.symbol((1,))
-
-        with self.assertRaises(TypeError):
-            algo.symbol({1})
-
-        with self.assertRaises(TypeError):
-            algo.symbol([1])
-
-        with self.assertRaises(TypeError):
-            algo.symbol({'foo': 'bar'})
-
     def test_future_symbol(self):
         """ Tests the future_symbol API function.
         """
@@ -807,25 +739,6 @@ class TestSetSymbolLookupDate(zf.WithMakeAlgo, zf.ZiplineTestCase):
             'currency': 'USD',
              'asset_name': 'BENCHMARK'},
         ], index=cls.sids)
-
-    def test_set_symbol_lookup_date(self):
-        """
-        Test the set_symbol_lookup_date API method.
-        """
-        set_symbol_lookup_date = zipline.api.set_symbol_lookup_date
-
-        def initialize(context):
-            set_symbol_lookup_date(self.asset_ends[0])
-            self.assertEqual(zipline.api.symbol('DUP').sid, self.sids[0])
-
-            set_symbol_lookup_date(self.asset_ends[1])
-            self.assertEqual(zipline.api.symbol('DUP').sid, self.sids[1])
-
-            with self.assertRaises(UnsupportedDatetimeFormat):
-                set_symbol_lookup_date('foobar')
-
-        self.run_algorithm(initialize=initialize)
-
 
 class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
     START_DATE = pd.Timestamp('2006-01-03', tz='utc')
@@ -1495,8 +1408,8 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
         algo.run()
         self.assertEqual(algo.environment, platform)
 
-    def test_api_symbol(self):
-        self.run_algorithm(script=api_symbol_algo)
+    def test_api_sid(self):
+        self.run_algorithm(script=api_sid_algo)
 
     def test_fixed_slippage(self):
         # verify order -> transaction -> portfolio position.

@@ -55,7 +55,15 @@ equities = sa.Table(
     sa.Column('currency', sa.Text, nullable=False),
     sa.Column('price_magnifier', sa.Float),
 )
-
+# NOTE from QuantRocket: symbols are not stored in equities but equity_symbol_mappings.
+# Historically this was because Zipline supported asset lookups by symbols, and symbols
+# can change over time. Thus, symbols were stored in equity_symbol_mappings with start
+# and end dates indicating the period the symbol belonged to a particular company. Now,
+# in QuantRocket, symbol lookups are removed, but the more complicated structure for
+# storing symbols remains. For simplicity, it would be better to store symbols directly
+# in the equities table and remove the equity_symbol_mappings table, as well as the various
+# "ownership" functions in zipline.assets.assets which utilize it, but as this would
+# involve a db schema change, so far it has not been deemed worthwhile.
 equity_symbol_mappings = sa.Table(
     'equity_symbol_mappings',
     metadata,
