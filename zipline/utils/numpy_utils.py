@@ -527,7 +527,4 @@ def compare_datetime_arrays(x, y):
 def bytes_array_to_native_str_object_array(a):
     """Convert an array of dtype S to an object array containing `str`.
     """
-    if six.PY2:
-        return a.astype(object)
-    else:
-        return a.astype(str).astype(object)
+    return a.astype(str).astype(object)

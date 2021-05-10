@@ -21,7 +21,7 @@ from math import isnan
 
 import numpy as np
 import pandas as pd
-from six import iteritems, itervalues, PY2
+from six import iteritems, itervalues
 
 from zipline.assets import Future
 from zipline.finance.transaction import Transaction
@@ -300,27 +300,7 @@ class PositionTracker(object):
 
         return self._stats
 
-
-if PY2:
-    def move_to_end(ordered_dict, key, last=False):
-        if last:
-            ordered_dict[key] = ordered_dict.pop(key)
-        else:
-            # please don't do this in python 2 ;_;
-            new_first_element = ordered_dict.pop(key)
-
-            # the items (without the given key) in the order they were inserted
-            items = ordered_dict.items()
-
-            # reset the ordered_dict to re-insert in the new order
-            ordered_dict.clear()
-
-            ordered_dict[key] = new_first_element
-
-            # add the items back in their original order
-            ordered_dict.update(items)
-else:
-    move_to_end = OrderedDict.move_to_end
+move_to_end = OrderedDict.move_to_end
 
 
 PeriodStats = namedtuple(

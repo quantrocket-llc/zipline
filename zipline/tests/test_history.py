@@ -24,7 +24,6 @@ from six import iteritems
 from zipline._protocol import handle_non_market_minutes, BarData
 from zipline.assets import Asset, Equity
 from zipline.errors import (
-    HistoryInInitialize,
     HistoryWindowStartsBeforeData,
 )
 from zipline.finance.asset_restrictions import NoRestrictions
@@ -622,22 +621,6 @@ class MinuteEquityHistoryTestCase(WithHistory,
             interval=10,
         )
         return iteritems(data)
-
-    def test_history_in_initialize(self):
-        algo_text = dedent(
-            """\
-            from zipline.api import history
-
-            def initialize(context):
-                history([1], 10, '1d', 'price')
-
-            def handle_data(context, data):
-                pass
-            """
-        )
-        algo = self.make_algo(script=algo_text)
-        with self.assertRaises(HistoryInInitialize):
-            algo.run()
 
     def test_negative_bar_count(self):
         """

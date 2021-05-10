@@ -81,8 +81,6 @@ from zipline.testing.fixtures import (
     WithTmpDir,
     WithInstanceTmpDir,
 )
-from zipline.utils.range import range
-
 
 Case = namedtuple('Case', 'finder inputs as_of country_code expected')
 
@@ -161,7 +159,7 @@ class AssetTestCase(TestCase):
         self.assertEqual(int64(23), s_23)
         self.assertEqual(s_23, int32(23))
         self.assertEqual(s_23, int64(23))
-        # Check all int types (includes long on py2):
+        # Check all int types:
         for int_type in integer_types:
             self.assertEqual(int_type(23), s_23)
             self.assertEqual(s_23, int_type(23))

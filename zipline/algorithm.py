@@ -38,7 +38,6 @@ from zipline.errors import (
     AttachPipelineAfterInitialize,
     CannotOrderDelistedAsset,
     DuplicatePipelineName,
-    HistoryInInitialize,
     IncompatibleCommissionModel,
     IncompatibleSlippageModel,
     NoSuchPipeline,
@@ -399,8 +398,6 @@ class TradingAlgorithm(object):
 
         self.restrictions = NoRestrictions()
 
-        self._backwards_compat_universe = None
-
         self.strategy = strategy
         if show_progress_on_dates is None:
             self._show_progress_on_dates = []
@@ -603,22 +600,11 @@ class TradingAlgorithm(object):
             self.data_portal,
             self._create_clock(),
             benchmark_source,
-            self.restrictions,
-            universe_func=self._calculate_universe
+            self.restrictions
         )
 
         metrics_tracker.handle_start_of_simulation(benchmark_source)
         return self.trading_client.transform()
-
-    def _calculate_universe(self):
-        # this exists to provide backwards compatibility for older,
-        # deprecated APIs, particularly around the iterability of
-        # BarData (ie, 'for sid in data`).
-        if self._backwards_compat_universe is None:
-            self._backwards_compat_universe = (
-                self.asset_finder.retrieve_all(self.asset_finder.sids)
-            )
-        return self._backwards_compat_universe
 
     def compute_eager_pipelines(self):
         """
@@ -1566,7 +1552,6 @@ class TradingAlgorithm(object):
 
         self.blotter.cancel_policy = cancel_policy
 
-    # Remain backwards compatibility
     @property
     def data_frequency(self):
         return self.sim_params.data_frequency
@@ -1925,66 +1910,6 @@ class TradingAlgorithm(object):
             order_id = order_param.id
 
         self.blotter.cancel(order_id)
-
-    @api_method
-    @require_initialized(HistoryInInitialize())
-    def history(self, bar_count, frequency, field, ffill=True):
-        """DEPRECATED: use ``data.history`` instead.
-        """
-        warnings.warn(
-            "The `history` method is deprecated.  Use `data.history` instead.",
-            category=ZiplineDeprecationWarning,
-            stacklevel=4
-        )
-
-        return self.get_history_window(
-            bar_count,
-            frequency,
-            self._calculate_universe(),
-            field,
-            ffill
-        )
-
-    def get_history_window(self, bar_count, frequency, assets, field, ffill):
-        if not self._in_before_trading_start:
-            return self.data_portal.get_history_window(
-                assets,
-                self.datetime,
-                bar_count,
-                frequency,
-                field,
-                self.data_frequency,
-                ffill,
-            )
-        else:
-            # If we are in before_trading_start, we need to get the window
-            # as of the previous market minute
-            adjusted_dt = \
-                self.trading_calendar.previous_minute(
-                    self.datetime
-                )
-
-            window = self.data_portal.get_history_window(
-                assets,
-                adjusted_dt,
-                bar_count,
-                frequency,
-                field,
-                self.data_frequency,
-                ffill,
-            )
-
-            # Get the adjustments between the last market minute and the
-            # current before_trading_start dt and apply to the window
-            adjs = self.data_portal.get_adjustments(
-                assets,
-                field,
-                adjusted_dt,
-                self.datetime
-            )
-            window = window * adjs
-
-            return window
 
     ####################
     # Account Controls #

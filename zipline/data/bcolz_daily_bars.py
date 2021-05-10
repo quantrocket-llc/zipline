@@ -444,20 +444,16 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
 
     @lazyval
     def sessions(self):
-        if 'calendar' in self._table.attrs.attrs:
-            # backwards compatibility with old formats, will remove
-            return DatetimeIndex(self._table.attrs['calendar'], tz='UTC')
-        else:
-            cal = get_calendar(self._table.attrs['calendar_name'])
-            start_session_ns = self._table.attrs['start_session_ns']
-            start_session = Timestamp(start_session_ns, tz='UTC')
+        cal = get_calendar(self._table.attrs['calendar_name'])
+        start_session_ns = self._table.attrs['start_session_ns']
+        start_session = Timestamp(start_session_ns, tz='UTC')
 
-            end_session_ns = self._table.attrs['end_session_ns']
-            end_session = Timestamp(end_session_ns, tz='UTC')
+        end_session_ns = self._table.attrs['end_session_ns']
+        end_session = Timestamp(end_session_ns, tz='UTC')
 
-            sessions = cal.sessions_in_range(start_session, end_session)
+        sessions = cal.sessions_in_range(start_session, end_session)
 
-            return sessions
+        return sessions
 
     @lazyval
     def _first_rows(self):

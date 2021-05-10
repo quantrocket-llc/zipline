@@ -118,8 +118,7 @@ def get_data(dt, bundle=None, data_frequency=None):
         simulation_dt_func=lambda: session_minute,
         data_frequency=data_frequency,
         trading_calendar=trading_calendar,
-        restrictions=NoRestrictions(),
-        universe_func=lambda: asset_finder.retrieve_all(asset_finder.sids)
+        restrictions=NoRestrictions()
     )
 
     return data

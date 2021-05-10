@@ -114,8 +114,7 @@ def initialize(context):
             self.data_portal,
             BeforeTradingStartsOnlyClock(dt),
             benchmark_source,
-            NoRestrictions(),
-            None
+            NoRestrictions()
         )
 
         # run through the algo's simulation

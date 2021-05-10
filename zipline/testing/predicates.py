@@ -40,7 +40,7 @@ from pandas.util.testing import (
     assert_series_equal,
     assert_index_equal,
 )
-from six import iteritems, viewkeys, PY2
+from six import iteritems, viewkeys
 from six.moves import zip_longest
 from toolz import dissoc, keyfilter
 import toolz.curried.operator as op
@@ -462,7 +462,7 @@ def assert_dict_equal(result, expected, path=(), msg='', **kwargs):
         viewkeys(result),
         viewkeys(expected),
         msg,
-        path + ('.%s()' % ('viewkeys' if PY2 else 'keys'),),
+        path + ('.%s()' % ('keys'),),
         'key',
     )
 

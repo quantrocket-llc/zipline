@@ -99,8 +99,7 @@ class WithBarDataChecks(object):
 
         # also verify that bar_data doesn't expose anything bad
         for field in ["data_portal", "simulation_dt_func", "data_frequency",
-                      "_views", "_universe_func", "_last_calculated_universe",
-                      "_universe_last_updatedat"]:
+                      "_views"]:
             with self.assertRaises(AttributeError):
                 getattr(bar_data, field)
 

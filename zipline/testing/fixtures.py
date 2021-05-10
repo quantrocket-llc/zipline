@@ -6,7 +6,7 @@ import warnings
 from contextlib2 import ExitStack
 import numpy as np
 import pandas as pd
-from six import with_metaclass, iteritems, itervalues, PY2
+from six import with_metaclass, iteritems, itervalues
 import responses
 from toolz import flip, groupby, merge
 from trading_calendars import (
@@ -238,11 +238,6 @@ class ZiplineTestCase(with_metaclass(DebugMROMeta, TestCase)):
             The callback to invoke at the end of each test.
         """
         return self._instance_teardown_stack.callback(callback)
-
-    if PY2:
-        def assertRaisesRegex(self, *args, **kwargs):
-            return self.assertRaisesRegexp(*args, **kwargs)
-
 
 def alias(attr_name):
     """Make a fixture attribute an alias of another fixture's attribute by

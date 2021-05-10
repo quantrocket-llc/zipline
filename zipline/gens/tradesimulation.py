@@ -35,7 +35,7 @@ class AlgorithmSimulator(object):
     }
 
     def __init__(self, algo, sim_params, data_portal, clock, benchmark_source,
-                 restrictions, universe_func):
+                 restrictions):
 
         # ==============
         # Simulation
@@ -56,7 +56,7 @@ class AlgorithmSimulator(object):
 
         # This object is the way that user algorithms interact with OHLCV data
         # and some API methods like `data.can_trade`.
-        self.current_data = self._create_bar_data(universe_func)
+        self.current_data = self._create_bar_data()
 
         # We don't have a datetime for the current snapshot until we
         # receive a message.
@@ -69,14 +69,13 @@ class AlgorithmSimulator(object):
     def get_simulation_dt(self):
         return self.simulation_dt
 
-    def _create_bar_data(self, universe_func):
+    def _create_bar_data(self):
         return BarData(
             data_portal=self.data_portal,
             simulation_dt_func=self.get_simulation_dt,
             data_frequency=self.sim_params.data_frequency,
             trading_calendar=self.algo.trading_calendar,
-            restrictions=self.restrictions,
-            universe_func=universe_func
+            restrictions=self.restrictions
         )
 
     def transform(self):

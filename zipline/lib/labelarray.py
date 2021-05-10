@@ -426,15 +426,6 @@ class LabelArray(ndarray):
 
         self.as_int_array()[indexer] = value_code
 
-    def __setslice__(self, i, j, sequence):
-        """
-        This method was deprecated in Python 2.0. It predates slice objects,
-        but Python 2.7.11 still uses it if you implement it, which ndarray
-        does.  In newer Pythons, __setitem__ is always called, but we need to
-        manuallly forward in py2.
-        """
-        self.__setitem__(slice(i, j), sequence)
-
     def __getitem__(self, indexer):
         result = super(LabelArray, self).__getitem__(indexer)
         if result.ndim:
