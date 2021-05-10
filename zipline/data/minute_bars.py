@@ -21,12 +21,9 @@ from textwrap import dedent
 from lru import LRU
 import bcolz
 from bcolz import ctable
-import h5py
 from intervaltree import IntervalTree
 import numpy as np
 import pandas as pd
-from pandas import HDFStore
-import tables
 from six import with_metaclass
 from toolz import keymap, valmap
 from trading_calendars import get_calendar
@@ -1329,102 +1326,3 @@ class MinuteBarUpdateReader(with_metaclass(ABCMeta, object)):
             Returns an iterable of ``sid`` to the corresponding OHLCV data.
         """
         raise NotImplementedError()
-
-
-class H5MinuteBarUpdateWriter(object):
-    """
-    Writer for files containing minute bar updates for consumption by a writer
-    for a ``MinuteBarReader`` format.
-
-    Parameters
-    ----------
-    path : str
-        The destination path.
-    complevel : int, optional
-        The HDF5 complevel, defaults to ``5``.
-    complib : str, optional
-        The HDF5 complib, defaults to ``zlib``.
-    """
-
-    FORMAT_VERSION = 0
-
-    _COMPLEVEL = 5
-    _COMPLIB = 'zlib'
-
-    def __init__(self, path, complevel=None, complib=None):
-        self._complevel = complevel if complevel \
-            is not None else self._COMPLEVEL
-        self._complib = complib if complib \
-            is not None else self._COMPLIB
-        self._path = path
-
-    def write(self, frames):
-        """
-        Write the frames to the target HDF5 file, using the format used by
-        ``pd.Panel.to_hdf``
-
-        Parameters
-        ----------
-        frames : iter[(int, DataFrame)] or dict[int -> DataFrame]
-            An iterable or other mapping of sid to the corresponding OHLCV
-            pricing data.
-        """
-        with HDFStore(self._path, 'w',
-                      complevel=self._complevel, complib=self._complib) \
-                as store:
-            panel = pd.Panel.from_dict(dict(frames))
-            panel.to_hdf(store, 'updates')
-        with tables.open_file(self._path, mode='r+') as h5file:
-            h5file.set_node_attr('/', 'version', 0)
-
-
-class H5MinuteBarUpdateReader(MinuteBarUpdateReader):
-    """
-    Reader for minute bar updates stored in HDF5 files.
-
-    Parameters
-    ----------
-    path : str
-        The path of the HDF5 file from which to source data.
-    """
-    def __init__(self, path):
-        try:
-            self._panel = pd.read_hdf(path)
-            return
-        except TypeError:
-            pass
-
-        # There is a bug in `pandas.read_hdf` whereby in Python 3 it fails to
-        # read the timezone attr of an h5 file if that file was written in
-        # Python 2. Until zipline has dropped Python 2 entirely we are at risk
-        # of hitting this issue. For now, use h5py to read the file instead.
-        # The downside of using h5py directly is that we need to interpret the
-        # attrs manually when creating our panel (specifically the tz attr),
-        # but since we know exactly how the file was written this should be
-        # pretty straightforward.
-        with h5py.File(path, 'r') as f:
-            updates = f['updates']
-            values = updates['block0_values']
-            items = updates['axis0']
-            major = updates['axis1']
-            minor = updates['axis2']
-
-            # Our current version of h5py is unable to read the tz attr in the
-            # tests as it was written by HDFStore. This is fixed in version
-            # 2.10.0 of h5py, but that requires >=Python3.7 on conda, so until
-            # then we should be safe to assume UTC.
-            try:
-                tz = major.attrs['tz'].decode()
-            except OSError:
-                tz = 'UTC'
-
-            self._panel = pd.Panel(
-                data=np.array(values).T,
-                items=np.array(items),
-                major_axis=pd.DatetimeIndex(major, tz=tz, freq='T'),
-                minor_axis=np.array(minor).astype('U'),
-            )
-
-    def read(self, dts, sids):
-        panel = self._panel[sids, dts, :]
-        return panel.iteritems()

@@ -458,8 +458,7 @@ class ConsumeAssetMetaDataError(ZiplineError):
     """
     msg = """
 AssetFinder can not consume metadata of type {obj}. Metadata must be a dict, a
-DataFrame, or a tables.Table. If the provided metadata is a Table, the rows
-must contain both or one of 'sid' or 'symbol'.
+DataFrame.
 """.strip()
 
 

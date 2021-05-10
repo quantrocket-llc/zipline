@@ -248,21 +248,6 @@ class InMemoryFXReaderTestCase(_FXReaderTestCase):
     def reader(self):
         return self.in_memory_fx_rate_reader
 
-
-class HDF5FXReaderTestCase(zp_fixtures.WithTmpDir,
-                           _FXReaderTestCase):
-
-    @classmethod
-    def init_class_fixtures(cls):
-        super(HDF5FXReaderTestCase, cls).init_class_fixtures()
-        path = cls.tmpdir.getpath('fx_rates.h5')
-        cls.h5_fx_reader = cls.write_h5_fx_rates(path)
-
-    @property
-    def reader(self):
-        return self.h5_fx_reader
-
-
 class FastGetLocTestCase(zp_fixtures.ZiplineTestCase):
 
     def test_fast_get_loc_ffilled(self):
