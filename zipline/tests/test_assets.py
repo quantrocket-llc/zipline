@@ -60,9 +60,6 @@ from zipline.assets.asset_writer import (
     SQLITE_MAX_VARIABLE_NUMBER,
 )
 from zipline.assets.asset_db_schema import ASSET_DB_VERSION
-from zipline.assets.asset_db_migrations import (
-    downgrade
-)
 from zipline.errors import (
     EquitiesNotFound,
     FutureContractsNotFound,
@@ -75,7 +72,6 @@ from zipline.errors import (
     SameSymbolUsedAcrossCountries,
     SidsNotFound,
     SymbolNotFound,
-    AssetDBImpossibleDowngrade,
     ValueNotFoundForField,
 )
 from zipline.testing import (
@@ -2239,109 +2235,6 @@ class TestAssetDBVersioning(ZiplineTestCase):
 
         # Now that the versions match, this Finder should succeed
         AssetFinder(engine=self.engine)
-
-    @unittest.skip("Downgrading the assets db is to be removed from QuantRocket")
-    def test_downgrade(self):
-        # Attempt to downgrade a current assets db all the way down to v0
-        conn = self.engine.connect()
-
-        # first downgrade to v3
-        downgrade(self.engine, 3)
-        metadata = sa.MetaData(conn)
-        metadata.reflect()
-        check_version_info(conn, metadata.tables['version_info'], 3)
-        self.assertFalse('exchange_full' in metadata.tables)
-
-        # now go all the way to v0
-        downgrade(self.engine, 0)
-
-        # Verify that the db version is now 0
-        metadata = sa.MetaData(conn)
-        metadata.reflect()
-        version_table = metadata.tables['version_info']
-        check_version_info(conn, version_table, 0)
-
-        # Check some of the v1-to-v0 downgrades
-        self.assertTrue('futures_contracts' in metadata.tables)
-        self.assertTrue('version_info' in metadata.tables)
-        self.assertFalse('tick_size' in
-                         metadata.tables['futures_contracts'].columns)
-        self.assertTrue('contract_multiplier' in
-                        metadata.tables['futures_contracts'].columns)
-
-    def test_impossible_downgrade(self):
-        # Attempt to downgrade a current assets db to a
-        # higher-than-current version
-        with self.assertRaises(AssetDBImpossibleDowngrade):
-            downgrade(self.engine, ASSET_DB_VERSION + 5)
-
-    @unittest.skip("Downgrading the assets db is to be removed from QuantRocket")
-    def test_v5_to_v4_selects_most_recent_ticker(self):
-        T = pd.Timestamp
-        equities = pd.DataFrame(
-            [['A', 'A', '0', 'USD', T('2014-01-01'), T('2014-01-02')],
-             ['B', 'B', '1', 'USD', T('2014-01-01'), T('2014-01-02')],
-             # these two are both ticker sid 2
-             ['B', 'C', '2', 'USD', T('2014-01-03'), T('2014-01-04')],
-             ['C', 'C', '2', 'USD', T('2014-01-01'), T('2014-01-02')]],
-            index=[0, 1, 2, 2],
-            columns=['symbol', 'asset_name', 'real_sid', 'currency', 'start_date', 'end_date'],
-        )
-        equities['exchange'] = 'NYSE'
-
-        AssetDBWriter(self.engine).write(equities=equities)
-
-        downgrade(self.engine, 4)
-        metadata = sa.MetaData(self.engine)
-        metadata.reflect()
-
-        def select_fields(r):
-            return r.sid, r.symbol, r.asset_name, r.start_date, r.end_date
-
-        expected_data = {
-            (0, 'A', 'A', T('2014-01-01').value, T('2014-01-02').value),
-            (1, 'B', 'B', T('2014-01-01').value, T('2014-01-02').value),
-            (2, 'B', 'C', T('2014-01-01').value, T('2014-01-04').value),
-        }
-        actual_data = set(map(
-            select_fields,
-            sa.select(metadata.tables['equities'].c).execute(),
-        ))
-
-        assert_equal(expected_data, actual_data)
-
-    @unittest.skip("Downgrading the assets db is to be removed from QuantRocket")
-    def test_v7_to_v6_only_keeps_US(self):
-        T = pd.Timestamp
-        equities = pd.DataFrame(
-            [['A', 'A', 'USD', T('2014-01-01'), T('2014-01-02'), 'NYSE'],
-             ['B', 'B', 'USD', T('2014-01-01'), T('2014-01-02'), 'JPX'],
-             ['C', 'C', 'USD', T('2014-01-03'), T('2014-01-04'), 'NYSE'],
-             ['D', 'D', 'USD', T('2014-01-01'), T('2014-01-02'), 'JPX']],
-            index=[0, 1, 2, 3],
-            columns=['symbol', 'real_sid', 'currency', 'start_date', 'end_date', 'exchange'],
-        )
-        exchanges = pd.DataFrame.from_records([
-            {'exchange': 'NYSE', 'country_code': 'US'},
-            {'exchange': 'JPX', 'country_code': 'JP'},
-        ])
-        AssetDBWriter(self.engine).write(
-            equities=equities,
-            exchanges=exchanges,
-        )
-
-        downgrade(self.engine, 6)
-        metadata = sa.MetaData(self.engine)
-        metadata.reflect()
-
-        expected_sids = {0, 2}
-        actual_sids = set(map(
-            lambda r: r.sid,
-            sa.select(metadata.tables['equities'].c).execute(),
-        ))
-
-        assert_equal(expected_sids, actual_sids)
-
 
 class TestVectorizedSymbolLookup(WithAssetFinder, ZiplineTestCase):
 

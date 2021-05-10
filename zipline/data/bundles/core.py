@@ -16,7 +16,6 @@ from ..minute_bars import (
     BcolzMinuteBarWriter,
 )
 from zipline.assets import AssetDBWriter, AssetFinder, ASSET_DB_VERSION
-from zipline.assets.asset_db_migrations import downgrade
 from zipline.utils.cache import (
     dataframe_cache,
     working_dir,
@@ -329,8 +328,7 @@ def _make_bundle_core():
 
     def ingest(name,
                environ=os.environ,
-               timestamp=None,
-               assets_versions=()):
+               timestamp=None):
         """Ingest data for a given bundle.
 
         Parameters
@@ -342,8 +340,6 @@ def _make_bundle_core():
         timestamp : datetime, optional
             The timestamp to use for the load.
             By default this is the current time.
-        assets_versions : Iterable[int], optional
-            Versions of the assets db to which to downgrade.
         """
         try:
             bundle = bundles[name]
@@ -414,10 +410,7 @@ def _make_bundle_core():
                 minute_bar_writer = None
                 asset_db_writer = None
                 adjustment_db_writer = None
-                if assets_versions:
-                    raise ValueError('Need to ingest a bundle that creates '
-                                     'writers in order to downgrade the assets'
-                                     ' db.')
+
             bundle.ingest(
                 environ,
                 asset_db_writer,
@@ -430,14 +423,6 @@ def _make_bundle_core():
                 cache,
                 pth.data_path([name, timestr], environ=environ),
             )
-
-            for version in sorted(set(assets_versions), reverse=True):
-                version_path = wd.getpath(*asset_db_relative(
-                    name, timestr, db_version=version,
-                ))
-                with working_file(version_path) as wf:
-                    shutil.copy2(assets_db_path, wf.path)
-                    downgrade(wf.path, version)
 
     def most_recent_data(bundle_name, timestamp, environ=None):
         """Get the path to the most recent data after ``date``for the
