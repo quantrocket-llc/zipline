@@ -565,7 +565,9 @@ class BcolzMinuteBarWriter(object):
         sid_containing_dirname = os.path.dirname(path)
         if not os.path.exists(sid_containing_dirname):
             # Other sids may have already created the containing directory.
-            os.makedirs(sid_containing_dirname)
+            # use exist_ok=True to solve a possible race condition during
+            # multi-threaded ingestion.
+            os.makedirs(sid_containing_dirname, exist_ok=True)
         initial_array = np.empty(0, np.uint32)
         table = ctable(
             rootdir=path,
