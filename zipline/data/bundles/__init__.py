@@ -1,7 +1,6 @@
 from .core import (
     UnknownBundle,
     bundles,
-    clean,
     from_bundle_ingest_dirname,
     ingest,
     ingestions_for_bundle,
@@ -15,7 +14,6 @@ from .core import (
 __all__ = [
     'UnknownBundle',
     'bundles',
-    'clean',
     'from_bundle_ingest_dirname',
     'ingest',
     'ingestions_for_bundle',

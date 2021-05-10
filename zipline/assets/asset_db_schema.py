@@ -12,7 +12,6 @@ asset_db_table_names = frozenset({
     'asset_router',
     'equities',
     'equity_symbol_mappings',
-    'equity_supplementary_mappings',
     'futures_contracts',
     'exchanges',
     'futures_root_symbols',
@@ -105,22 +104,6 @@ equity_symbol_mappings = sa.Table(
         sa.Integer,
         nullable=False,
     ),
-)
-
-equity_supplementary_mappings = sa.Table(
-    'equity_supplementary_mappings',
-    metadata,
-    sa.Column(
-        'sid',
-        sa.Integer,
-        sa.ForeignKey(equities.c.sid),
-        nullable=False,
-        primary_key=True
-    ),
-    sa.Column('field', sa.Text, nullable=False, primary_key=True),
-    sa.Column('start_date', sa.Integer, nullable=False, primary_key=True),
-    sa.Column('end_date', sa.Integer, nullable=False),
-    sa.Column('value', sa.Text, nullable=False),
 )
 
 futures_root_symbols = sa.Table(

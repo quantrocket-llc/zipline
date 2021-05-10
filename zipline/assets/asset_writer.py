@@ -28,7 +28,6 @@ from zipline.assets.asset_db_schema import (
     asset_router,
     equities as equities_table,
     equity_symbol_mappings,
-    equity_supplementary_mappings as equity_supplementary_mappings_table,
     futures_contracts as futures_contracts_table,
     exchanges as exchanges_table,
     futures_root_symbols,
@@ -48,7 +47,6 @@ AssetData = namedtuple(
         'futures',
         'exchanges',
         'root_symbols',
-        'equity_supplementary_mappings',
     ),
 )
 
@@ -64,7 +62,6 @@ mapping_columns = symbol_columns | {'start_date', 'end_date'}
 
 _index_columns = {
     'equities': 'sid',
-    'equity_supplementary_mappings': 'sid',
     'futures': 'sid',
     'exchanges': 'exchange',
     'root_symbols': 'root_symbol',
@@ -72,7 +69,6 @@ _index_columns = {
 
 
 def _normalize_index_columns_in_place(equities,
-                                      equity_supplementary_mappings,
                                       futures,
                                       exchanges,
                                       root_symbols):
@@ -87,7 +83,6 @@ def _normalize_index_columns_in_place(equities,
     If frames are passed as None, they're ignored.
     """
     for frame, column_name in ((equities, 'sid'),
-                               (equity_supplementary_mappings, 'sid'),
                                (futures, 'sid'),
                                (exchanges, 'exchange'),
                                (root_symbols, 'root_symbol')):
@@ -154,14 +149,6 @@ _root_symbols_defaults = {
     'sector': _default_none,
     'description': _default_none,
     'exchange': _default_none,
-}
-
-# Default values for the equity_supplementary_mappings DataFrame
-_equity_supplementary_mappings_defaults = {
-    'value': _default_none,
-    'field': _default_none,
-    'start_date': lambda df, col: 0,
-    'end_date': lambda df, col: np.iinfo(np.int64).max,
 }
 
 # Default values for the equity_symbol_mappings DataFrame
@@ -391,7 +378,6 @@ class AssetDBWriter(object):
     def _real_write(self,
                     equities,
                     equity_symbol_mappings,
-                    equity_supplementary_mappings,
                     futures,
                     exchanges,
                     root_symbols,
@@ -416,14 +402,6 @@ class AssetDBWriter(object):
                     chunk_size,
                 )
 
-            if equity_supplementary_mappings is not None:
-                self._write_df_to_table(
-                    equity_supplementary_mappings_table,
-                    equity_supplementary_mappings,
-                    conn,
-                    chunk_size,
-                )
-
             if futures is not None:
                 self._write_assets(
                     'future',
@@ -444,7 +422,6 @@ class AssetDBWriter(object):
     def write_direct(self,
                      equities=None,
                      equity_symbol_mappings=None,
-                     equity_supplementary_mappings=None,
                      futures=None,
                      exchanges=None,
                      root_symbols=None,
@@ -531,8 +508,6 @@ class AssetDBWriter(object):
                   A short description of this root symbol.
               exchange : str
                   The exchange where this root symbol is traded.
-        equity_supplementary_mappings : pd.DataFrame, optional
-            Additional mappings from values of abitrary type to assets.
         chunk_size : int, optional
             The amount of rows to write to the SQLite table at once.
             This defaults to the default number of bind params in sqlite.
@@ -555,12 +530,6 @@ class AssetDBWriter(object):
                 _equity_symbol_mappings_defaults,
             )
 
-        if equity_supplementary_mappings is not None:
-            equity_supplementary_mappings = _generate_output_dataframe(
-                equity_supplementary_mappings,
-                _equity_supplementary_mappings_defaults,
-            )
-
         if futures is not None:
             futures = _generate_output_dataframe(_futures_defaults, futures)
 
@@ -579,7 +548,6 @@ class AssetDBWriter(object):
         # Set named identifier columns as indices, if provided.
         _normalize_index_columns_in_place(
             equities=equities,
-            equity_supplementary_mappings=equity_supplementary_mappings,
             futures=futures,
             exchanges=exchanges,
             root_symbols=root_symbols,
@@ -588,7 +556,6 @@ class AssetDBWriter(object):
         self._real_write(
             equities=equities,
             equity_symbol_mappings=equity_symbol_mappings,
-            equity_supplementary_mappings=equity_supplementary_mappings,
             futures=futures,
             exchanges=exchanges,
             root_symbols=root_symbols,
@@ -600,7 +567,6 @@ class AssetDBWriter(object):
               futures=None,
               exchanges=None,
               root_symbols=None,
-              equity_supplementary_mappings=None,
               chunk_size=DEFAULT_CHUNK_SIZE):
         """Write asset metadata to a sqlite database.
 
@@ -683,8 +649,6 @@ class AssetDBWriter(object):
                   A short description of this root symbol.
               exchange : str
                   The exchange where this root symbol is traded.
-        equity_supplementary_mappings : pd.DataFrame, optional
-            Additional mappings from values of abitrary type to assets.
         chunk_size : int, optional
             The amount of rows to write to the SQLite table at once.
             This defaults to the default number of bind params in sqlite.
@@ -711,16 +675,10 @@ class AssetDBWriter(object):
             futures if futures is not None else pd.DataFrame(),
             exchanges if exchanges is not None else pd.DataFrame(),
             root_symbols if root_symbols is not None else pd.DataFrame(),
-            (
-                equity_supplementary_mappings
-                if equity_supplementary_mappings is not None
-                else pd.DataFrame()
-            ),
         )
         self._real_write(
             equities=data.equities,
             equity_symbol_mappings=data.equities_mappings,
-            equity_supplementary_mappings=data.equity_supplementary_mappings,
             futures=data.futures,
             root_symbols=data.root_symbols,
             exchanges=data.exchanges,
@@ -888,23 +846,11 @@ class AssetDBWriter(object):
 
         return futures_output
 
-    def _normalize_equity_supplementary_mappings(self, mappings):
-        mappings_output = _generate_output_dataframe(
-            data_subset=mappings,
-            defaults=_equity_supplementary_mappings_defaults,
-        )
-
-        for col in ('start_date', 'end_date'):
-            mappings_output[col] = _dt_to_epoch_ns(mappings_output[col])
-
-        return mappings_output
-
     def _load_data(self,
                    equities,
                    futures,
                    exchanges,
-                   root_symbols,
-                   equity_supplementary_mappings):
+                   root_symbols):
         """
         Returns a standard set of pandas.DataFrames:
         equities, futures, exchanges, root_symbols
@@ -912,19 +858,12 @@ class AssetDBWriter(object):
         # Set named identifier columns as indices, if provided.
         _normalize_index_columns_in_place(
             equities=equities,
-            equity_supplementary_mappings=equity_supplementary_mappings,
             futures=futures,
             exchanges=exchanges,
             root_symbols=root_symbols,
         )
 
         futures_output = self._normalize_futures(futures)
-
-        equity_supplementary_mappings_output = (
-            self._normalize_equity_supplementary_mappings(
-                equity_supplementary_mappings,
-            )
-        )
 
         exchanges_output = _generate_output_dataframe(
             data_subset=exchanges,
@@ -947,5 +886,4 @@ class AssetDBWriter(object):
             futures=futures_output,
             exchanges=exchanges_output,
             root_symbols=root_symbols_output,
-            equity_supplementary_mappings=equity_supplementary_mappings_output,
         )

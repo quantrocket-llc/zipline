@@ -8,14 +8,9 @@ from toolz import valmap
 import toolz.curried.operator as op
 from trading_calendars import TradingCalendar, get_calendar
 
-from zipline.assets import ASSET_DB_VERSION
-
-from zipline.assets.asset_writer import check_version_info
 from zipline.assets.synthetic import make_simple_equity_info
-from zipline.data.bundles import UnknownBundle, from_bundle_ingest_dirname, \
-    ingestions_for_bundle
-from zipline.data.bundles.core import _make_bundle_core, BadClean, \
-    to_bundle_ingest_dirname, asset_db_path
+from zipline.data.bundles import UnknownBundle
+from zipline.data.bundles.core import _make_bundle_core
 from zipline.lib.adjustment import Float64Multiply
 from zipline.pipeline.loaders.synthetic import (
     make_bar_data,
@@ -58,8 +53,7 @@ class BundleCoreTestCase(WithInstanceTmpDir,
          self.register,
          self.unregister,
          self.ingest,
-         self.load,
-         self.clean) = _make_bundle_core()
+         self.load) = _make_bundle_core()
         self.environ = {'ZIPLINE_ROOT': self.instance_tmpdir.path}
 
     def test_register_decorator(self):
@@ -263,7 +257,7 @@ class BundleCoreTestCase(WithInstanceTmpDir,
             msg='volume',
         )
 
-    @parameterized.expand([('clean',), ('load',)])
+    @parameterized.expand([('load',),])
     def test_bundle_doesnt_exist(self, fnname):
         with assert_raises(UnknownBundle) as e:
             getattr(self, fnname)('ayy', environ=self.environ)
@@ -327,163 +321,3 @@ class BundleCoreTestCase(WithInstanceTmpDir,
             msg='output_dir was not in the bundle directory',
         )
         return _wrote_to[0]
-
-    def test_clean_keep_last(self):
-        first = self._empty_ingest()
-
-        assert_equal(
-            self.clean('bundle', keep_last=1, environ=self.environ),
-            set(),
-        )
-        assert_equal(
-            self._list_bundle(),
-            {first},
-            msg='directory should not have changed',
-        )
-
-        second = self._empty_ingest()
-        assert_equal(
-            self._list_bundle(),
-            {first, second},
-            msg='two ingestions are not present',
-        )
-        assert_equal(
-            self.clean('bundle', keep_last=1, environ=self.environ),
-            {first},
-        )
-        assert_equal(
-            self._list_bundle(),
-            {second},
-            msg='first ingestion was not removed with keep_last=2',
-        )
-
-        third = self._empty_ingest()
-        fourth = self._empty_ingest()
-        fifth = self._empty_ingest()
-
-        assert_equal(
-            self._list_bundle(),
-            {second, third, fourth, fifth},
-            msg='larger set of ingestions did not happen correctly',
-        )
-
-        assert_equal(
-            self.clean('bundle', keep_last=2, environ=self.environ),
-            {second, third},
-        )
-
-        assert_equal(
-            self._list_bundle(),
-            {fourth, fifth},
-            msg='keep_last=2 did not remove the correct number of ingestions',
-        )
-
-        with assert_raises(BadClean):
-            self.clean('bundle', keep_last=-1, environ=self.environ)
-
-        assert_equal(
-            self._list_bundle(),
-            {fourth, fifth},
-            msg='keep_last=-1 removed some ingestions',
-        )
-
-        assert_equal(
-            self.clean('bundle', keep_last=0, environ=self.environ),
-            {fourth, fifth},
-        )
-
-        assert_equal(
-            self._list_bundle(),
-            set(),
-            msg='keep_last=0 did not remove the correct number of ingestions',
-        )
-
-    @staticmethod
-    def _ts_of_run(run):
-        return from_bundle_ingest_dirname(run.rsplit(os.path.sep, 1)[-1])
-
-    def test_clean_before_after(self):
-        first = self._empty_ingest()
-        assert_equal(
-            self.clean(
-                'bundle',
-                before=self._ts_of_run(first),
-                environ=self.environ,
-            ),
-            set(),
-        )
-        assert_equal(
-            self._list_bundle(),
-            {first},
-            msg='directory should not have changed (before)',
-        )
-
-        assert_equal(
-            self.clean(
-                'bundle',
-                after=self._ts_of_run(first),
-                environ=self.environ,
-            ),
-            set(),
-        )
-        assert_equal(
-            self._list_bundle(),
-            {first},
-            msg='directory should not have changed (after)',
-        )
-
-        assert_equal(
-            self.clean(
-                'bundle',
-                before=self._ts_of_run(first) + _1_ns,
-                environ=self.environ,
-            ),
-            {first},
-        )
-        assert_equal(
-            self._list_bundle(),
-            set(),
-            msg='directory now be empty (before)',
-        )
-
-        second = self._empty_ingest()
-        assert_equal(
-            self.clean(
-                'bundle',
-                after=self._ts_of_run(second) - _1_ns,
-                environ=self.environ,
-            ),
-            {second},
-        )
-        assert_equal(
-            self._list_bundle(),
-            set(),
-            msg='directory now be empty (after)',
-        )
-
-        third = self._empty_ingest()
-        fourth = self._empty_ingest()
-        fifth = self._empty_ingest()
-        sixth = self._empty_ingest()
-
-        assert_equal(
-            self._list_bundle(),
-            {third, fourth, fifth, sixth},
-            msg='larger set of ingestions did no happen correctly',
-        )
-
-        assert_equal(
-            self.clean(
-                'bundle',
-                before=self._ts_of_run(fourth),
-                after=self._ts_of_run(fifth),
-                environ=self.environ,
-            ),
-            {third, sixth},
-        )
-
-        assert_equal(
-            self._list_bundle(),
-            {fourth, fifth},
-            msg='did not strip first and last directories',
-        )

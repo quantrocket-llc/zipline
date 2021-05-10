@@ -41,10 +41,6 @@ from toolz import (
 from zipline.errors import (
     EquitiesNotFound,
     FutureContractsNotFound,
-    MultipleValuesFoundForField,
-    MultipleValuesFoundForSid,
-    NoValueForSid,
-    ValueNotFoundForField,
     SidsNotFound,
     SymbolNotFound,
 )
@@ -360,22 +356,6 @@ class AssetFinder(object):
     @lazyval
     def country_codes(self):
         return tuple(self.symbol_ownership_maps_by_country_code)
-
-    @lazyval
-    def equity_supplementary_map(self):
-        return build_ownership_map(
-            table=self.equity_supplementary_mappings,
-            key_from_row=lambda row: (row.field, row.value),
-            value_from_row=lambda row: row.value,
-        )
-
-    @lazyval
-    def equity_supplementary_map_by_sid(self):
-        return build_ownership_map(
-            table=self.equity_supplementary_mappings,
-            key_from_row=lambda row: (row.field, row.sid),
-            value_from_row=lambda row: row.value,
-        )
 
     def lookup_asset_types(self, sids):
         """
@@ -749,94 +729,6 @@ class AssetFinder(object):
         if not data:
             raise SymbolNotFound(symbol=symbol)
         return self.retrieve_asset(data['sid'])
-
-    def lookup_by_supplementary_field(self, field_name, value, as_of_date):
-        try:
-            owners = self.equity_supplementary_map[
-                field_name,
-                value,
-            ]
-            assert owners, 'empty owners list for %r' % (field_name, value)
-        except KeyError:
-            # no equity has ever held this value
-            raise ValueNotFoundForField(field=field_name, value=value)
-
-        if not as_of_date:
-            if len(owners) > 1:
-                # more than one equity has held this value, this is ambigious
-                # without the date
-                raise MultipleValuesFoundForField(
-                    field=field_name,
-                    value=value,
-                    options=set(map(
-                        compose(self.retrieve_asset, attrgetter('sid')),
-                        owners,
-                    )),
-                )
-            # exactly one equity has ever held this value, we may resolve
-            # without the date
-            return self.retrieve_asset(owners[0].sid)
-
-        for start, end, sid, _ in owners:
-            if start <= as_of_date < end:
-                # find the equity that owned it on the given asof date
-                return self.retrieve_asset(sid)
-
-        # no equity held the value on the given asof date
-        raise ValueNotFoundForField(field=field_name, value=value)
-
-    def get_supplementary_field(self, sid, field_name, as_of_date):
-        """Get the value of a supplementary field for an asset.
-
-        Parameters
-        ----------
-        sid : int
-            The sid of the asset to query.
-        field_name : str
-            Name of the supplementary field.
-        as_of_date : pd.Timestamp, None
-            The last known value on this date is returned. If None, a
-            value is returned only if we've only ever had one value for
-            this sid. If None and we've had multiple values,
-            MultipleValuesFoundForSid is raised.
-
-        Raises
-        ------
-        NoValueForSid
-            If we have no values for this asset, or no values was known
-            on this as_of_date.
-        MultipleValuesFoundForSid
-            If we have had multiple values for this asset over time, and
-            None was passed for as_of_date.
-        """
-        try:
-            periods = self.equity_supplementary_map_by_sid[
-                field_name,
-                sid,
-            ]
-            assert periods, 'empty periods list for %r' % (field_name, sid)
-        except KeyError:
-            raise NoValueForSid(field=field_name, sid=sid)
-
-        if not as_of_date:
-            if len(periods) > 1:
-                # This equity has held more than one value, this is ambigious
-                # without the date
-                raise MultipleValuesFoundForSid(
-                    field=field_name,
-                    sid=sid,
-                    options={p.value for p in periods},
-                )
-            # this equity has only ever held this value, we may resolve
-            # without the date
-            return periods[0].value
-
-        for start, end, _, value in periods:
-            if start <= as_of_date < end:
-                return value
-
-        # Could not find a value for this sid on the as_of_date.
-        raise NoValueForSid(field=field_name, sid=sid)
 
     def _get_contract_sids(self, root_symbol):
         fc_cols = self.futures_contracts.c

@@ -143,7 +143,7 @@ BundleData = namedtuple(
 
 BundleCore = namedtuple(
     'BundleCore',
-    'bundles register unregister ingest load clean',
+    'bundles register unregister ingest load',
 )
 
 
@@ -161,34 +161,6 @@ class UnknownBundle(LookupError):
     def __str__(self):
         return self.message
 
-
-class BadClean(ValueError):
-    """Exception indicating that an invalid argument set was passed to
-    ``clean``.
-
-    Parameters
-    ----------
-    before, after, keep_last : any
-        The bad arguments to ``clean``.
-
-    See Also
-    --------
-    clean
-    """
-    def __init__(self, before, after, keep_last):
-        super(BadClean, self).__init__(
-            'Cannot pass a combination of `before` and `after` with'
-            '`keep_last`. Got: before=%r, after=%r, keep_n=%r\n' % (
-                before,
-                after,
-                keep_last,
-            ),
-        )
-
-    def __str__(self):
-        return self.message
-
-
 def _make_bundle_core():
     """Create a family of data bundle functions that read from the same
     bundle mapping.
@@ -205,8 +177,6 @@ def _make_bundle_core():
         The function which downloads and write data for a given data bundle.
     load : callable
         The function which loads the ingested bundles back into memory.
-    clean : callable
-        The function which cleans up data written with ``ingest``.
     """
     _bundles = {}  # the registered bundles
     # Expose _bundles through a proxy so that users cannot mutate this
@@ -502,90 +472,7 @@ def _make_bundle_core():
             ),
         )
 
-    @preprocess(
-        before=optionally(ensure_timestamp),
-        after=optionally(ensure_timestamp),
-    )
-    def clean(name,
-              before=None,
-              after=None,
-              keep_last=None,
-              environ=os.environ):
-        """Clean up data that was created with ``ingest`` or
-        ``$ python -m zipline ingest``
-
-        Parameters
-        ----------
-        name : str
-            The name of the bundle to remove data for.
-        before : datetime, optional
-            Remove data ingested before this date.
-            This argument is mutually exclusive with: keep_last
-        after : datetime, optional
-            Remove data ingested after this date.
-            This argument is mutually exclusive with: keep_last
-        keep_last : int, optional
-            Remove all but the last ``keep_last`` ingestions.
-            This argument is mutually exclusive with:
-              before
-              after
-        environ : mapping, optional
-            The environment variables. Defaults of os.environ.
-
-        Returns
-        -------
-        cleaned : set[str]
-            The names of the runs that were removed.
-
-        Raises
-        ------
-        BadClean
-            Raised when ``before`` and or ``after`` are passed with
-            ``keep_last``. This is a subclass of ``ValueError``.
-        """
-        try:
-            all_runs = sorted(
-                filter(
-                    complement(pth.hidden),
-                    os.listdir(pth.data_path([name], environ=environ)),
-                ),
-                key=from_bundle_ingest_dirname,
-            )
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
-            raise UnknownBundle(name)
-        if ((before is not None or after is not None) and
-                keep_last is not None):
-            raise BadClean(before, after, keep_last)
-
-        if keep_last is None:
-            def should_clean(name):
-                dt = from_bundle_ingest_dirname(name)
-                return (
-                    (before is not None and dt < before) or
-                    (after is not None and dt > after)
-                )
-
-        elif keep_last >= 0:
-            last_n_dts = set(take(keep_last, reversed(all_runs)))
-
-            def should_clean(name):
-                return name not in last_n_dts
-        else:
-            raise BadClean(before, after, keep_last)
-
-        cleaned = set()
-        for run in all_runs:
-            if should_clean(run):
-                print("Cleaning {}.", run)
-                path = pth.data_path([name, run], environ=environ)
-                shutil.rmtree(path)
-                cleaned.add(path)
-
-        return cleaned
-
-    return BundleCore(bundles, register, unregister, ingest, load, clean)
+    return BundleCore(bundles, register, unregister, ingest, load)
 
 
-bundles, register, unregister, ingest, load, clean = _make_bundle_core()
+bundles, register, unregister, ingest, load = _make_bundle_core()
