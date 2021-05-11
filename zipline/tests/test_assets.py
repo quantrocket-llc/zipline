@@ -29,7 +29,7 @@ import unittest
 import uuid
 import warnings
 
-from nose_parameterized import parameterized
+from parameterized import parameterized
 import numpy as np
 from numpy import full, int32, int64
 import pandas as pd
