@@ -28,7 +28,7 @@ from testfixtures import TempDirectory
 import numpy as np
 import pandas as pd
 import pytz
-from pandas.core.common import PerformanceWarning
+from pandas.errors import PerformanceWarning
 from trading_calendars import get_calendar, register_calendar
 
 import zipline.api

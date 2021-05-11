@@ -10,10 +10,10 @@ from six import viewkeys, exec_, PY3
 
 from zipline.utils.compat import getargspec, wraps
 
-
 _code_argorder = (
-    ('co_argcount', 'co_kwonlyargcount') if PY3 else ('co_argcount',)
-) + (
+    'co_argcount',
+    'co_posonlyargcount',
+    'co_kwonlyargcount',
     'co_nlocals',
     'co_stacksize',
     'co_flags',

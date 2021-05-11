@@ -103,7 +103,6 @@ from zipline.utils.input_validation import (
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.utils.pandas_utils import normalize_date
 from zipline.utils.cache import ExpiringCache
-from zipline.utils.pandas_utils import clear_dataframe_indexer_caches
 
 import zipline.utils.events
 from zipline.utils.events import (
@@ -303,9 +302,7 @@ class TradingAlgorithm(object):
 
         # Create an already-expired cache so that we compute the first time
         # data is requested.
-        self._pipeline_cache = ExpiringCache(
-            cleanup=clear_dataframe_indexer_caches
-        )
+        self._pipeline_cache = ExpiringCache()
 
         if blotter is not None:
             self.blotter = blotter
