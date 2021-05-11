@@ -33,7 +33,7 @@ from pandas import (
     Int64Index,
     Timestamp,
 )
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 from toolz.curried.operator import getitem
 
 from zipline.lib.adjustment import Float64Multiply
@@ -93,7 +93,7 @@ EQUITY_INFO = DataFrame(
     ],
     index=arange(1, 7),
     columns=['start_date', 'end_date'],
-).astype(datetime64)
+).astype('datetime64[ns]')
 EQUITY_INFO['symbol'] = [chr(ord('A') + n) for n in range(len(EQUITY_INFO))]
 EQUITY_INFO['exchange'] = 'TEST'
 EQUITY_INFO['currency'] = 'USD'
