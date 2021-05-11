@@ -285,8 +285,8 @@ class EventIndexerTestCase(ZiplineTestCase):
 class EventsLoaderEmptyTestCase(WithAssetFinder,
                                 WithTradingSessions,
                                 ZiplineTestCase):
-    START_DATE = pd.Timestamp('2014-01-01')
-    END_DATE = pd.Timestamp('2014-01-30')
+    START_DATE = pd.Timestamp('2014-01-01', tz='utc')
+    END_DATE = pd.Timestamp('2014-01-30', tz='utc')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     @classmethod
@@ -371,8 +371,8 @@ class EventsLoaderTestCase(WithAssetFinder,
                            WithTradingSessions,
                            ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2014-01-01')
-    END_DATE = pd.Timestamp('2014-01-30')
+    START_DATE = pd.Timestamp('2014-01-01', tz='utc')
+    END_DATE = pd.Timestamp('2014-01-30', tz='utc')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     @classmethod
