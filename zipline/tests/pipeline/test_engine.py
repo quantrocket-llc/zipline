@@ -979,10 +979,12 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
         for asset in df.columns:
             if asset.start_date >= min_:
                 start = index.get_loc(asset.start_date, method='bfill')
-                df.loc[:start + 1, asset] = nan  # +1 to overwrite start_date
+                # +1 to overwrite start_date:
+                df.iloc[:start + 1, df.columns.get_loc(asset)] = nan
             if asset.end_date <= max_:
                 end = index.get_loc(asset.end_date)
-                df.ix[end + 1:, asset] = nan  # +1 to *not* overwrite end_date
+                # +1 to *not* overwrite end_date:
+                df.iloc[end + 1:, df.columns.get_loc(asset)] = nan
 
     def test_SMA(self):
         window_length = 5

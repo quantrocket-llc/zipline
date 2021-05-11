@@ -495,8 +495,6 @@ class EventsLoaderTestCase(WithAssetFinder,
 
             v1, v2 = relevant_events[self.previous_value_columns[column]]
             event1_first_eligible = max(
-                # .ix doesn't work here because the frame index contains
-                # integers, so 0 is still interpreted as a key.
                 relevant_events.iloc[0].loc[['event_date', 'timestamp']],
             )
             event2_first_eligible = max(
