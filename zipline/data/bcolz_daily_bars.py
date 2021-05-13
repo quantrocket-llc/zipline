@@ -165,7 +165,7 @@ class BcolzDailyBarWriter(object):
     def write(self,
               data,
               assets=None,
-              invalid_data_behavior='warn'):
+              invalid_data_behavior='ignore'):
         """
         Parameters
         ----------
@@ -193,7 +193,7 @@ class BcolzDailyBarWriter(object):
 
     def write_csvs(self,
                    asset_map,
-                   invalid_data_behavior='warn'):
+                   invalid_data_behavior='ignore'):
         """Read CSVs as DataFrames from our asset map.
 
         Parameters
