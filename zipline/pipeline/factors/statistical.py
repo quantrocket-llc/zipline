@@ -548,7 +548,7 @@ class SimpleBeta(CustomFactor, StandardOutputs):
     def graph_repr(self):
         return "{}({!r}, {}, {})".format(
             type(self).__name__,
-            str(self.target.symbol),  # coerce from unicode to str in py2.
+            str(self.target.symbol),
             self.window_length,
             self.params['allowed_missing_count'],
         )

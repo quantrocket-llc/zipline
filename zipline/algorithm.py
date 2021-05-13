@@ -16,7 +16,6 @@ from collections import Iterable, namedtuple
 from copy import copy
 import warnings
 from datetime import tzinfo, time
-import logbook
 import logging
 import pytz
 import pandas as pd
@@ -39,7 +38,6 @@ from zipline.errors import (
     AttachPipelineAfterInitialize,
     CannotOrderDelistedAsset,
     DuplicatePipelineName,
-    HistoryInInitialize,
     IncompatibleCommissionModel,
     IncompatibleSlippageModel,
     NoSuchPipeline,
@@ -77,11 +75,7 @@ from zipline.finance.execution import (
 )
 from zipline.finance.asset_restrictions import Restrictions
 from zipline.finance.cancel_policy import NeverCancel, CancelPolicy
-from zipline.finance.asset_restrictions import (
-    NoRestrictions,
-    StaticRestrictions,
-    SecurityListRestrictions,
-)
+from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.assets import Asset, Equity, Future, ContinuousFuture
 from zipline.gens.tradesimulation import AlgorithmSimulator
 from zipline.finance.metrics import MetricsTracker, load as load_metrics_set
@@ -109,7 +103,6 @@ from zipline.utils.input_validation import (
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.utils.pandas_utils import normalize_date
 from zipline.utils.cache import ExpiringCache
-from zipline.utils.pandas_utils import clear_dataframe_indexer_caches
 
 import zipline.utils.events
 from zipline.utils.events import (
@@ -126,10 +119,8 @@ from zipline.utils.math_utils import (
     round_if_near_integer,
 )
 from zipline.utils.preprocess import preprocess
-from zipline.utils.security_list import SecurityList
 
 import zipline.protocol
-from zipline.sources.requests_csv import PandasRequestsCSV
 
 from zipline.gens.sim_engine import MinuteSimulationClock
 from zipline.sources.benchmark_source import BenchmarkSource
@@ -137,8 +128,6 @@ from zipline.zipline_warnings import ZiplineDeprecationWarning
 
 logger = logging.getLogger("quantrocket.zipline")
 logger.setLevel(logging.DEBUG)
-
-log = logbook.Logger("ZiplineLog")
 
 # For creating and storing pipeline instances
 AttachedPipeline = namedtuple('AttachedPipeline', 'pipe chunks eager')
@@ -253,7 +242,6 @@ class TradingAlgorithm(object):
         self.namespace = namespace or {}
 
         self._platform = platform
-        self.logger = None
 
         # XXX: This is kind of a mess.
         # We support passing a data_portal in `run`, but we need an asset
@@ -314,9 +302,7 @@ class TradingAlgorithm(object):
 
         # Create an already-expired cache so that we compute the first time
         # data is requested.
-        self._pipeline_cache = ExpiringCache(
-            cleanup=clear_dataframe_indexer_caches
-        )
+        self._pipeline_cache = ExpiringCache()
 
         if blotter is not None:
             self.blotter = blotter
@@ -324,10 +310,6 @@ class TradingAlgorithm(object):
             cancel_policy = cancel_policy or NeverCancel()
             blotter_class = blotter_class or SimulationBlotter
             self.blotter = blotter_class(cancel_policy=cancel_policy)
-
-        # The symbol lookup date specifies the date to use when resolving
-        # symbols to sids, and can be set using set_symbol_lookup_date()
-        self._symbol_lookup_date = None
 
         # If string is passed in, execute and get reference to
         # functions.
@@ -412,8 +394,6 @@ class TradingAlgorithm(object):
         self.capital_change_deltas = {}
 
         self.restrictions = NoRestrictions()
-
-        self._backwards_compat_universe = None
 
         self.strategy = strategy
         if show_progress_on_dates is None:
@@ -521,7 +501,7 @@ class TradingAlgorithm(object):
         """
         If the clock property is not set, then create one based on frequency.
         """
-        trading_o_and_c = self.trading_calendar.schedule.ix[
+        trading_o_and_c = self.trading_calendar.schedule.loc[
             self.sim_params.sessions]
         market_closes = trading_o_and_c['market_close']
         minutely_emission = False
@@ -617,22 +597,11 @@ class TradingAlgorithm(object):
             self.data_portal,
             self._create_clock(),
             benchmark_source,
-            self.restrictions,
-            universe_func=self._calculate_universe
+            self.restrictions
         )
 
         metrics_tracker.handle_start_of_simulation(benchmark_source)
         return self.trading_client.transform()
-
-    def _calculate_universe(self):
-        # this exists to provide backwards compatibility for older,
-        # deprecated APIs, particularly around the iterability of
-        # BarData (ie, 'for sid in data`).
-        if self._backwards_compat_universe is None:
-            self._backwards_compat_universe = (
-                self.asset_finder.retrieve_all(self.asset_finder.sids)
-            )
-        return self._backwards_compat_universe
 
     def compute_eager_pipelines(self):
         """
@@ -759,7 +728,7 @@ class TradingAlgorithm(object):
                 self.risk_report = perf
 
         daily_dts = pd.DatetimeIndex(
-            [p['period_close'] for p in daily_perfs], tz='UTC'
+            [p['period_close'] for p in daily_perfs]
         )
         daily_stats = pd.DataFrame(daily_perfs, index=daily_dts)
         return daily_stats
@@ -792,18 +761,17 @@ class TradingAlgorithm(object):
                 )
             )
 
-            log.info('Processing capital change to target %s at %s. Capital '
+            print('Processing capital change to target %s at %s. Capital '
                      'change delta is %s' % (target, dt,
                                              capital_change_amount))
         elif capital_change['type'] == 'delta':
             target = None
             capital_change_amount = capital_change['value']
-            log.info('Processing capital change of delta %s at %s'
+            print('Processing capital change of delta %s at %s'
                      % (capital_change_amount, dt))
         else:
-            log.error("Capital change %s does not indicate a valid type "
-                      "('target' or 'delta')" % capital_change)
-            return
+            raise ValueError("Capital change %s does not indicate a valid type "
+                            "('target' or 'delta')" % capital_change)
 
         self.capital_change_deltas.update({dt: capital_change_amount})
         self.metrics_tracker.capital_change(capital_change_amount)
@@ -862,8 +830,8 @@ class TradingAlgorithm(object):
         Only perform a certain action in live trading:
 
         >>> import zipline.api as algo
-        >>> if algo.get_environment("arena") == "trade":
-        >>>     ...
+        >>> if algo.get_environment("arena") == "trade":    # doctest: +SKIP
+        >>>     ...                                         # doctest: +SKIP
         """
         env = {
             'arena': self.sim_params.arena,
@@ -882,96 +850,6 @@ class TradingAlgorithm(object):
                 raise ValueError(
                     '%r is not a valid field for get_environment' % field,
                 )
-
-    @api_method
-    def fetch_csv(self,
-                  url,
-                  pre_func=None,
-                  post_func=None,
-                  date_column='date',
-                  date_format=None,
-                  timezone=pytz.utc.zone,
-                  symbol=None,
-                  mask=True,
-                  symbol_column=None,
-                  special_params_checker=None,
-                  country_code=None,
-                  **kwargs):
-        """Fetch a csv from a remote url and register the data so that it is
-        queryable from the ``data`` object.
-
-        Parameters
-        ----------
-        url : str
-            The url of the csv file to load.
-        pre_func : callable[pd.DataFrame -> pd.DataFrame], optional
-            A callback to allow preprocessing the raw data returned from
-            fetch_csv before dates are paresed or symbols are mapped.
-        post_func : callable[pd.DataFrame -> pd.DataFrame], optional
-            A callback to allow postprocessing of the data after dates and
-            symbols have been mapped.
-        date_column : str, optional
-            The name of the column in the preprocessed dataframe containing
-            datetime information to map the data.
-        date_format : str, optional
-            The format of the dates in the ``date_column``. If not provided
-            ``fetch_csv`` will attempt to infer the format. For information
-            about the format of this string, see :func:`pandas.read_csv`.
-        timezone : tzinfo or str, optional
-            The timezone for the datetime in the ``date_column``.
-        symbol : str, optional
-            If the data is about a new asset or index then this string will
-            be the name used to identify the values in ``data``. For example,
-            one may use ``fetch_csv`` to load data for VIX, then this field
-            could be the string ``'VIX'``.
-        mask : bool, optional
-            Drop any rows which cannot be symbol mapped.
-        symbol_column : str
-            If the data is attaching some new attribute to each asset then this
-            argument is the name of the column in the preprocessed dataframe
-            containing the symbols. This will be used along with the date
-            information to map the sids in the asset finder.
-        country_code : str, optional
-            Country code to use to disambiguate symbol lookups.
-        **kwargs
-            Forwarded to :func:`pandas.read_csv`.
-
-        Returns
-        -------
-        csv_data_source : zipline.sources.requests_csv.PandasRequestsCSV
-            A requests source that will pull data from the url specified.
-        """
-        if country_code is None:
-            country_code = self.default_fetch_csv_country_code(
-                self.trading_calendar,
-            )
-
-        # Show all the logs every time fetcher is used.
-        csv_data_source = PandasRequestsCSV(
-            url,
-            pre_func,
-            post_func,
-            self.asset_finder,
-            self.trading_calendar.day,
-            self.sim_params.start_session,
-            self.sim_params.end_session,
-            date_column,
-            date_format,
-            timezone,
-            symbol,
-            mask,
-            symbol_column,
-            data_frequency=self.data_frequency,
-            country_code=country_code,
-            special_params_checker=special_params_checker,
-            **kwargs
-        )
-
-        # ingest this into dataportal
-        self.data_portal.handle_extra_source(csv_data_source.df,
-                                             self.sim_params)
-
-        return csv_data_source
 
     def add_event(self, rule, callback):
         """Adds an event to the algorithm's EventManager.
@@ -1020,7 +898,7 @@ class TradingAlgorithm(object):
         after the open:
 
         >>> import zipline.api as algo
-        >>> algo.schedule_function(
+        >>> algo.schedule_function(                          # doctest: +SKIP
                 rebalance,
                 algo.date_rules.every_day(),
                 algo.time_rules.market_open(minutes=30))
@@ -1106,8 +984,8 @@ class TradingAlgorithm(object):
         Set the benchmark to SPY:
 
         >>> import zipline.api as algo
-        >>> spy = algo.sid("FIBBG000BDTBL9")
-        >>> algo.set_benchmark(spy)
+        >>> spy = algo.sid("FIBBG000BDTBL9")    # doctest: +SKIP
+        >>> algo.set_benchmark(spy)             # doctest: +SKIP
 
         Notes
         -----
@@ -1156,7 +1034,7 @@ class TradingAlgorithm(object):
         Create a continuous future for ES, rolling on volume:
 
         >>> import zipline.api as algo
-        >>> algo.continuous_future("ES", roll="volume")
+        >>> algo.continuous_future("ES", roll="volume")    # doctest: +SKIP
         """
         return self.asset_finder.create_continuous_future(
             root_symbol_str,
@@ -1164,77 +1042,6 @@ class TradingAlgorithm(object):
             roll,
             adjustment,
         )
-
-    @api_method
-    @preprocess(
-        symbol_str=ensure_upper_case,
-        country_code=optionally(ensure_upper_case),
-    )
-    def symbol(self, symbol_str, country_code=None):
-        """Lookup an Equity by its ticker symbol.
-
-        Parameters
-        ----------
-        symbol_str : str
-            The ticker symbol for the equity to lookup.
-        country_code : str or None, optional
-            A country to limit symbol searches to.
-
-        Returns
-        -------
-        equity : zipline.assets.Equity
-            The equity that held the ticker symbol on the current
-            symbol lookup date.
-
-        Raises
-        ------
-        SymbolNotFound
-            Raised when the symbols was not held on the current lookup date.
-
-        See Also
-        --------
-        :func:`zipline.api.set_symbol_lookup_date`
-        """
-        # If the user has not set the symbol lookup date,
-        # use the end_session as the date for symbol->sid resolution.
-        _lookup_date = self._symbol_lookup_date \
-            if self._symbol_lookup_date is not None \
-            else self.sim_params.end_session
-
-        return self.asset_finder.lookup_symbol(
-            symbol_str,
-            as_of_date=_lookup_date,
-            country_code=country_code,
-        )
-
-    @api_method
-    def symbols(self, *args, **kwargs):
-        """Lookup multuple Equities as a list.
-
-        Parameters
-        ----------
-        *args : iterable[str]
-            The ticker symbols to lookup.
-        country_code : str or None, optional
-            A country to limit symbol searches to.
-
-        Returns
-        -------
-        equities : list[zipline.assets.Equity]
-            The equities that held the given ticker symbols on the current
-            symbol lookup date.
-
-        Raises
-        ------
-        SymbolNotFound
-            Raised when one of the symbols was not held on the current
-            lookup date.
-
-        See Also
-        --------
-        :func:`zipline.api.set_symbol_lookup_date`
-        """
-        return [self.symbol(identifier, **kwargs) for identifier in args]
 
     @api_method
     def sid(self, sid):
@@ -1318,8 +1125,7 @@ class TradingAlgorithm(object):
             zero_message = "Price of 0 for {psid}; can't infer value".format(
                 psid=asset
             )
-            if self.logger:
-                self.logger.debug(zero_message)
+            print(zero_message)
             # Don't place any order
             return 0
 
@@ -1341,10 +1147,10 @@ class TradingAlgorithm(object):
                 # If we are after the asset's end date or auto close date, warn
                 # the user that they can't place an order for this asset, and
                 # return None.
-                log.warn("Cannot place order for {0}, as it has de-listed. "
-                         "Any existing positions for this asset will be "
-                         "liquidated on "
-                         "{1}.".format(asset.symbol, asset.auto_close_date))
+                warnings.warn("Cannot place order for {0}, as it has de-listed. "
+                               "Any existing positions for this asset will be "
+                               "liquidated on "
+                               "{1}.".format(asset.symbol, asset.auto_close_date))
 
                 return False
 
@@ -1584,9 +1390,6 @@ class TradingAlgorithm(object):
         self._sync_last_sale_prices()
         return self.metrics_tracker.account
 
-    def set_logger(self, logger):
-        self.logger = logger
-
     def on_dt_changed(self, dt):
         """
         Callback triggered by the simulation loop whenever the current dt
@@ -1639,7 +1442,7 @@ class TradingAlgorithm(object):
 
         >>> import zipline.api as algo
         >>> from zipline.finance import slippage
-        >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))
+        >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))    # doctest: +SKIP
 
         Notes
         -----
@@ -1693,7 +1496,7 @@ class TradingAlgorithm(object):
 
         >>> import zipline.api as algo
         >>> from zipline.finance import commission
-        >>> algo.set_commission(commission.PerShare(cost=0.001))
+        >>> algo.set_commission(commission.PerShare(cost=0.001))    # doctest: +SKIP
 
         See Also
         --------
@@ -1746,24 +1549,6 @@ class TradingAlgorithm(object):
 
         self.blotter.cancel_policy = cancel_policy
 
-    @api_method
-    def set_symbol_lookup_date(self, dt):
-        """Set the date for which symbols will be resolved to their assets
-        (symbols may map to different firms or underlying assets at
-        different times)
-
-        Parameters
-        ----------
-        dt : datetime
-            The new symbol lookup date.
-        """
-        try:
-            self._symbol_lookup_date = pd.Timestamp(dt, tz='UTC')
-        except ValueError:
-            raise UnsupportedDatetimeFormat(input=dt,
-                                            method='set_symbol_lookup_date')
-
-    # Remain backwards compatibility
     @property
     def data_frequency(self):
         return self.sim_params.data_frequency
@@ -2123,66 +1908,6 @@ class TradingAlgorithm(object):
 
         self.blotter.cancel(order_id)
 
-    @api_method
-    @require_initialized(HistoryInInitialize())
-    def history(self, bar_count, frequency, field, ffill=True):
-        """DEPRECATED: use ``data.history`` instead.
-        """
-        warnings.warn(
-            "The `history` method is deprecated.  Use `data.history` instead.",
-            category=ZiplineDeprecationWarning,
-            stacklevel=4
-        )
-
-        return self.get_history_window(
-            bar_count,
-            frequency,
-            self._calculate_universe(),
-            field,
-            ffill
-        )
-
-    def get_history_window(self, bar_count, frequency, assets, field, ffill):
-        if not self._in_before_trading_start:
-            return self.data_portal.get_history_window(
-                assets,
-                self.datetime,
-                bar_count,
-                frequency,
-                field,
-                self.data_frequency,
-                ffill,
-            )
-        else:
-            # If we are in before_trading_start, we need to get the window
-            # as of the previous market minute
-            adjusted_dt = \
-                self.trading_calendar.previous_minute(
-                    self.datetime
-                )
-
-            window = self.data_portal.get_history_window(
-                assets,
-                adjusted_dt,
-                bar_count,
-                frequency,
-                field,
-                self.data_frequency,
-                ffill,
-            )
-
-            # Get the adjustments between the last market minute and the
-            # current before_trading_start dt and apply to the window
-            adjs = self.data_portal.get_adjustments(
-                assets,
-                field,
-                adjusted_dt,
-                self.datetime
-            )
-            window = window * adjs
-
-            return window
-
     ####################
     # Account Controls #
     ####################
@@ -2316,38 +2041,6 @@ class TradingAlgorithm(object):
         """
         control = MaxOrderCount(on_error, max_count)
         self.register_trading_control(control)
-
-    @api_method
-    def set_do_not_order_list(self, restricted_list, on_error='fail'):
-        """Set a restriction on which assets can be ordered.
-
-        Parameters
-        ----------
-        restricted_list : container[Asset], SecurityList
-            The assets that cannot be ordered.
-        """
-        if isinstance(restricted_list, SecurityList):
-            warnings.warn(
-                "`set_do_not_order_list(security_lists.leveraged_etf_list)` "
-                "is deprecated. Use `set_asset_restrictions("
-                "security_lists.restrict_leveraged_etfs)` instead.",
-                category=ZiplineDeprecationWarning,
-                stacklevel=2
-            )
-            restrictions = SecurityListRestrictions(restricted_list)
-        else:
-            warnings.warn(
-                "`set_do_not_order_list(container_of_assets)` is deprecated. "
-                "Create a zipline.finance.asset_restrictions."
-                "StaticRestrictions object with a container of assets and use "
-                "`set_asset_restrictions(StaticRestrictions("
-                "container_of_assets))` instead.",
-                category=ZiplineDeprecationWarning,
-                stacklevel=2
-            )
-            restrictions = StaticRestrictions(restricted_list)
-
-        self.set_asset_restrictions(restrictions, on_error)
 
     @api_method
     @expect_types(
@@ -2536,17 +2229,6 @@ class TradingAlgorithm(object):
         """
         return domain.get_domain_from_calendar(calendar)
 
-    @staticmethod
-    def default_fetch_csv_country_code(calendar):
-        """
-        Get a default country_code to use for fetch_csv symbol lookups.
-
-        This will be used to disambiguate symbol lookups for fetch_csv calls if
-        our asset db contains entries with the same ticker spread across
-        multiple
-        """
-        return _DEFAULT_FETCH_CSV_COUNTRY_CODES.get(calendar.name)
-
     ##################
     # End Pipeline API
     ##################
@@ -2575,7 +2257,7 @@ class TradingAlgorithm(object):
         --------
         Set the realtime database and map fields:
 
-        >>> algo.set_realtime_db(
+        >>> algo.set_realtime_db(                 # doctest: +SKIP
                 "us-stk-tick-1min",
                 fields={
                     "close": "LastPriceClose",
@@ -2600,9 +2282,3 @@ class TradingAlgorithm(object):
 
 # Map from calendar name to default domain for that calendar.
 _DEFAULT_DOMAINS = {d.calendar_name: d for d in domain.BUILT_IN_DOMAINS}
-# Map from calendar name to default country code for that calendar.
-_DEFAULT_FETCH_CSV_COUNTRY_CODES = {
-    d.calendar_name: d.country_code for d in domain.BUILT_IN_DOMAINS
-}
-# Include us_futures, which doesn't have a pipeline domain.
-_DEFAULT_FETCH_CSV_COUNTRY_CODES['us_futures'] = 'US'

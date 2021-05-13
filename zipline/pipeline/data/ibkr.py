@@ -36,7 +36,7 @@ class ShortableShares(DataSetFamily):
     --------
     Get shortable shares as of 8:45 AM:
 
-    >>> shares = ibkr.ShortableShares.slice(time="08:45:00").shares.latest
+    >>> shares = ibkr.ShortableShares.slice(time="08:45:00").shares.latest    # doctest: +SKIP
     """
     extra_dims = [
         ('time', set(pd.date_range(

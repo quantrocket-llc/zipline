@@ -73,8 +73,8 @@ class NeverCancel(CancelPolicy):
     --------
     Set the cancel policy to NeverCancel:
 
-    >>> from zipline.api import set_cancel_policy, cancel_policy
-    >>> def initialize(context):
+    >>> from zipline.api import set_cancel_policy, cancel_policy    # doctest: +SKIP
+    >>> def initialize(context):                                    # doctest: +SKIP
             set_cancel_policy(cancel_policy.NeverCancel())
     """
     def __init__(self):

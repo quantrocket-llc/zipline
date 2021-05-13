@@ -1,4 +1,3 @@
-import click
 import os
 import sys
 import warnings
@@ -11,7 +10,6 @@ try:
     PYGMENTS = True
 except ImportError:
     PYGMENTS = False
-import logbook
 import pandas as pd
 import six
 from toolz import concatv
@@ -27,14 +25,10 @@ from zipline.pipeline.loaders import USEquityPricingLoader
 
 import zipline.utils.paths as pth
 from zipline.extensions import load
-from zipline.errors import SymbolNotFound
 from zipline.algorithm import TradingAlgorithm
 from zipline.finance.blotter import Blotter
 
-log = logbook.Logger(__name__)
-
-
-class _RunAlgoError(click.ClickException, ValueError):
+class _RunAlgoError(ValueError):
     """Signal an error that should have a different message if invoked from
     the cli.
 
@@ -151,7 +145,7 @@ def _run(handle_data,
                 outfile=sys.stdout,
             )
         else:
-            click.echo(algotext)
+            print(algotext)
 
     first_trading_day = \
         bundle_data.equity_minute_bar_reader.first_trading_day
@@ -217,7 +211,7 @@ def _run(handle_data,
     ).run()
 
     if output == '-':
-        click.echo(str(perf))
+        print(str(perf))
     elif output != os.devnull:  # make the zipline magic not write any data
         perf.to_pickle(output)
 
@@ -287,7 +281,7 @@ def run_algorithm(start,
                   before_trading_start=None,
                   analyze=None,
                   data_frequency='daily',
-                  bundle='quantopian-quandl',
+                  bundle=None,
                   bundle_timestamp=None,
                   trading_calendar=None,
                   metrics_set='default',
@@ -327,7 +321,7 @@ def run_algorithm(start,
         The data frequency to run the algorithm at.
     bundle : str, optional
         The name of the data bundle to use to load the data to run the backtest
-        with. This defaults to 'quantopian-quandl'.
+        with.
     bundle_timestamp : datetime, optional
         The datetime to lookup the bundle data for. This defaults to the
         current time.
@@ -408,9 +402,6 @@ class BenchmarkSpec(object):
         the benchmark.
     benchmark_sid : int, optional
         Sid of the asset to use as a benchmark.
-    benchmark_symbol : str, optional
-        Symbol of the asset to use as a benchmark. Symbol will be looked up as
-        of the end date of the backtest.
     no_benchmark : bool
         Flag indicating that no benchmark is configured. Benchmark-dependent
         metrics will be calculated using a dummy benchmark of all-zero returns.
@@ -420,26 +411,22 @@ class BenchmarkSpec(object):
                  benchmark_returns,
                  benchmark_file,
                  benchmark_sid,
-                 benchmark_symbol,
                  no_benchmark):
 
         self.benchmark_returns = benchmark_returns
         self.benchmark_file = benchmark_file
         self.benchmark_sid = benchmark_sid
-        self.benchmark_symbol = benchmark_symbol
         self.no_benchmark = no_benchmark
 
     @classmethod
     def from_cli_params(cls,
                         benchmark_sid,
-                        benchmark_symbol,
                         benchmark_file,
                         no_benchmark):
 
         return cls(
             benchmark_returns=None,
             benchmark_sid=benchmark_sid,
-            benchmark_symbol=benchmark_symbol,
             benchmark_file=benchmark_file,
             no_benchmark=no_benchmark,
         )
@@ -450,7 +437,6 @@ class BenchmarkSpec(object):
             benchmark_returns=benchmark_returns,
             benchmark_file=None,
             benchmark_sid=None,
-            benchmark_symbol=None,
             no_benchmark=benchmark_returns is not None,
         )
 
@@ -489,18 +475,6 @@ class BenchmarkSpec(object):
         elif self.benchmark_sid is not None:
             benchmark_sid = self.benchmark_sid
             benchmark_returns = None
-        elif self.benchmark_symbol is not None:
-            try:
-                asset = asset_finder.lookup_symbol(
-                    self.benchmark_symbol,
-                    as_of_date=end_date,
-                )
-                benchmark_sid = asset.sid
-                benchmark_returns = None
-            except SymbolNotFound:
-                raise _RunAlgoError(
-                    "Symbol %s as a benchmark not found in this bundle."
-                )
         elif self.no_benchmark:
             benchmark_sid = None
             benchmark_returns = self._zero_benchmark_returns(
@@ -508,18 +482,6 @@ class BenchmarkSpec(object):
                 end_date=end_date,
             )
         else:
-            log.warn(
-                "No benchmark configured. "
-                "Assuming algorithm calls set_benchmark."
-            )
-            log.warn(
-                "Pass --benchmark-sid, --benchmark-symbol, or"
-                " --benchmark-file to set a source of benchmark returns."
-            )
-            log.warn(
-                "Pass --no-benchmark to use a dummy benchmark "
-                "of zero returns.",
-            )
             benchmark_sid = None
             benchmark_returns = None
 

@@ -285,62 +285,11 @@ Requested history at frequency '{frequency}' cannot be created with data
 at frequency '{data_frequency}'.
 """.strip()
 
-
-class HistoryInInitialize(ZiplineError):
-    """
-    Raised when an algorithm calls history() in initialize.
-    """
-    msg = "history() should only be called in handle_data()"
-
-
 class OrderInBeforeTradingStart(ZiplineError):
     """
     Raised when an algorithm calls an order method in before_trading_start.
     """
     msg = "Cannot place orders inside before_trading_start."
-
-
-class MultipleSymbolsFound(ZiplineError):
-    """
-    Raised when a symbol() call contains a symbol that changed over
-    time and is thus not resolvable without additional information
-    provided via as_of_date.
-    """
-    msg = """
-Multiple symbols with the name '{symbol}' found. Use the
-as_of_date' argument to to specify when the date symbol-lookup
-should be valid.
-
-Possible options: {options}
-    """.strip()
-
-
-class MultipleSymbolsFoundForFuzzySymbol(MultipleSymbolsFound):
-    """
-    Raised when a fuzzy symbol lookup is not resolvable without additional
-    information.
-    """
-    msg = dedent("""\
-        Multiple symbols were found fuzzy matching the name '{symbol}'. Use
-        the as_of_date and/or country_code arguments to to specify the date
-        and country for the symbol-lookup.
-
-        Possible options: {options}
-    """)
-
-
-class SameSymbolUsedAcrossCountries(MultipleSymbolsFound):
-    """
-    Raised when a symbol() call contains a symbol that is used in more than
-    one country and is thus not resolvable without a country_code.
-    """
-    msg = dedent("""\
-        The symbol '{symbol}' is used in more than one country. Use the
-        country_code argument to to specify the country.
-
-        Possible options by country: {options}
-    """)
-
 
 class SymbolNotFound(ZiplineError):
     """
@@ -358,57 +307,6 @@ class RootSymbolNotFound(ZiplineError):
     msg = """
 Root symbol '{root_symbol}' was not found.
 """.strip()
-
-
-class ValueNotFoundForField(ZiplineError):
-    """
-    Raised when a lookup_by_supplementary_mapping() call contains a
-    value does not exist for the specified mapping type.
-    """
-    msg = """
-Value '{value}' was not found for field '{field}'.
-""".strip()
-
-
-class MultipleValuesFoundForField(ZiplineError):
-    """
-    Raised when a lookup_by_supplementary_mapping() call contains a
-    value that changed over time for the specified field and is
-    thus not resolvable without additional information provided via
-    as_of_date.
-    """
-    msg = """
-Multiple occurrences of the value '{value}' found for field '{field}'.
-Use the 'as_of_date' or 'country_code' argument to specify when or where the
-lookup should be valid.
-
-Possible options: {options}
-    """.strip()
-
-
-class NoValueForSid(ZiplineError):
-    """
-    Raised when a get_supplementary_field() call contains a sid that
-    does not have a value for the specified mapping type.
-    """
-    msg = """
-No '{field}' value found for sid '{sid}'.
-""".strip()
-
-
-class MultipleValuesFoundForSid(ZiplineError):
-    """
-    Raised when a get_supplementary_field() call contains a value that
-    changed over time for the specified field and is thus not resolvable
-    without additional information provided via as_of_date.
-    """
-    msg = """
-Multiple '{field}' values found for sid '{sid}'. Use the as_of_date' argument
-to specify when the lookup should be valid.
-
-Possible options: {options}
-""".strip()
-
 
 class SidsNotFound(ZiplineError):
     """
@@ -458,8 +356,7 @@ class ConsumeAssetMetaDataError(ZiplineError):
     """
     msg = """
 AssetFinder can not consume metadata of type {obj}. Metadata must be a dict, a
-DataFrame, or a tables.Table. If the provided metadata is a Table, the rows
-must contain both or one of 'sid' or 'symbol'.
+DataFrame.
 """.strip()
 
 
@@ -758,13 +655,6 @@ class AssetDBVersionError(ZiplineError):
         "The existing Asset database has an incorrect version: {db_version}. "
         "Expected version: {expected_version}. Try rebuilding your asset "
         "database or updating your version of Zipline."
-    )
-
-
-class AssetDBImpossibleDowngrade(ZiplineError):
-    msg = (
-        "The existing Asset database is version: {db_version} which is lower "
-        "than the desired downgrade version: {desired_version}."
     )
 
 

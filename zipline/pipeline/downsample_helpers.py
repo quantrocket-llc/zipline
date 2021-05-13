@@ -55,6 +55,10 @@ def select_sampling_indices(dates, frequency):
     ``np.diff(dates.<frequency>)`` to find dates where the sampling
     period has changed.
     """
+    if frequency == "week_start":
+        # dates.week is deprecated, uses dates.isocalendar().week
+        dates = dates.isocalendar()
+
     return changed_locations(
         _dt_to_period[frequency](dates),
         include_first=True

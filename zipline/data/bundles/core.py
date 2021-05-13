@@ -5,8 +5,6 @@ import shutil
 import warnings
 
 from contextlib2 import ExitStack
-import click
-from logbook import Logger
 import pandas as pd
 from trading_calendars import get_calendar
 from toolz import curry, complement, take
@@ -18,7 +16,6 @@ from ..minute_bars import (
     BcolzMinuteBarWriter,
 )
 from zipline.assets import AssetDBWriter, AssetFinder, ASSET_DB_VERSION
-from zipline.assets.asset_db_migrations import downgrade
 from zipline.utils.cache import (
     dataframe_cache,
     working_dir,
@@ -28,9 +25,6 @@ from zipline.utils.compat import mappingproxy
 from zipline.utils.input_validation import ensure_timestamp, optionally
 import zipline.utils.paths as pth
 from zipline.utils.preprocess import preprocess
-
-log = Logger(__name__)
-
 
 def asset_db_path(bundle_name, timestr, environ=None, db_version=None):
     return pth.data_path(
@@ -149,11 +143,11 @@ BundleData = namedtuple(
 
 BundleCore = namedtuple(
     'BundleCore',
-    'bundles register unregister ingest load clean',
+    'bundles register unregister ingest load',
 )
 
 
-class UnknownBundle(click.ClickException, LookupError):
+class UnknownBundle(LookupError):
     """Raised if no bundle with the given name was registered.
     """
     exit_code = 1
@@ -166,34 +160,6 @@ class UnknownBundle(click.ClickException, LookupError):
 
     def __str__(self):
         return self.message
-
-
-class BadClean(click.ClickException, ValueError):
-    """Exception indicating that an invalid argument set was passed to
-    ``clean``.
-
-    Parameters
-    ----------
-    before, after, keep_last : any
-        The bad arguments to ``clean``.
-
-    See Also
-    --------
-    clean
-    """
-    def __init__(self, before, after, keep_last):
-        super(BadClean, self).__init__(
-            'Cannot pass a combination of `before` and `after` with'
-            '`keep_last`. Got: before=%r, after=%r, keep_n=%r\n' % (
-                before,
-                after,
-                keep_last,
-            ),
-        )
-
-    def __str__(self):
-        return self.message
-
 
 def _make_bundle_core():
     """Create a family of data bundle functions that read from the same
@@ -211,8 +177,6 @@ def _make_bundle_core():
         The function which downloads and write data for a given data bundle.
     load : callable
         The function which loads the ingested bundles back into memory.
-    clean : callable
-        The function which cleans up data written with ``ingest``.
     """
     _bundles = {}  # the registered bundles
     # Expose _bundles through a proxy so that users cannot mutate this
@@ -258,8 +222,6 @@ def _make_bundle_core():
                   This should be used to cache intermediates in case the load
                   fails. This will be automatically cleaned up after a
                   successful load.
-              show_progress : bool
-                  Show the progress for the current load where possible.
         calendar_name : str, optional
             The name of a calendar used to align bundle data.
             Default is 'NYSE'.
@@ -276,7 +238,7 @@ def _make_bundle_core():
         create_writers : bool, optional
             Should the ingest machinery create the writers for the ingest
             function. This can be disabled as an optimization for cases where
-            they are not needed, like the ``quantopian-quandl`` bundle.
+            they are not needed.
 
         Notes
         -----
@@ -336,9 +298,7 @@ def _make_bundle_core():
 
     def ingest(name,
                environ=os.environ,
-               timestamp=None,
-               assets_versions=(),
-               show_progress=False):
+               timestamp=None):
         """Ingest data for a given bundle.
 
         Parameters
@@ -350,10 +310,6 @@ def _make_bundle_core():
         timestamp : datetime, optional
             The timestamp to use for the load.
             By default this is the current time.
-        assets_versions : Iterable[int], optional
-            Versions of the assets db to which to downgrade.
-        show_progress : bool, optional
-            Tell the ingest function to display the progress where possible.
         """
         try:
             bundle = bundles[name]
@@ -424,11 +380,7 @@ def _make_bundle_core():
                 minute_bar_writer = None
                 asset_db_writer = None
                 adjustment_db_writer = None
-                if assets_versions:
-                    raise ValueError('Need to ingest a bundle that creates '
-                                     'writers in order to downgrade the assets'
-                                     ' db.')
-            log.info("Ingesting {}.", name)
+
             bundle.ingest(
                 environ,
                 asset_db_writer,
@@ -439,17 +391,8 @@ def _make_bundle_core():
                 start_session,
                 end_session,
                 cache,
-                show_progress,
                 pth.data_path([name, timestr], environ=environ),
             )
-
-            for version in sorted(set(assets_versions), reverse=True):
-                version_path = wd.getpath(*asset_db_relative(
-                    name, timestr, db_version=version,
-                ))
-                with working_file(version_path) as wf:
-                    shutil.copy2(assets_db_path, wf.path)
-                    downgrade(wf.path, version)
 
     def most_recent_data(bundle_name, timestamp, environ=None):
         """Get the path to the most recent data after ``date``for the
@@ -529,90 +472,7 @@ def _make_bundle_core():
             ),
         )
 
-    @preprocess(
-        before=optionally(ensure_timestamp),
-        after=optionally(ensure_timestamp),
-    )
-    def clean(name,
-              before=None,
-              after=None,
-              keep_last=None,
-              environ=os.environ):
-        """Clean up data that was created with ``ingest`` or
-        ``$ python -m zipline ingest``
-
-        Parameters
-        ----------
-        name : str
-            The name of the bundle to remove data for.
-        before : datetime, optional
-            Remove data ingested before this date.
-            This argument is mutually exclusive with: keep_last
-        after : datetime, optional
-            Remove data ingested after this date.
-            This argument is mutually exclusive with: keep_last
-        keep_last : int, optional
-            Remove all but the last ``keep_last`` ingestions.
-            This argument is mutually exclusive with:
-              before
-              after
-        environ : mapping, optional
-            The environment variables. Defaults of os.environ.
-
-        Returns
-        -------
-        cleaned : set[str]
-            The names of the runs that were removed.
-
-        Raises
-        ------
-        BadClean
-            Raised when ``before`` and or ``after`` are passed with
-            ``keep_last``. This is a subclass of ``ValueError``.
-        """
-        try:
-            all_runs = sorted(
-                filter(
-                    complement(pth.hidden),
-                    os.listdir(pth.data_path([name], environ=environ)),
-                ),
-                key=from_bundle_ingest_dirname,
-            )
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
-            raise UnknownBundle(name)
-        if ((before is not None or after is not None) and
-                keep_last is not None):
-            raise BadClean(before, after, keep_last)
-
-        if keep_last is None:
-            def should_clean(name):
-                dt = from_bundle_ingest_dirname(name)
-                return (
-                    (before is not None and dt < before) or
-                    (after is not None and dt > after)
-                )
-
-        elif keep_last >= 0:
-            last_n_dts = set(take(keep_last, reversed(all_runs)))
-
-            def should_clean(name):
-                return name not in last_n_dts
-        else:
-            raise BadClean(before, after, keep_last)
-
-        cleaned = set()
-        for run in all_runs:
-            if should_clean(run):
-                log.info("Cleaning {}.", run)
-                path = pth.data_path([name, run], environ=environ)
-                shutil.rmtree(path)
-                cleaned.add(path)
-
-        return cleaned
-
-    return BundleCore(bundles, register, unregister, ingest, load, clean)
+    return BundleCore(bundles, register, unregister, ingest, load)
 
 
-bundles, register, unregister, ingest, load, clean = _make_bundle_core()
+bundles, register, unregister, ingest, load = _make_bundle_core()

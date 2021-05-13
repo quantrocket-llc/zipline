@@ -14,8 +14,6 @@
 # limitations under the License.
 from operator import mul
 
-from logbook import Logger
-
 import numpy as np
 from numpy import float64, int64, nan
 import pandas as pd
@@ -65,9 +63,6 @@ from zipline.utils.pandas_utils import (
 )
 from zipline.errors import HistoryWindowStartsBeforeData
 
-
-log = Logger('DataPortal')
-
 BASE_FIELDS = frozenset([
     "open",
     "high",
@@ -108,7 +103,7 @@ class DataPortal(object):
     ----------
     asset_finder : zipline.assets.assets.AssetFinder
         The AssetFinder instance used to resolve assets.
-    trading_calendar: zipline.utils.calendar.exchange_calendar.TradingCalendar
+    trading_calendar: trading_calendars.TradingCalendar
         The calendar instance used to provide minute->session information.
     first_trading_day : pd.Timestamp
         The first trading day for the simulation.
@@ -162,10 +157,6 @@ class DataPortal(object):
         self._splits_dict = {}
         self._mergers_dict = {}
         self._dividends_dict = {}
-
-        # Handle extra sources, like Fetcher.
-        self._augmented_sources_map = {}
-        self._extra_source_df = None
 
         self._first_available_session = first_trading_day
 
@@ -318,81 +309,6 @@ class DataPortal(object):
                 self._last_available_session
             )
 
-    def _reindex_extra_source(self, df, source_date_index):
-        return df.reindex(index=source_date_index, method='ffill')
-
-    def handle_extra_source(self, source_df, sim_params):
-        """
-        Extra sources always have a sid column.
-
-        We expand the given data (by forward filling) to the full range of
-        the simulation dates, so that lookup is fast during simulation.
-        """
-        if source_df is None:
-            return
-
-        # Normalize all the dates in the df
-        source_df.index = source_df.index.normalize()
-
-        # source_df's sid column can either consist of assets we know about
-        # (such as sid(24)) or of assets we don't know about (such as
-        # palladium).
-        #
-        # In both cases, we break up the dataframe into individual dfs
-        # that only contain a single asset's information.  ie, if source_df
-        # has data for PALLADIUM and GOLD, we split source_df into two
-        # dataframes, one for each. (same applies if source_df has data for
-        # AAPL and IBM).
-        #
-        # We then take each child df and reindex it to the simulation's date
-        # range by forward-filling missing values. this makes reads simpler.
-        #
-        # Finally, we store the data. For each column, we store a mapping in
-        # self.augmented_sources_map from the column to a dictionary of
-        # asset -> df.  In other words,
-        # self.augmented_sources_map['days_to_cover']['AAPL'] gives us the df
-        # holding that data.
-        source_date_index = self.trading_calendar.sessions_in_range(
-            sim_params.start_session,
-            sim_params.end_session
-        )
-
-        # Break the source_df up into one dataframe per sid.  This lets
-        # us (more easily) calculate accurate start/end dates for each sid,
-        # de-dup data, and expand the data to fit the backtest start/end date.
-        grouped_by_sid = source_df.groupby(["sid"])
-        group_names = grouped_by_sid.groups.keys()
-        group_dict = {}
-        for group_name in group_names:
-            group_dict[group_name] = grouped_by_sid.get_group(group_name)
-
-        # This will be the dataframe which we query to get fetcher assets at
-        # any given time. Get's overwritten every time there's a new fetcher
-        # call
-        extra_source_df = pd.DataFrame()
-
-        for identifier, df in iteritems(group_dict):
-            # Since we know this df only contains a single sid, we can safely
-            # de-dupe by the index (dt). If minute granularity, will take the
-            # last data point on any given day
-            df = df.groupby(level=0).last()
-
-            # Reindex the dataframe based on the backtest start/end date.
-            # This makes reads easier during the backtest.
-            df = self._reindex_extra_source(df, source_date_index)
-
-            for col_name in df.columns.difference(['sid']):
-                if col_name not in self._augmented_sources_map:
-                    self._augmented_sources_map[col_name] = {}
-
-                self._augmented_sources_map[col_name][identifier] = df
-
-            # Append to extra_source_df the reindexed dataframe for the single
-            # sid
-            extra_source_df = extra_source_df.append(df)
-
-        self._extra_source_df = extra_source_df
-
     def _get_pricing_reader(self, data_frequency):
         return self._pricing_readers[data_frequency]
 
@@ -406,37 +322,12 @@ class DataPortal(object):
         return self._get_pricing_reader(data_frequency).get_last_traded_dt(
             asset, dt)
 
-    @staticmethod
-    def _is_extra_source(asset, field, map):
-        """
-        Internal method that determines if this asset/field combination
-        represents a fetcher value or a regular OHLCVP lookup.
-        """
-        # If we have an extra source with a column called "price", only look
-        # at it if it's on something like palladium and not AAPL (since our
-        # own price data always wins when dealing with assets).
-
-        return not (field in BASE_FIELDS and
-                    (isinstance(asset, (Asset, ContinuousFuture))))
-
-    def _get_fetcher_value(self, asset, field, dt):
-        day = normalize_date(dt)
-
-        try:
-            return \
-                self._augmented_sources_map[field][asset].loc[day, field]
-        except KeyError:
-            return np.NaN
-
     def _get_single_asset_value(self,
                                 session_label,
                                 asset,
                                 field,
                                 dt,
                                 data_frequency):
-        if self._is_extra_source(
-                asset, field, self._augmented_sources_map):
-            return self._get_fetcher_value(asset, field, dt)
 
         if field not in BASE_FIELDS:
             raise KeyError("Invalid column: " + str(field))
@@ -671,15 +562,7 @@ class DataPortal(object):
             is 'last_traded' the value will be a Timestamp.
         """
         if spot_value is None:
-            # if this a fetcher field, we want to use perspective_dt (not dt)
-            # because we want the new value as of midnight (fetcher only works
-            # on a daily basis, all timestamps are on midnight)
-            if self._is_extra_source(asset, field,
-                                     self._augmented_sources_map):
-                spot_value = self.get_spot_value(asset, field, perspective_dt,
-                                                 data_frequency)
-            else:
-                spot_value = self.get_spot_value(asset, field, dt,
+            spot_value = self.get_spot_value(asset, field, dt,
                                                  data_frequency)
 
         if isinstance(asset, Equity):
@@ -1218,175 +1101,28 @@ class DataPortal(object):
         end_dt = trading_days[-1].value / 1e9
 
         dividends = self._adjustment_reader.conn.execute(
-            "SELECT * FROM stock_dividend_payouts WHERE sid = ? AND "
-            "ex_date > ? AND pay_date < ?", (int(sid), start_dt, end_dt,)).\
-            fetchall()
+            "SELECT declared_date, ex_date, pay_date, payment_sid, ratio, "
+            "record_date, sid FROM stock_dividend_payouts "
+            "WHERE sid = ? AND ex_date > ? AND pay_date < ?",
+            (int(sid), start_dt, end_dt,)
+        ).fetchall()
 
         dividend_info = []
         for dividend_tuple in dividends:
             dividend_info.append({
-                "declared_date": dividend_tuple[1],
-                "ex_date": pd.Timestamp(dividend_tuple[2], unit="s"),
-                "pay_date": pd.Timestamp(dividend_tuple[3], unit="s"),
-                "payment_sid": dividend_tuple[4],
-                "ratio": dividend_tuple[5],
-                "record_date": pd.Timestamp(dividend_tuple[6], unit="s"),
-                "sid": dividend_tuple[7]
+                "declared_date": pd.Timestamp(dividend_tuple[0], unit="s"),
+                "ex_date": pd.Timestamp(dividend_tuple[1], unit="s"),
+                "pay_date": pd.Timestamp(dividend_tuple[2], unit="s"),
+                "payment_sid": dividend_tuple[3],
+                "ratio": dividend_tuple[4],
+                "record_date": pd.Timestamp(dividend_tuple[5], unit="s"),
+                "sid": dividend_tuple[6],
             })
 
         return dividend_info
 
     def contains(self, asset, field):
-        return field in BASE_FIELDS or \
-            (field in self._augmented_sources_map and
-             asset in self._augmented_sources_map[field])
-
-    def get_fetcher_assets(self, dt):
-        """
-        Returns a list of assets for the current date, as defined by the
-        fetcher data.
-
-        Returns
-        -------
-        list: a list of Asset objects.
-        """
-        # return a list of assets for the current date, as defined by the
-        # fetcher source
-        if self._extra_source_df is None:
-            return []
-
-        day = normalize_date(dt)
-
-        if day in self._extra_source_df.index:
-            assets = self._extra_source_df.loc[day]['sid']
-        else:
-            return []
-
-        if isinstance(assets, pd.Series):
-            return [x for x in assets if isinstance(x, Asset)]
-        else:
-            return [assets] if isinstance(assets, Asset) else []
-
-    # cache size picked somewhat loosely.  this code exists purely to
-    # handle deprecated API.
-    @weak_lru_cache(20)
-    def _get_minute_count_for_transform(self, ending_minute, days_count):
-        # This function works in three steps.
-        # Step 1. Count the minutes from ``ending_minute`` to the start of its
-        #         session.
-        # Step 2. Count the minutes from the prior ``days_count - 1`` sessions.
-        # Step 3. Return the sum of the results from steps (1) and (2).
-
-        # Example (NYSE Calendar)
-        #     ending_minute = 2016-12-28 9:40 AM US/Eastern
-        #     days_count = 3
-        # Step 1. Calculate that there are 10 minutes in the ending session.
-        # Step 2. Calculate that there are 390 + 210 = 600 minutes in the prior
-        #         two sessions. (Prior sessions are 2015-12-23 and 2015-12-24.)
-        #         2015-12-24 is a half day.
-        # Step 3. Return 600 + 10 = 610.
-
-        cal = self.trading_calendar
-
-        ending_session = cal.minute_to_session_label(
-            ending_minute,
-            direction="none",  # It's an error to pass a non-trading minute.
-        )
-
-        # Assume that calendar days are always full of contiguous minutes,
-        # which means we can just take 1 + (number of minutes between the last
-        # minute and the start of the session). We add one so that we include
-        # the ending minute in the total.
-        ending_session_minute_count = timedelta_to_integral_minutes(
-            ending_minute - cal.open_and_close_for_session(ending_session)[0]
-        ) + 1
-
-        if days_count == 1:
-            # We just need sessions for the active day.
-            return ending_session_minute_count
-
-        # XXX: We're subtracting 2 here to account for two offsets:
-        # 1. We only want ``days_count - 1`` sessions, since we've already
-        #    accounted for the ending session above.
-        # 2. The API of ``sessions_window`` is to return one more session than
-        #    the requested number.  I don't think any consumers actually want
-        #    that behavior, but it's the tested and documented behavior right
-        #    now, so we have to request one less session than we actually want.
-        completed_sessions = cal.sessions_window(
-            cal.previous_session_label(ending_session),
-            2 - days_count,
-        )
-
-        completed_sessions_minute_count = (
-            self.trading_calendar.minutes_count_for_sessions_in_range(
-                completed_sessions[0],
-                completed_sessions[-1]
-            )
-        )
-        return ending_session_minute_count + completed_sessions_minute_count
-
-    def get_simple_transform(self, asset, transform_name, dt, data_frequency,
-                             bars=None):
-        if transform_name == "returns":
-            # returns is always calculated over the last 2 days, regardless
-            # of the simulation's data frequency.
-            hst = self.get_history_window(
-                [asset],
-                dt,
-                2,
-                "1d",
-                "price",
-                data_frequency,
-                ffill=True,
-            )[asset]
-
-            return (hst.iloc[-1] - hst.iloc[0]) / hst.iloc[0]
-
-        if bars is None:
-            raise ValueError("bars cannot be None!")
-
-        if data_frequency == "minute":
-            freq_str = "1m"
-            calculated_bar_count = int(self._get_minute_count_for_transform(
-                dt, bars
-            ))
-        else:
-            freq_str = "1d"
-            calculated_bar_count = bars
-
-        price_arr = self.get_history_window(
-            [asset],
-            dt,
-            calculated_bar_count,
-            freq_str,
-            "price",
-            data_frequency,
-            ffill=True,
-        )[asset]
-
-        if transform_name == "mavg":
-            return nanmean(price_arr)
-        elif transform_name == "stddev":
-            return nanstd(price_arr, ddof=1)
-        elif transform_name == "vwap":
-            volume_arr = self.get_history_window(
-                [asset],
-                dt,
-                calculated_bar_count,
-                freq_str,
-                "volume",
-                data_frequency,
-                ffill=True,
-            )[asset]
-
-            vol_sum = nansum(volume_arr)
-
-            try:
-                ret = nansum(price_arr * volume_arr) / vol_sum
-            except ZeroDivisionError:
-                ret = np.nan
-
-            return ret
+        return field in BASE_FIELDS
 
     def get_current_future_chain(self, continuous_future, dt):
         """

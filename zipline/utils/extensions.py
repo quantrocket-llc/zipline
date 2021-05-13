@@ -47,17 +47,9 @@ def delete_extension_file(code):
 
     return False
 
-def unload_default_bundles():
-
-    for bundle in ("csvdir", "quandl", "quantopian-quandl"):
-        if bundle in zipline.data.bundles.bundles:
-            zipline.data.bundles.unregister(bundle)
-
 def load_extensions(code=None):
 
     warnings.filterwarnings("ignore", "Overwriting bundle with name", UserWarning)
-
-    unload_default_bundles()
 
     extensions = glob.glob("{0}/bundle.{1}.py".format(
         EXTENSIONS_DIR, code if code else "*"))

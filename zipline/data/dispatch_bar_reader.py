@@ -30,7 +30,7 @@ class AssetDispatchBarReader(with_metaclass(ABCMeta)):
 
     Parameters
     ----------
-    - trading_calendar : zipline.utils.trading_calendar.TradingCalendar
+    - trading_calendar : trading_calendars.TradingCalendar
     - asset_finder : zipline.assets.AssetFinder
     - readers : dict
         A dict mapping Asset type to the corresponding
@@ -49,6 +49,9 @@ class AssetDispatchBarReader(with_metaclass(ABCMeta)):
         self._trading_calendar = trading_calendar
         self._asset_finder = asset_finder
         self._readers = readers
+        # if no timezone given, assume utc
+        if last_available_dt and not last_available_dt.tzinfo:
+            last_available_dt = last_available_dt.tz_localize('utc')
         self._last_available_dt = last_available_dt
 
         for t, r in iteritems(self._readers):

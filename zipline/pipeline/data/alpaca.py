@@ -29,7 +29,7 @@ class ETB(DataSet):
     Examples
     --------
 
-    >>> are_etb = alpaca.ETB.etb.latest
+    >>> are_etb = alpaca.ETB.etb.latest    # doctest: +SKIP
     """
     domain = US_EQUITIES
     etb = Column(bool_dtype)

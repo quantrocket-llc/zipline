@@ -4,17 +4,15 @@ from unittest import TestCase
 import warnings
 
 from contextlib2 import ExitStack
-from logbook import NullHandler, Logger
 import numpy as np
 import pandas as pd
-from six import with_metaclass, iteritems, itervalues, PY2
+from six import with_metaclass, iteritems, itervalues
 import responses
 from toolz import flip, groupby, merge
 from trading_calendars import (
     get_calendar,
     register_calendar_alias,
 )
-import h5py
 
 import zipline
 from zipline.algorithm import TradingAlgorithm
@@ -38,7 +36,6 @@ from .core import (
     make_simple_equity_info,
     tmp_asset_finder,
     tmp_dir,
-    write_hdf5_daily_bars,
 )
 from .debug import debug_mro_failure
 from ..data.adjustments import (
@@ -56,13 +53,6 @@ from ..data.data_portal import (
 )
 from ..data.fx import (
     InMemoryFXRateReader,
-    HDF5FXRateReader,
-    HDF5FXRateWriter,
-)
-from ..data.hdf5_daily_bars import (
-    HDF5DailyBarReader,
-    HDF5DailyBarWriter,
-    MultiCountryDailyBarReader,
 )
 from ..data.minute_bars import (
     BcolzMinuteBarReader,
@@ -249,11 +239,6 @@ class ZiplineTestCase(with_metaclass(DebugMROMeta, TestCase)):
         """
         return self._instance_teardown_stack.callback(callback)
 
-    if PY2:
-        def assertRaisesRegex(self, *args, **kwargs):
-            return self.assertRaisesRegexp(*args, **kwargs)
-
-
 def alias(attr_name):
     """Make a fixture attribute an alias of another fixture's attribute by
     default.
@@ -308,32 +293,6 @@ class WithDefaultDateBounds(with_metaclass(DebugMROMeta, object)):
     """
     START_DATE = pd.Timestamp('2006-01-03', tz='utc')
     END_DATE = pd.Timestamp('2006-12-29', tz='utc')
-
-
-class WithLogger(object):
-    """
-    ZiplineTestCase mixin providing cls.log_handler as an instance-level
-    fixture.
-
-    After init_instance_fixtures has been called `self.log_handler` will be a
-    new ``logbook.NullHandler``.
-
-    Methods
-    -------
-    make_log_handler() -> logbook.LogHandler
-        A class method which constructs the new log handler object. By default
-        this will construct a ``NullHandler``.
-    """
-    make_log_handler = NullHandler
-
-    @classmethod
-    def init_class_fixtures(cls):
-        super(WithLogger, cls).init_class_fixtures()
-        cls.log = Logger()
-        cls.log_handler = cls.enter_class_context(
-            cls.make_log_handler().applicationbound(),
-        )
-
 
 class WithAssetFinder(WithDefaultDateBounds):
     """
@@ -408,7 +367,6 @@ class WithAssetFinder(WithDefaultDateBounds):
     make_futures_info = _make_info
     make_exchanges_info = _make_info
     make_root_symbols_info = _make_info
-    make_equity_supplementary_mappings = _make_info
 
     del _make_info
 
@@ -458,9 +416,6 @@ class WithAssetFinder(WithDefaultDateBounds):
             futures=futures,
             exchanges=exchanges,
             root_symbols=root_symbols,
-            equity_supplementary_mappings=(
-                cls.make_equity_supplementary_mappings()
-            ),
             future_chain_predicates=cls.ASSET_FINDER_FUTURE_CHAIN_PREDICATES,
         ))
 
@@ -553,6 +508,7 @@ class WithTradingCalendars(object):
 
 STATIC_BENCHMARK_PATH = os.path.join(
     zipline_dir,
+    'tests',
     'resources',
     'market_data',
     'SPY_benchmark.csv',
@@ -699,8 +655,16 @@ class WithTradingSessions(WithDefaultDateBounds, WithTradingCalendars):
 
         for cal_str in cls.TRADING_CALENDAR_STRS:
             trading_calendar = cls.trading_calendars[cal_str]
+
+            start_date = cls.DATA_MIN_DAY
+            end_date = cls.DATA_MAX_DAY
+            if not start_date.tzinfo:
+                start_date = start_date.tz_localize('utc')
+            if not end_date.tzinfo:
+                end_date = end_date.tz_localize('utc')
+
             sessions = trading_calendar.sessions_in_range(
-                cls.DATA_MIN_DAY, cls.DATA_MAX_DAY)
+                start_date, end_date)
             # Set name for aliasing.
             setattr(cls,
                     '{0}_sessions'.format(cal_str.lower()), sessions)
@@ -1040,7 +1004,7 @@ class WithBcolzEquityDailyBarReader(WithEquityDailyBarData, WithTmpDir):
     _write_method_name = 'write'
     # What to do when data being written is invalid, e.g. nan, inf, etc.
     # options are: 'warn', 'raise', 'ignore'
-    INVALID_DATA_BEHAVIOR = 'warn'
+    INVALID_DATA_BEHAVIOR = 'ignore'
 
     @classproperty
     def BCOLZ_DAILY_BAR_COUNTRY_CODE(cls):
@@ -1190,124 +1154,12 @@ def _trading_days_for_minute_bars(calendar,
             -1 * lookback_days
         )[0]
 
+    if not first_session.tzinfo:
+        first_session = fist_session.tz_localize('utc')
+    if not end_date.tzinfo:
+        end_date = end_date.tz_localize('utc')
+
     return calendar.sessions_in_range(first_session, end_date)
-
-
-# TODO_SS: This currently doesn't define any relationship between country_code
-#          and calendar, which would be useful downstream.
-class WithWriteHDF5DailyBars(WithEquityDailyBarData,
-                             WithTmpDir):
-    """
-    Fixture class defining the capability of writing HDF5 daily bars to disk.
-
-    Uses cls.make_equity_daily_bar_data (inherited from WithEquityDailyBarData)
-    to determine the data to write.
-
-    Methods
-    -------
-    write_hdf5_daily_bars(cls, path, country_codes)
-        Creates an HDF5 file on disk and populates it with pricing data.
-
-    Attributes
-    ----------
-    HDF5_DAILY_BAR_CHUNK_SIZE
-    """
-    HDF5_DAILY_BAR_CHUNK_SIZE = 30
-
-    @classmethod
-    def write_hdf5_daily_bars(cls, path, country_codes):
-        """
-        Write HDF5 pricing data using an HDF5DailyBarWriter.
-
-        Parameters
-        ----------
-        path : str
-            Location (relative to cls.tmpdir) at which to write data.
-        country_codes : list[str]
-            List of country codes to write.
-
-        Returns
-        -------
-        written : h5py.File
-             A read-only h5py.File pointing at the written data. The returned
-             file is registered to be closed automatically during class
-             teardown.
-        """
-        ensure_directory_containing(path)
-        writer = HDF5DailyBarWriter(path, cls.HDF5_DAILY_BAR_CHUNK_SIZE)
-        write_hdf5_daily_bars(
-            writer,
-            cls.asset_finder,
-            country_codes,
-            cls.make_equity_daily_bar_data,
-            cls.make_equity_daily_bar_currency_codes,
-        )
-
-        # Open the file and mark it for closure during teardown.
-        return cls.enter_class_context(writer.h5_file(mode='r'))
-
-
-class WithHDF5EquityMultiCountryDailyBarReader(WithWriteHDF5DailyBars):
-    """
-    Fixture providing cls.hdf5_daily_bar_path and
-    cls.hdf5_equity_daily_bar_reader class level fixtures.
-
-    After init_class_fixtures has been called:
-    - `cls.hdf5_daily_bar_path` is populated with
-      `cls.tmpdir.getpath(cls.HDF5_DAILY_BAR_PATH)`.
-    - The file at `cls.hdf5_daily_bar_path` is populated with data returned
-      from `cls.make_equity_daily_bar_data`. By default this calls
-      :func:`zipline.pipeline.loaders.synthetic.make_equity_daily_bar_data`.
-
-    - `cls.hdf5_equity_daily_bar_reader` is a daily bar reader pointing
-      to the file that was just written to.
-
-    Attributes
-    ----------
-    HDF5_DAILY_BAR_PATH : str
-        The path inside the tmpdir where this will be written.
-    HDF5_DAILY_BAR_COUNTRY_CODE : str
-        The ISO 3166 alpha-2 country code for the country to write/read.
-
-    Methods
-    -------
-    make_hdf5_daily_bar_path() -> string
-        A class method that returns the path for the rootdir of the daily
-        bars ctable. By default this is a subdirectory HDF5_DAILY_BAR_PATH in
-        the shared temp directory.
-
-    See Also
-    --------
-    WithDataPortal
-    zipline.testing.create_daily_bar_data
-    """
-    HDF5_DAILY_BAR_PATH = 'daily_equity_pricing.h5'
-    HDF5_DAILY_BAR_COUNTRY_CODES = alias('EQUITY_DAILY_BAR_COUNTRY_CODES')
-
-    @classmethod
-    def make_hdf5_daily_bar_path(cls):
-        return cls.tmpdir.getpath(cls.HDF5_DAILY_BAR_PATH)
-
-    @classmethod
-    def init_class_fixtures(cls):
-        super(
-            WithHDF5EquityMultiCountryDailyBarReader,
-            cls,
-        ).init_class_fixtures()
-
-        cls.hdf5_daily_bar_path = path = cls.make_hdf5_daily_bar_path()
-
-        f = cls.write_hdf5_daily_bars(path, cls.HDF5_DAILY_BAR_COUNTRY_CODES)
-
-        cls.single_country_hdf5_equity_daily_bar_readers = {
-            country_code: HDF5DailyBarReader.from_file(f, country_code)
-            for country_code in f
-        }
-
-        cls.hdf5_equity_daily_bar_reader = MultiCountryDailyBarReader(
-            cls.single_country_hdf5_equity_daily_bar_readers
-        )
-
 
 class WithEquityMinuteBarData(WithAssetFinder, WithTradingCalendars):
     """
@@ -1362,8 +1214,8 @@ class WithEquityMinuteBarData(WithAssetFinder, WithTradingCalendars):
         trading_calendar = cls.trading_calendars[Equity]
         cls.equity_minute_bar_days = _trading_days_for_minute_bars(
             trading_calendar,
-            pd.Timestamp(cls.EQUITY_MINUTE_BAR_START_DATE),
-            pd.Timestamp(cls.EQUITY_MINUTE_BAR_END_DATE),
+            cls.EQUITY_MINUTE_BAR_START_DATE,
+            cls.EQUITY_MINUTE_BAR_END_DATE,
             cls.EQUITY_MINUTE_BAR_LOOKBACK_DAYS
         )
 
@@ -1422,8 +1274,8 @@ class WithFutureMinuteBarData(WithAssetFinder, WithTradingCalendars):
         trading_calendar = get_calendar('us_futures')
         cls.future_minute_bar_days = _trading_days_for_minute_bars(
             trading_calendar,
-            pd.Timestamp(cls.FUTURE_MINUTE_BAR_START_DATE),
-            pd.Timestamp(cls.FUTURE_MINUTE_BAR_END_DATE),
+            cls.FUTURE_MINUTE_BAR_START_DATE,
+            cls.FUTURE_MINUTE_BAR_END_DATE,
             cls.FUTURE_MINUTE_BAR_LOOKBACK_DAYS
         )
 
@@ -1973,7 +1825,6 @@ class WithCreateBarData(WithDataPortal):
 
 class WithMakeAlgo(WithBenchmarkReturns,
                    WithSimParams,
-                   WithLogger,
                    WithDataPortal):
     """
     ZiplineTestCase mixin that provides a ``make_algo`` method.
@@ -2093,9 +1944,6 @@ class WithFXRates(object):
     # Kinds of rates for which exchange rate data is present.
     FX_RATES_RATE_NAMES = ["mid"]
 
-    # Default chunk size used for fx artifact compression.
-    HDF5_FX_CHUNK_SIZE = 75
-
     # Rate used by default for Pipeline API queries that don't specify a rate
     # explicitly.
     @classproperty
@@ -2164,34 +2012,6 @@ class WithFXRates(object):
             out[rate_name] = cls.make_fx_rates_from_reference(reference)
 
         return out
-
-    @classmethod
-    def write_h5_fx_rates(cls, path):
-        """Write cls.fx_rates to disk with an HDF5FXRateWriter.
-
-        Returns an HDF5FXRateReader that reader from written data.
-        """
-        sessions = cls.fx_rates_sessions
-
-        # Write in-memory data to h5 file.
-        with h5py.File(path, 'w') as h5_file:
-            writer = HDF5FXRateWriter(h5_file, cls.HDF5_FX_CHUNK_SIZE)
-            fx_data = ((rate, quote, quote_frame.values)
-                       for rate, rate_dict in cls.fx_rates.items()
-                       for quote, quote_frame in rate_dict.items())
-
-            writer.write(
-                dts=sessions.values,
-                currencies=np.array(cls.FX_RATES_CURRENCIES, dtype=object),
-                data=fx_data,
-            )
-
-        h5_file = cls.enter_class_context(h5py.File(path, 'r'))
-
-        return HDF5FXRateReader(
-            h5_file,
-            default_rate=cls.FX_RATES_DEFAULT_RATE,
-        )
 
     @classmethod
     def get_expected_fx_rate_scalar(cls, rate, quote, base, dt):

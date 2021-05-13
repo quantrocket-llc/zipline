@@ -12,12 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logbook
 
 import pandas as pd
-
-log = logbook.Logger(__name__)
-
 
 def get_benchmark_returns_from_file(filelike):
     """
@@ -33,13 +29,15 @@ def get_benchmark_returns_from_file(filelike):
         2020-01-03 00:00:00+00:00,-0.02
 
     """
-    log.info("Reading benchmark returns from {}", filelike)
+    print("Reading benchmark returns from {}", filelike)
 
     df = pd.read_csv(
         filelike,
         index_col=['date'],
         parse_dates=['date'],
-    ).tz_localize('utc')
+    )
+    if not df.index.tz:
+        df = df.tz_localize('utc')
 
     if 'return' not in df.columns:
         raise ValueError("The column 'return' not found in the "

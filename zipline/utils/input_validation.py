@@ -53,12 +53,12 @@ def verify_indices_all_unique(obj):
 
     Parameters
     ----------
-    obj : pd.Series / pd.DataFrame / pd.Panel
+    obj : pd.Series / pd.DataFrame
         The object to validate.
 
     Returns
     -------
-    obj : pd.Series / pd.DataFrame / pd.Panel
+    obj : pd.Series / pd.DataFrame
         The validated object, unchanged.
 
     Raises
@@ -69,7 +69,6 @@ def verify_indices_all_unique(obj):
     axis_names = [
         ('index',),                            # Series
         ('index', 'columns'),                  # DataFrame
-        ('items', 'major_axis', 'minor_axis')  # Panel
     ][obj.ndim - 1]  # ndim = 1 should go to entry 0,
 
     for axis_name, index in zip(axis_names, obj.axes):

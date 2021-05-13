@@ -56,9 +56,9 @@ def continuous_future(root_symbol_str, offset=0, roll="volume", adjustment="mul"
     Get the continuous future object for ES and get the current chain as of
     2020-09-18:
 
-    >>> es = continuous_future("ES", roll="volume", bundle="es-1min")
-    >>> data = get_data("2020-09-18 10:00:00", bundle="es-1min")
-    >>> print(data.current_chain(es))
+    >>> es = continuous_future("ES", roll="volume", bundle="es-1min")    # doctest: +SKIP
+    >>> data = get_data("2020-09-18 10:00:00", bundle="es-1min")         # doctest: +SKIP
+    >>> print(data.current_chain(es))                                    # doctest: +SKIP
     """
     if not bundle:
         bundle = get_default_bundle()

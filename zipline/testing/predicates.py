@@ -34,13 +34,12 @@ from nose.tools import (  # noqa
 )
 import numpy as np
 import pandas as pd
-from pandas.util.testing import (
+from pandas.testing import (
     assert_frame_equal,
-    assert_panel_equal,
     assert_series_equal,
     assert_index_equal,
 )
-from six import iteritems, viewkeys, PY2
+from six import iteritems, viewkeys
 from six.moves import zip_longest
 from toolz import dissoc, keyfilter
 import toolz.curried.operator as op
@@ -462,7 +461,7 @@ def assert_dict_equal(result, expected, path=(), msg='', **kwargs):
         viewkeys(result),
         viewkeys(expected),
         msg,
-        path + ('.%s()' % ('viewkeys' if PY2 else 'keys'),),
+        path + ('.%s()' % ('keys'),),
         'key',
     )
 
@@ -578,7 +577,7 @@ def assert_array_equal(result,
             % (result_dtype, expected_dtype, _fmt_path(path))
         )
         f = partial(
-            np.testing.utils.assert_array_compare,
+            np.testing.assert_array_compare,
             compare_datetime_arrays,
             header='Arrays are not equal',
         )
@@ -651,10 +650,6 @@ def _register_assert_equal_wrapper(type_, assert_eq):
 assert_frame_equal = _register_assert_equal_wrapper(
     pd.DataFrame,
     assert_frame_equal,
-)
-assert_panel_equal = _register_assert_equal_wrapper(
-    pd.Panel,
-    assert_panel_equal,
 )
 assert_series_equal = _register_assert_equal_wrapper(
     pd.Series,
@@ -825,14 +820,3 @@ def index_of_first_difference(left, right):
         return next(difflocs)
     except StopIteration:
         raise ValueError("Left was equal to right!")
-
-
-try:
-    # pull the dshape cases in
-    from datashape.util.testing import assert_dshape_equal
-except ImportError:
-    pass
-else:
-    assert_equal.funcs.update(
-        dissoc(assert_dshape_equal.funcs, (object, object)),
-    )

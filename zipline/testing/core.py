@@ -15,7 +15,6 @@ import sys
 import tempfile
 from traceback import format_exception
 
-from logbook import TestHandler
 from mock import patch
 from nose.tools import nottest
 from numpy.testing import assert_allclose, assert_array_equal
@@ -48,7 +47,6 @@ from zipline.pipeline.domain import EquitySessionDomain
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.loaders.testing import make_seeded_random_loader
-from zipline.utils import security_list
 from zipline.utils.input_validation import expect_dimensions
 from zipline.utils.numpy_utils import as_column, isnat
 from zipline.utils.pandas_utils import timedelta_to_integral_seconds
@@ -175,45 +173,6 @@ def assert_single_position(test, zipline):
     )
 
     return output, transaction_count
-
-
-@contextmanager
-def security_list_copy():
-    old_dir = security_list.SECURITY_LISTS_DIR
-    new_dir = tempfile.mkdtemp()
-    try:
-        for subdir in os.listdir(old_dir):
-            shutil.copytree(os.path.join(old_dir, subdir),
-                            os.path.join(new_dir, subdir))
-            with patch.object(security_list, 'SECURITY_LISTS_DIR', new_dir), \
-                    patch.object(security_list, 'using_copy', True,
-                                 create=True):
-                yield
-    finally:
-        shutil.rmtree(new_dir, True)
-
-
-def add_security_data(adds, deletes):
-    if not hasattr(security_list, 'using_copy'):
-        raise Exception('add_security_data must be used within '
-                        'security_list_copy context')
-    directory = os.path.join(
-        security_list.SECURITY_LISTS_DIR,
-        "leveraged_etf_list/20150127/20150125"
-    )
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    del_path = os.path.join(directory, "delete")
-    with open(del_path, 'w') as f:
-        for sym in deletes:
-            f.write(sym)
-            f.write('\n')
-    add_path = os.path.join(directory, "add")
-    with open(add_path, 'w') as f:
-        for sym in adds:
-            f.write(sym)
-            f.write('\n')
-
 
 def all_pairs_matching_predicate(values, pred):
     """
@@ -743,36 +702,6 @@ class FakeDataPortal(DataPortal):
 
         return df
 
-
-class FetcherDataPortal(DataPortal):
-    """
-    Mock dataportal that returns fake data for history and non-fetcher
-    spot value.
-    """
-    def __init__(self, asset_finder, trading_calendar, first_trading_day=None):
-        super(FetcherDataPortal, self).__init__(asset_finder, trading_calendar,
-                                                first_trading_day)
-
-    def get_spot_value(self, asset, field, dt, data_frequency):
-        # if this is a fetcher field, exercise the regular code path
-        if self._is_extra_source(asset, field, self._augmented_sources_map):
-            return super(FetcherDataPortal, self).get_spot_value(
-                asset, field, dt, data_frequency)
-
-        # otherwise just return a fixed value
-        return int(asset)
-
-    # XXX: These aren't actually the methods that are used by the superclasses,
-    # so these don't do anything, and this class will likely produce unexpected
-    # results for history().
-    def _get_daily_window_for_sid(self, asset, field, days_in_window,
-                                  extra_slot=True):
-        return np.arange(days_in_window, dtype=np.float64)
-
-    def _get_minute_window_for_asset(self, asset, field, minutes_for_window):
-        return np.arange(minutes_for_window, dtype=np.float64)
-
-
 class tmp_assets_db(object):
     """Create a temporary assets sqlite database.
     This is meant to be used as a context manager.
@@ -945,7 +874,7 @@ def subtest(iterator, *_names):
     * Have a large parameter space we are testing
       (see tests/utils/test_events.py).
 
-    ``nose_parameterized.expand`` will create a test for each parameter
+    ``parameterized.expand`` will create a test for each parameter
     combination which bloats the test output and makes the travis pages slow.
 
     We cannot use ``unittest2.TestCase.subTest`` because nose, pytest, and
@@ -1029,7 +958,7 @@ def assert_timestamp_equal(left, right, compare_nat_equal=True, msg=""):
     msg : str, optional
         A message to forward to `pd.util.testing.assert_equal`.
     """
-    if compare_nat_equal and left is pd.NaT and right is pd.NaT:
+    if compare_nat_equal and pd.isnull(left) and pd.isnull(right):
         return
     return pd.util.testing.assert_equal(left, right, msg=msg)
 
@@ -1333,30 +1262,6 @@ def permute_rows(seed, array):
     rand = np.random.RandomState(seed)
     return np.apply_along_axis(rand.permutation, 1, array)
 
-
-@nottest
-def make_test_handler(testcase, *args, **kwargs):
-    """
-    Returns a TestHandler which will be used by the given testcase. This
-    handler can be used to test log messages.
-
-    Parameters
-    ----------
-    testcase: unittest.TestCase
-        The test class in which the log handler will be used.
-    *args, **kwargs
-        Forwarded to the new TestHandler object.
-
-    Returns
-    -------
-    handler: logbook.TestHandler
-        The handler to use for the test case.
-    """
-    handler = TestHandler(*args, **kwargs)
-    testcase.addCleanup(handler.close)
-    return handler
-
-
 def write_compressed(path, content):
     """
     Write a compressed (gzipped) file to `path`.
@@ -1380,7 +1285,7 @@ zipline_git_root = abspath(
 
 @nottest
 def test_resource_path(*path_parts):
-    return os.path.join(zipline_git_root, 'tests', 'resources', *path_parts)
+    return os.path.join(zipline_git_root, 'zipline', 'tests', 'resources', *path_parts)
 
 
 @contextmanager
@@ -1765,50 +1670,6 @@ def create_simple_domain(start, end, country_code):
     """Create a new pipeline domain with a simple date_range index.
     """
     return EquitySessionDomain(pd.date_range(start, end), country_code)
-
-
-def write_hdf5_daily_bars(writer,
-                          asset_finder,
-                          country_codes,
-                          generate_data,
-                          generate_currency_codes):
-    """Write an HDF5 file of pricing data using an HDF5DailyBarWriter.
-    """
-    asset_finder = asset_finder
-    for country_code in country_codes:
-        sids = asset_finder.equities_sids_for_country_code(country_code)
-
-        # XXX: The contract for generate_data is that it should return an
-        # iterator of (sid, df) pairs with entry for each sid in `sids`, and
-        # the contract for `generate_currency_codes` is that it should return a
-        # series indexed by the sids it receives.
-        #
-        # Unfortunately, some of our tests that were written before the
-        # introduction of multiple markets (in particular, the ones that use
-        # EQUITY_DAILY_BAR_SOURCE_FROM_MINUTE), provide a function that always
-        # returns the same iterator, regardless of the provided `sids`, which
-        # means there are cases where the sids in `data` don't match the sids
-        # in `currency_codes`, which causes an assertion failure in
-        # `write_from_sid_df_pairs`.
-        #
-        # The correct fix for this is to update those old tests to respect
-        # `sids` (most likely by updating `make_equity_minute_bar_sids` to
-        # support multiple countries). But that requires updating a lot of
-        # tests, so for now, we call `generate_data` and use the sids it
-        # produces to determine what to pass to `generate_country_codes`.
-        data = list(generate_data(country_code=country_code, sids=sids))
-        data_sids = [p[0] for p in data]
-
-        currency_codes = generate_currency_codes(
-            country_code=country_code,
-            sids=data_sids,
-        )
-        writer.write_from_sid_df_pairs(
-            country_code,
-            iter(data),
-            currency_codes=currency_codes,
-        )
-
 
 def exchange_info_for_domains(domains):
     """

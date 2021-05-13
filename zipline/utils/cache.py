@@ -11,8 +11,6 @@ from shutil import rmtree, move
 from tempfile import mkdtemp, NamedTemporaryFile
 
 import pandas as pd
-
-from .compat import PY2
 from .context_tricks import nop_context
 from .paths import ensure_directory
 from .sentinel import sentinel
@@ -207,30 +205,25 @@ class dataframe_cache(MutableMapping):
                  path=None,
                  lock=None,
                  clean_on_failure=True,
-                 serialization='msgpack'):
+                 serialization='pickle'):
         self.path = path if path is not None else mkdtemp()
         self.lock = lock if lock is not None else nop_context
         self.clean_on_failure = clean_on_failure
 
-        if serialization == 'msgpack':
-            self.serialize = pd.DataFrame.to_msgpack
-            self.deserialize = pd.read_msgpack
-            self._protocol = None
-        else:
-            s = serialization.split(':', 1)
-            if s[0] != 'pickle':
-                raise ValueError(
-                    "'serialization' must be either 'msgpack' or 'pickle[:n]'",
-                )
-            self._protocol = int(s[1]) if len(s) == 2 else None
-
-            self.serialize = self._serialize_pickle
-            self.deserialize = (
-                pickle.load if PY2 else
-                partial(pickle.load, encoding='latin-1')
+        s = serialization.split(':', 1)
+        if s[0] != 'pickle':
+            raise ValueError(
+                "'serialization' must be 'pickle[:n]'",
             )
+        self._protocol = int(s[1]) if len(s) == 2 else None
+
+        self.serialize = self._serialize_pickle
+        self.deserialize = partial(pickle.load, encoding='latin-1')
 
         ensure_directory(self.path)
+
+    def _read_msgpack(self):
+        pass
 
     def _serialize_pickle(self, df, path):
         with open(path, 'wb') as f:

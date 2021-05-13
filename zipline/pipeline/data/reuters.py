@@ -337,8 +337,8 @@ class Financials(DataSetFamily):
     --------
     Create a CustomFactor for PB ratio, using annual financials:
 
-    >>> annual_financials = reuters.Financials.slice(interim=False, period_offset=0)
-    >>> class PriceBookRatio(CustomFactor):
+    >>> annual_financials = reuters.Financials.slice(interim=False, period_offset=0)    # doctest: +SKIP
+    >>> class PriceBookRatio(CustomFactor):                                             # doctest: +SKIP
             inputs = [
                 EquityPricing.close,
                 annual_financials.ATOT,  # total assets
@@ -579,7 +579,7 @@ class Estimates(DataSetFamily):
     --------
     Select stocks with high book values, using quarterly actuals:
 
-    >>> have_high_bvps = reuters.Estimates.slice(period_type="Q", field="Actual", period_offset=0).BVPS.latest.percentile_between(80, 100)
+    >>> have_high_bvps = reuters.Estimates.slice(period_type="Q", field="Actual", period_offset=0).BVPS.latest.percentile_between(80, 100)    # doctest: +SKIP
     """
     extra_dims = [
         ('period_type', {'Q', 'A', 'S'}),

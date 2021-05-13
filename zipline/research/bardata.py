@@ -55,11 +55,11 @@ def get_data(dt, bundle=None, data_frequency=None):
     Get the data object for July 7, 2020 at 11 AM for the usstock minute
     bundle:
 
-    >>> data = get_data('2020-07-07 11:00:00', bundle="usstock-1min")
+    >>> data = get_data('2020-07-07 11:00:00', bundle="usstock-1min")    # doctest: +SKIP
 
     Get the data object for July 7, 2020 for a daily bundle:
 
-    >>> data = get_data('2020-07-07', bundle="xjpx-1d-bundle")
+    >>> data = get_data('2020-07-07', bundle="xjpx-1d-bundle")           # doctest: +SKIP
     """
     if not bundle:
         bundle = get_default_bundle()
@@ -118,8 +118,7 @@ def get_data(dt, bundle=None, data_frequency=None):
         simulation_dt_func=lambda: session_minute,
         data_frequency=data_frequency,
         trading_calendar=trading_calendar,
-        restrictions=NoRestrictions(),
-        universe_func=lambda: asset_finder.retrieve_all(asset_finder.sids)
+        restrictions=NoRestrictions()
     )
 
     return data

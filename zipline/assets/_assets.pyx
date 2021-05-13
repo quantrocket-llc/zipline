@@ -208,8 +208,8 @@ cdef class Asset:
         return (self.__class__, (self.sid,
                                  self.real_sid,
                                  self.exchange_info,
-                                 self.symbol,
                                  self.currency,
+                                 self.symbol,
                                  self.asset_name,
                                  self.start_date,
                                  self.end_date,
@@ -295,40 +295,7 @@ cdef class Equity(Asset):
     Asset subclass representing partial ownership of a company, trust, or
     partnership.
     """
-
-    property security_start_date:
-        """
-        DEPRECATION: This property should be deprecated and is only present for
-        backwards compatibility
-        """
-        def __get__(self):
-            warnings.warn("The security_start_date property will soon be "
-            "retired. Please use the start_date property instead.",
-            DeprecationWarning)
-            return self.start_date
-
-    property security_end_date:
-        """
-        DEPRECATION: This property should be deprecated and is only present for
-        backwards compatibility
-        """
-        def __get__(self):
-            warnings.warn("The security_end_date property will soon be "
-            "retired. Please use the end_date property instead.",
-            DeprecationWarning)
-            return self.end_date
-
-    property security_name:
-        """
-        DEPRECATION: This property should be deprecated and is only present for
-        backwards compatibility
-        """
-        def __get__(self):
-            warnings.warn("The security_name property will soon be "
-            "retired. Please use the asset_name property instead.",
-            DeprecationWarning)
-            return self.asset_name
-
+    pass
 
 @cython.embedsignature(False)
 cdef class Future(Asset):
@@ -408,17 +375,6 @@ cdef class Future(Asset):
         if rollover_date is None:
             self.rollover_date = self.auto_close_date
 
-    property multiplier:
-        """
-        DEPRECATION: This property should be deprecated and is only present for
-        backwards compatibility
-        """
-        def __get__(self):
-            warnings.warn("The multiplier property will soon be "
-            "retired. Please use the price_multiplier property instead.",
-            DeprecationWarning)
-            return self.price_multiplier
-
     cpdef __reduce__(self):
         """
         Function used by pickle to determine how to serialize/deserialize this
@@ -429,9 +385,9 @@ cdef class Future(Asset):
         return (self.__class__, (self.sid,
                                  self.real_sid,
                                  self.exchange_info,
+                                 self.currency,
                                  self.symbol,
                                  self.root_symbol,
-                                 self.currency,
                                  self.asset_name,
                                  self.start_date,
                                  self.end_date,

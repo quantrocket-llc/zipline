@@ -1,10 +1,8 @@
 from collections import namedtuple
 from errno import ENOENT
 from os import remove
-
-from logbook import Logger
+import warnings
 import numpy as np
-from numpy import integer as any_integer
 import pandas as pd
 from pandas import Timestamp
 import six
@@ -22,9 +20,6 @@ from zipline.utils.numpy_utils import (
 from zipline.utils.pandas_utils import empty_dataframe
 from zipline.utils.sqlite_utils import group_into_chunks, coerce_string_to_conn
 from ._adjustments import load_adjustments_from_sqlite
-
-log = Logger(__name__)
-
 
 SQLITE_ADJUSTMENT_TABLENAMES = frozenset(['splits', 'dividends', 'mergers'])
 
@@ -47,42 +42,31 @@ StockDividend = namedtuple(
 
 
 SQLITE_ADJUSTMENT_COLUMN_DTYPES = {
-    'effective_date': any_integer,
+    'effective_date': int64_dtype,
     'ratio': float64_dtype,
-    'sid': any_integer,
+    'sid': int64_dtype,
 }
 
 
 SQLITE_DIVIDEND_PAYOUT_COLUMN_DTYPES = {
-    'sid': any_integer,
-    'ex_date': any_integer,
-    'declared_date': any_integer,
-    'record_date': any_integer,
-    'pay_date': any_integer,
+    'sid': int64_dtype,
+    'ex_date': int64_dtype,
+    'declared_date': int64_dtype,
+    'record_date': int64_dtype,
+    'pay_date': int64_dtype,
     'amount': float,
 }
 
 
 SQLITE_STOCK_DIVIDEND_PAYOUT_COLUMN_DTYPES = {
-    'sid': any_integer,
-    'ex_date': any_integer,
-    'declared_date': any_integer,
-    'record_date': any_integer,
-    'pay_date': any_integer,
-    'payment_sid': any_integer,
+    'sid': int64_dtype,
+    'ex_date': int64_dtype,
+    'declared_date': int64_dtype,
+    'record_date': int64_dtype,
+    'pay_date': int64_dtype,
+    'payment_sid': int64_dtype,
     'ratio': float,
 }
-
-
-def specialize_any_integer(d):
-    out = {}
-    for k, v in six.iteritems(d):
-        if v is any_integer:
-            out[k] = int64_dtype
-        else:
-            out[k] = v
-    return out
-
 
 class SQLiteAdjustmentReader(object):
     """
@@ -111,19 +95,11 @@ class SQLiteAdjustmentReader(object):
         )
     }
     _raw_table_dtypes = {
-        # We use any_integer above to be lenient in accepting different dtypes
-        # from users. For our outputs, however, we always want to return the
-        # same types, and any_integer turns into int32 on some numpy windows
-        # builds, so specify int64 explicitly here.
-        'splits': specialize_any_integer(SQLITE_ADJUSTMENT_COLUMN_DTYPES),
-        'mergers': specialize_any_integer(SQLITE_ADJUSTMENT_COLUMN_DTYPES),
-        'dividends': specialize_any_integer(SQLITE_ADJUSTMENT_COLUMN_DTYPES),
-        'dividend_payouts': specialize_any_integer(
-            SQLITE_DIVIDEND_PAYOUT_COLUMN_DTYPES,
-        ),
-        'stock_dividend_payouts': specialize_any_integer(
-            SQLITE_STOCK_DIVIDEND_PAYOUT_COLUMN_DTYPES,
-        ),
+        'splits': SQLITE_ADJUSTMENT_COLUMN_DTYPES,
+        'mergers': SQLITE_ADJUSTMENT_COLUMN_DTYPES,
+        'dividends': SQLITE_ADJUSTMENT_COLUMN_DTYPES,
+        'dividend_payouts': SQLITE_DIVIDEND_PAYOUT_COLUMN_DTYPES,
+        'stock_dividend_payouts': SQLITE_STOCK_DIVIDEND_PAYOUT_COLUMN_DTYPES,
     }
 
     @preprocess(conn=coerce_string_to_conn(require_exists=True))
@@ -315,12 +291,14 @@ class SQLiteAdjustmentReader(object):
             self.conn,
             index_col='index',
             **kwargs
-        ).rename_axis(None)
+        )
+        dtypes = self._df_dtypes(table_name, convert_dates)
 
         if not len(result):
-            dtypes = self._df_dtypes(table_name, convert_dates)
             return empty_dataframe(*keysorted(dtypes))
 
+        result.rename_axis(None, inplace=True)
+        result = result[sorted(dtypes)]  # ensure expected order of columns
         return result
 
     def _df_dtypes(self, table_name, convert_dates):
@@ -504,22 +482,22 @@ class SQLiteAdjustmentWriter(object):
 
         non_nan_ratio_mask = ~np.isnan(ratio)
         for ix in np.flatnonzero(~non_nan_ratio_mask):
-            log.warn(
+            warnings.warn(
                 "Couldn't compute ratio for dividend"
-                " sid={sid}, ex_date={ex_date:%Y-%m-%d}, amount={amount:.3f}",
+                " sid={sid}, ex_date={ex_date:%Y-%m-%d}, amount={amount:.3f}".format(
                 sid=input_sids[ix],
                 ex_date=pd.Timestamp(input_dates[ix]),
-                amount=amount[ix],
+                amount=amount[ix])
             )
 
         positive_ratio_mask = ratio > 0
         for ix in np.flatnonzero(~positive_ratio_mask & non_nan_ratio_mask):
-            log.warn(
+            warnings.warn(
                 "Dividend ratio <= 0 for dividend"
-                " sid={sid}, ex_date={ex_date:%Y-%m-%d}, amount={amount:.3f}",
+                " sid={sid}, ex_date={ex_date:%Y-%m-%d}, amount={amount:.3f}".format(
                 sid=input_sids[ix],
                 ex_date=pd.Timestamp(input_dates[ix]),
-                amount=amount[ix],
+                amount=amount[ix])
             )
 
         valid_ratio_mask = non_nan_ratio_mask & positive_ratio_mask

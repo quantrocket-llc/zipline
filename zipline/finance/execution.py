@@ -73,7 +73,7 @@ class MarketOrder(ExecutionStyle):
     Brokers):
 
     >>> style = MarketOrder(exchange="SMART", order_params={"AlgoStrategy": "Adaptive"})
-    >>> algo.order(asset, 100, style=style)
+    >>> algo.order(asset, 100, style=style)                                                # doctest: +SKIP
     """
 
     def __init__(self, exchange=None, order_params=None):

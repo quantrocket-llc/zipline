@@ -14,7 +14,6 @@
 # limitations under the License.
 from contextlib2 import ExitStack
 from copy import copy
-from logbook import Logger, Processor
 from zipline.finance.order import ORDER_STATUS
 from zipline.protocol import BarData
 from zipline.utils.api_support import ZiplineAPI
@@ -28,9 +27,6 @@ from zipline.gens.sim_engine import (
     BEFORE_TRADING_START_BAR
 )
 
-log = Logger('Trade Simulation')
-
-
 class AlgorithmSimulator(object):
 
     EMISSION_TO_PERF_KEY_MAP = {
@@ -39,7 +35,7 @@ class AlgorithmSimulator(object):
     }
 
     def __init__(self, algo, sim_params, data_portal, clock, benchmark_source,
-                 restrictions, universe_func):
+                 restrictions):
 
         # ==============
         # Simulation
@@ -58,9 +54,9 @@ class AlgorithmSimulator(object):
         # Snapshot Setup
         # ==============
 
-        # This object is the way that user algorithms interact with OHLCV data,
-        # fetcher data, and some API methods like `data.can_trade`.
-        self.current_data = self._create_bar_data(universe_func)
+        # This object is the way that user algorithms interact with OHLCV data
+        # and some API methods like `data.can_trade`.
+        self.current_data = self._create_bar_data()
 
         # We don't have a datetime for the current snapshot until we
         # receive a message.
@@ -70,28 +66,16 @@ class AlgorithmSimulator(object):
 
         self.benchmark_source = benchmark_source
 
-        # =============
-        # Logging Setup
-        # =============
-
-        # Processor function for injecting the algo_dt into
-        # user prints/logs.
-        def inject_algo_dt(record):
-            if 'algo_dt' not in record.extra:
-                record.extra['algo_dt'] = self.simulation_dt
-        self.processor = Processor(inject_algo_dt)
-
     def get_simulation_dt(self):
         return self.simulation_dt
 
-    def _create_bar_data(self, universe_func):
+    def _create_bar_data(self):
         return BarData(
             data_portal=self.data_portal,
             simulation_dt_func=self.get_simulation_dt,
             data_frequency=self.sim_params.data_frequency,
             trading_calendar=self.algo.trading_calendar,
-            restrictions=self.restrictions,
-            universe_func=universe_func
+            restrictions=self.restrictions
         )
 
     def transform(self):
@@ -181,7 +165,6 @@ class AlgorithmSimulator(object):
 
         with ExitStack() as stack:
             stack.callback(on_exit)
-            stack.enter_context(self.processor)
             stack.enter_context(ZiplineAPI(self.algo))
 
             if algo.data_frequency == 'minute':

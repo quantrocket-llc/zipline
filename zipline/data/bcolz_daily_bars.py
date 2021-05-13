@@ -15,7 +15,6 @@ from functools import partial
 import warnings
 
 from bcolz import carray, ctable
-import logbook
 import numpy as np
 from numpy import (
     array,
@@ -44,11 +43,7 @@ from zipline.utils.functional import apply
 from zipline.utils.input_validation import expect_element
 from zipline.utils.numpy_utils import iNaT, float64_dtype, uint32_dtype
 from zipline.utils.memoize import lazyval
-from zipline.utils.cli import maybe_show_progress
 from ._equities import _compute_row_slices, _read_bcolz_data
-
-
-logger = logbook.Logger('UsEquityPricing')
 
 OHLC = frozenset(['open', 'high', 'low', 'close'])
 US_EQUITY_PRICING_BCOLZ_COLUMNS = (
@@ -123,7 +118,7 @@ class BcolzDailyBarWriter(object):
     ----------
     filename : str
         The location at which we should write our output.
-    calendar : zipline.utils.calendar.trading_calendar
+    calendar : trading_calendars.TradingCalendar
         Calendar to use to compute asset calendar offsets.
     start_session: pd.Timestamp
         Midnight UTC session label.
@@ -170,8 +165,7 @@ class BcolzDailyBarWriter(object):
     def write(self,
               data,
               assets=None,
-              show_progress=False,
-              invalid_data_behavior='warn'):
+              invalid_data_behavior='ignore'):
         """
         Parameters
         ----------
@@ -182,8 +176,6 @@ class BcolzDailyBarWriter(object):
             The assets that should be in ``data``. If this is provided
             we will check ``data`` against the assets and provide better
             progress information.
-        show_progress : bool, optional
-            Whether or not to show a progress bar while writing.
         invalid_data_behavior : {'warn', 'raise', 'ignore'}, optional
             What to do when data is encountered that is outside the range of
             a uint32.
@@ -193,23 +185,15 @@ class BcolzDailyBarWriter(object):
         table : bcolz.ctable
             The newly-written table.
         """
-        ctx = maybe_show_progress(
+        return self._write_internal(
             (
                 (sid, self.to_ctable(df, invalid_data_behavior))
                 for sid, df in data
-            ),
-            show_progress=show_progress,
-            item_show_func=self.progress_bar_item_show_func,
-            label=self.progress_bar_message,
-            length=len(assets) if assets is not None else None,
-        )
-        with ctx as it:
-            return self._write_internal(it, assets)
+            ), assets)
 
     def write_csvs(self,
                    asset_map,
-                   show_progress=False,
-                   invalid_data_behavior='warn'):
+                   invalid_data_behavior='ignore'):
         """Read CSVs as DataFrames from our asset map.
 
         Parameters
@@ -217,8 +201,6 @@ class BcolzDailyBarWriter(object):
         asset_map : dict[int -> str]
             A mapping from asset id to file path with the CSV data for that
             asset
-        show_progress : bool
-            Whether or not to show a progress bar while writing.
         invalid_data_behavior : {'warn', 'raise', 'ignore'}
             What to do when data is encountered that is outside the range of
             a uint32.
@@ -232,7 +214,6 @@ class BcolzDailyBarWriter(object):
         return self.write(
             ((asset, read(path)) for asset, path in iteritems(asset_map)),
             assets=viewkeys(asset_map),
-            show_progress=show_progress,
             invalid_data_behavior=invalid_data_behavior,
         )
 
@@ -463,20 +444,16 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
 
     @lazyval
     def sessions(self):
-        if 'calendar' in self._table.attrs.attrs:
-            # backwards compatibility with old formats, will remove
-            return DatetimeIndex(self._table.attrs['calendar'], tz='UTC')
-        else:
-            cal = get_calendar(self._table.attrs['calendar_name'])
-            start_session_ns = self._table.attrs['start_session_ns']
-            start_session = Timestamp(start_session_ns, tz='UTC')
+        cal = get_calendar(self._table.attrs['calendar_name'])
+        start_session_ns = self._table.attrs['start_session_ns']
+        start_session = Timestamp(start_session_ns, tz='UTC')
 
-            end_session_ns = self._table.attrs['end_session_ns']
-            end_session = Timestamp(end_session_ns, tz='UTC')
+        end_session_ns = self._table.attrs['end_session_ns']
+        end_session = Timestamp(end_session_ns, tz='UTC')
 
-            sessions = cal.sessions_in_range(start_session, end_session)
+        sessions = cal.sessions_in_range(start_session, end_session)
 
-            return sessions
+        return sessions
 
     @lazyval
     def _first_rows(self):

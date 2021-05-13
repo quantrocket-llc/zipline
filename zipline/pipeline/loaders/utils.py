@@ -176,9 +176,8 @@ def last_in_date_group(df,
         levels of a multiindex of columns.
 
     """
-    idx = [data_query_cutoff_times[data_query_cutoff_times.searchsorted(
-        df[TS_FIELD_NAME].values,
-    )]]
+    dts = pd.DatetimeIndex(df[TS_FIELD_NAME].values, tz="UTC")
+    idx = [data_query_cutoff_times[data_query_cutoff_times.searchsorted(dts)]]
     if have_sids:
         idx += [SID_FIELD_NAME]
     if extra_groupers is None:

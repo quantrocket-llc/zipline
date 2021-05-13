@@ -6,8 +6,6 @@ from zipline.finance.cancel_policy import CancelPolicy
 from zipline.pipeline import Pipeline
 from zipline.protocol import Order
 from zipline.utils.events import EventRule
-from zipline.utils.security_list import SecurityList
-
 
 def attach_pipeline(pipeline, name, chunks=None, eager=True):
     """Register a pipeline to be computed at the start of each day.
@@ -83,50 +81,6 @@ def continuous_future(root_symbol_str, offset=0, roll='volume', adjustment='mul'
     -------
     continuous_future : ContinuousFuture
         The continuous future specifier.
-    """
-
-def fetch_csv(url, pre_func=None, post_func=None, date_column='date', date_format=None, timezone='UTC', symbol=None, mask=True, symbol_column=None, special_params_checker=None, **kwargs):
-    """Fetch a csv from a remote url and register the data so that it is
-    queryable from the ``data`` object.
-
-    Parameters
-    ----------
-    url : str
-        The url of the csv file to load.
-    pre_func : callable[pd.DataFrame -> pd.DataFrame], optional
-        A callback to allow preprocessing the raw data returned from
-        fetch_csv before dates are paresed or symbols are mapped.
-    post_func : callable[pd.DataFrame -> pd.DataFrame], optional
-        A callback to allow postprocessing of the data after dates and
-        symbols have been mapped.
-    date_column : str, optional
-        The name of the column in the preprocessed dataframe containing
-        datetime information to map the data.
-    date_format : str, optional
-        The format of the dates in the ``date_column``. If not provided
-        ``fetch_csv`` will attempt to infer the format. For information
-        about the format of this string, see :func:`pandas.read_csv`.
-    timezone : tzinfo or str, optional
-        The timezone for the datetime in the ``date_column``.
-    symbol : str, optional
-        If the data is about a new asset or index then this string will
-        be the name used to identify the values in ``data``. For example,
-        one may use ``fetch_csv`` to load data for VIX, then this field
-        could be the string ``'VIX'``.
-    mask : bool, optional
-        Drop any rows which cannot be symbol mapped.
-    symbol_column : str
-        If the data is attaching some new attribute to each asset then this
-        argument is the name of the column in the preprocessed dataframe
-        containing the symbols. This will be used along with the date
-        information to map the sids in the asset finder.
-    **kwargs
-        Forwarded to :func:`pandas.read_csv`.
-
-    Returns
-    -------
-    csv_data_source : zipline.sources.requests_csv.PandasRequestsCSV
-        A requests source that will pull data from the url specified.
     """
 
 def future_symbol(symbol):
@@ -630,15 +584,6 @@ def set_commission(us_equities=None, us_futures=None):
     :class:`zipline.finance.commission.PerDollar`
     """
 
-def set_do_not_order_list(restricted_list, on_error='fail'):
-    """Set a restriction on which assets can be ordered.
-
-    Parameters
-    ----------
-    restricted_list : container[Asset], SecurityList
-        The assets that cannot be ordered.
-    """
-
 def set_long_only(on_error='fail'):
     """Set a rule specifying that this algorithm cannot take short
     positions.
@@ -732,17 +677,6 @@ def set_slippage(us_equities=None, us_futures=None):
     :class:`zipline.finance.slippage.SlippageModel`
     """
 
-def set_symbol_lookup_date(dt):
-    """Set the date for which symbols will be resolved to their assets
-    (symbols may map to different firms or underlying assets at
-    different times)
-
-    Parameters
-    ----------
-    dt : datetime
-        The new symbol lookup date.
-    """
-
 def sid(sid):
     """Lookup an Asset by its unique asset identifier.
 
@@ -760,53 +694,4 @@ def sid(sid):
     ------
     SidsNotFound
         When a requested ``sid`` does not map to any asset.
-    """
-
-def symbol(symbol_str):
-    """Lookup an Equity by its ticker symbol.
-
-    Parameters
-    ----------
-    symbol_str : str
-        The ticker symbol for the equity to lookup.
-
-    Returns
-    -------
-    equity : Equity
-        The equity that held the ticker symbol on the current
-        symbol lookup date.
-
-    Raises
-    ------
-    SymbolNotFound
-        Raised when the symbols was not held on the current lookup date.
-
-    See Also
-    --------
-    :func:`zipline.api.set_symbol_lookup_date`
-    """
-
-def symbols(*args):
-    """Lookup multuple Equities as a list.
-
-    Parameters
-    ----------
-    *args : iterable[str]
-        The ticker symbols to lookup.
-
-    Returns
-    -------
-    equities : list[Equity]
-        The equities that held the given ticker symbols on the current
-        symbol lookup date.
-
-    Raises
-    ------
-    SymbolNotFound
-        Raised when one of the symbols was not held on the current
-        lookup date.
-
-    See Also
-    --------
-    :func:`zipline.api.set_symbol_lookup_date`
     """

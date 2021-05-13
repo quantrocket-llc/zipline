@@ -108,7 +108,7 @@ class ContinuousFutureSessionBarReader(SessionBarReader):
     @property
     def trading_calendar(self):
         """
-        Returns the zipline.utils.calendar.trading_calendar used to read
+        Returns the trading_calendar used to read
         the data.  Can be None (if the writer didn't specify it).
         """
         return self._bar_reader.trading_calendar
@@ -294,7 +294,7 @@ class ContinuousFutureMinuteBarReader(SessionBarReader):
     @property
     def trading_calendar(self):
         """
-        Returns the zipline.utils.calendar.trading_calendar used to read
+        Returns the trading_calendar used to read
         the data.  Can be None (if the writer didn't specify it).
         """
         return self._bar_reader.trading_calendar
