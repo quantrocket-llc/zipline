@@ -67,8 +67,8 @@ class WithBarDataChecks(object):
         except AssertionError:
             if val1 is pd.NaT:
                 self.assertTrue(val2 is pd.NaT)
-            elif np.isnan(val1):
-                self.assertTrue(np.isnan(val2))
+            elif pd.isnull(val1):
+                self.assertTrue(pd.isnull(val2))
             else:
                 raise
 

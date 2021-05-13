@@ -18,6 +18,7 @@ import re
 
 from parameterized import parameterized
 import numpy as np
+import pandas as pd
 from numpy import (
     arange,
     array,
@@ -492,26 +493,26 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
             mid_date = Timestamp('2015-06-15', tz='UTC')
             if self.asset_start(sid) <= mid_date:
                 expected = min(self.asset_end(sid), mid_date)
+                assert_equal(
+                    self.daily_bar_reader.get_last_traded_dt(
+                        self.asset_finder.retrieve_asset(sid),
+                        mid_date,
+                    ),
+                    expected,
+                )
             else:
-                expected = NaT
-
-            assert_equal(
-                self.daily_bar_reader.get_last_traded_dt(
-                    self.asset_finder.retrieve_asset(sid),
-                    mid_date,
-                ),
-                expected,
-            )
+                self.assertTrue(
+                    self.daily_bar_reader.get_last_traded_dt(
+                        self.asset_finder.retrieve_asset(sid),
+                        mid_date,
+                    ) is pd.NaT)
 
             # If the dt passed comes before any of the assets
             # start trading, the "last traded" dt for each is pd.NaT.
-            assert_equal(
+            self.assertTrue(
                 self.daily_bar_reader.get_last_traded_dt(
                     self.asset_finder.retrieve_asset(sid),
-                    Timestamp(0, tz='UTC'),
-                ),
-                NaT,
-            )
+                    Timestamp(0, tz='UTC')) is pd.NaT)
 
     def test_listing_currency(self):
         # Test loading on all assets.

@@ -318,7 +318,7 @@ class LabelArrayTestCase(ZiplineTestCase):
             )
             for func in all_ufuncs():
                 # Different ufuncs vary between returning NotImplemented and
-                # raising a TypeError when provided with unknown dtypes.
+                # raising a TypeError or ValueError when provided with unknown dtypes.
                 # This is a bit unfortunate, but still better than silently
                 # accepting an int array.
                 try:
@@ -328,7 +328,7 @@ class LabelArrayTestCase(ZiplineTestCase):
                         ret = func(labels, ints)
                     else:
                         self.fail("Who added a ternary ufunc !?!")
-                except TypeError:
+                except (TypeError, ValueError):
                     pass
                 else:
                     self.assertIs(ret, NotImplemented)

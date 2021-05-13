@@ -288,7 +288,10 @@ class DailyHistoryAggregator(object):
                             dt,
                             [asset],
                         )[0].T
-                        val = np.nanmax(np.append(window, last_max))
+                        if np.isnan(window).all():
+                            val = np.nan
+                        else:
+                            val = np.nanmax(np.append(window, last_max))
                         entries[asset] = (dt_value, val)
                         highs.append(val)
                         continue
@@ -299,7 +302,10 @@ class DailyHistoryAggregator(object):
                         dt,
                         [asset],
                     )[0].T
-                    val = np.nanmax(window)
+                    if np.isnan(window).all():
+                        val = np.nan
+                    else:
+                        val = np.nanmax(window)
                     entries[asset] = (dt_value, val)
                     highs.append(val)
                     continue
@@ -339,7 +345,10 @@ class DailyHistoryAggregator(object):
                     elif last_visited_dt == prev_dt:
                         curr_val = self._minute_reader.get_value(
                             asset, dt, 'low')
-                        val = np.nanmin([last_min, curr_val])
+                        if pd.isnull(last_min) and pd.isnull(curr_val):
+                            val = np.nan
+                        else:
+                            val = np.nanmin([last_min, curr_val])
                         entries[asset] = (dt_value, val)
                         lows.append(val)
                         continue
@@ -352,7 +361,10 @@ class DailyHistoryAggregator(object):
                             dt,
                             [asset],
                         )[0].T
-                        val = np.nanmin(np.append(window, last_min))
+                        if np.isnan(window).all():
+                            val = np.nan
+                        else:
+                            val = np.nanmin(np.append(window, last_min))
                         entries[asset] = (dt_value, val)
                         lows.append(val)
                         continue
@@ -363,7 +375,10 @@ class DailyHistoryAggregator(object):
                         dt,
                         [asset],
                     )[0].T
-                    val = np.nanmin(window)
+                    if np.isnan(window).all():
+                        val = np.nan
+                    else:
+                        val = np.nanmin(window)
                     entries[asset] = (dt_value, val)
                     lows.append(val)
                     continue
@@ -542,7 +557,7 @@ class MinuteResampleSessionBarReader(SessionBarReader):
                 start_session,
                 end_session,
             )
-            close_ilocs = minutes.searchsorted(session_closes.values)
+            close_ilocs = minutes.searchsorted(pd.to_datetime(session_closes.values, utc=True))
 
         results = []
         shape = (len(close_ilocs), len(assets))
@@ -594,8 +609,10 @@ class MinuteResampleSessionBarReader(SessionBarReader):
         return self._minute_bar_reader.first_trading_day
 
     def get_last_traded_dt(self, asset, dt):
-        return self.trading_calendar.minute_to_session_label(
-            self._minute_bar_reader.get_last_traded_dt(asset, dt))
+        last_traded_dt = self._minute_bar_reader.get_last_traded_dt(asset, dt)
+        if pd.isnull(last_traded_dt):
+            return last_traded_dt
+        return self.trading_calendar.minute_to_session_label(last_traded_dt)
 
 
 class ReindexBarReader(with_metaclass(ABCMeta)):

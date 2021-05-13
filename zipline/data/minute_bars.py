@@ -618,7 +618,7 @@ class BcolzMinuteBarWriter(object):
             # No need to pad.
             return
 
-        if last_date == pd.NaT:
+        if pd.isnull(last_date):
             # If there is no data, determine how many days to add so that
             # desired days are written to the correct slots.
             days_to_zerofill = tds[tds.slice_indexer(end=date)]
@@ -762,7 +762,9 @@ class BcolzMinuteBarWriter(object):
 
         all_minutes = self._minute_index
         # Get the latest minute we wish to write to the ctable
-        last_minute_to_write = pd.Timestamp(dts[-1], tz='UTC')
+        last_minute_to_write = pd.Timestamp(dts[-1])
+        if not last_minute_to_write.tzname():
+            last_minute_to_write = last_minute_to_write.tz_localize('utc')
 
         # In the event that we've already written some minutely data to the
         # ctable, guard against overwriting that data.

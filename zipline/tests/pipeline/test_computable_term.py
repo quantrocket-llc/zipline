@@ -256,7 +256,7 @@ class FillNATestCase(BaseUSEquityPipelineTestCase):
             TypeError,
             "Fill value '3.0' is not a valid choice for term Floats with"
             " dtype float64.\n\n"
-            "Coercion attempt failed with: Cannot cast array from {!r}"
+            "Coercion attempt failed with: Cannot cast array data from {!r}"
             " to {!r} according to the rule 'same_kind'"
             .format(dtype_for('3.0'), np.dtype(float))
         )
@@ -266,7 +266,7 @@ class FillNATestCase(BaseUSEquityPipelineTestCase):
             TypeError,
             "Fill value '2014-01-02' is not a valid choice for term Dates with"
             " dtype datetime64[ns].\n\n"
-            "Coercion attempt failed with: Cannot cast array from {!r}"
+            "Coercion attempt failed with: Cannot cast array data from {!r}"
             " to {!r} according to the rule 'same_kind'"
             .format(dtype_for('2014-01-02'), np.dtype('M8[ns]'))
         )
@@ -276,7 +276,7 @@ class FillNATestCase(BaseUSEquityPipelineTestCase):
             TypeError,
             "Fill value '300' is not a valid choice for term Ints with"
             " dtype int64.\n\n"
-            "Coercion attempt failed with: Cannot cast array from {!r}"
+            "Coercion attempt failed with: Cannot cast array data from {!r}"
             " to {!r} according to the rule 'same_kind'"
             .format(dtype_for('300'), np.dtype('i8')),
         )

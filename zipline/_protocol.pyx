@@ -563,7 +563,7 @@ cdef class BarData:
                 data_portal.get_spot_value(asset, "last_traded", adjusted_dt,
                                            self.data_frequency)
 
-            return not (last_traded_dt is pd.NaT)
+            return pd.notnull(last_traded_dt)
 
     @check_parameters(('assets', 'fields', 'bar_count',
                        'frequency'),
@@ -596,7 +596,7 @@ cdef class BarData:
 
         Returns
         -------
-        history : pd.Series or pd.DataFrame or pd.Panel
+        history : pd.Series or pd.DataFrame
             See notes below.
 
         Notes
@@ -619,13 +619,11 @@ cdef class BarData:
           :class:`pd.DatetimeIndex`, and its columns will be ``assets``.
 
         - If multiple assets and multiple fields are requested, the returned
-          value is a :class:`pd.Panel` with shape
-          ``(len(fields), bar_count, len(assets))``. The axes of the returned
-          panel will be:
-
-          - ``panel.items`` : ``fields``
-          - ``panel.major_axis`` : :class:`pd.DatetimeIndex` of length ``bar_count``
-          - ``panel.minor_axis`` : ``assets``
+          value is a :class:`pd.DataFrame` with shape
+          ``(len(fields) * bar_count, len(assets))``. The frame's index will
+          have be a :class:`pd.MultiIndex` in which level 0 will contain
+          ``fields`` level 1 will be a :class:`pd.DatetimeIndex`. The columns
+          will be ``assets``.
 
         If the current simulation time is not a valid market time, we use the
         last market close instead.
@@ -735,11 +733,7 @@ cdef class BarData:
                     df_dict = {field: df * adjs[field]
                                for field, df in iteritems(df_dict)}
 
-                # returned panel has:
-                # items: fields
-                # major axis: dt
-                # minor axis: assets
-                return pd.Panel(df_dict)
+                return pd.concat(df_dict, axis=1)
 
     property current_dt:
         def __get__(self):

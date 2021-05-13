@@ -101,8 +101,8 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
         ex_date = cls.sim_params.sessions[50]
         record_date = pay_date = cls.sim_params.sessions[55]
         return pd.DataFrame({
-            'sid': np.array([4], dtype=np.uint32),
-            'payment_sid': np.array([5], dtype=np.uint32),
+            'sid': np.array([4], dtype=np.int64),
+            'payment_sid': np.array([5], dtype=np.int64),
             'ratio': np.array([2], dtype=np.float64),
             'declared_date': np.array([declared_date], dtype='datetime64[ns]'),
             'ex_date': np.array([ex_date], dtype='datetime64[ns]'),

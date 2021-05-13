@@ -72,7 +72,7 @@ critical_dates = pd.to_datetime([
     '2014-01-10',
     '2014-01-15',
     '2014-01-20',
-])
+], utc=True)
 
 
 def make_events_for_sid(sid, event_dates, event_timestamps):
@@ -83,7 +83,7 @@ def make_events_for_sid(sid, event_dates, event_timestamps):
         'event_date': event_dates,
         'float': np.arange(num_events, dtype=np.float64) + sid,
         'int': np.arange(num_events) + sid,
-        'datetime': pd.date_range('1990-01-01', periods=num_events).shift(sid),
+        'datetime': pd.date_range('1990-01-01', periods=num_events, tz='utc').shift(sid),
         'string': ['-'.join([str(sid), str(i)]) for i in range(num_events)],
     })
 
@@ -97,10 +97,10 @@ def make_null_event_date_events(all_sids, timestamp):
     return pd.DataFrame({
         'sid': all_sids,
         'timestamp': timestamp,
-        'event_date': pd.Timestamp('NaT'),
+        'event_date': pd.Timestamp('NaT', tz='utc'),
         'float': -9999.0,
         'int': -9999,
-        'datetime': pd.Timestamp('1980'),
+        'datetime': pd.Timestamp('1980', tz='utc'),
         'string': 'should be ignored',
     })
 
@@ -161,10 +161,10 @@ class EventIndexerTestCase(ZiplineTestCase):
     def test_previous_event_indexer(self):
         events = self.events
         event_sids = events['sid'].values
-        event_dates = events['event_date'].values
-        event_timestamps = events['timestamp'].values
+        event_dates = events['event_date']
+        event_timestamps = events['timestamp']
 
-        all_dates = pd.date_range('2014', '2014-01-31')
+        all_dates = pd.date_range('2014', '2014-01-31', tz='utc')
         all_sids = np.unique(event_sids)
 
         domain = EquitySessionDomain(
@@ -225,8 +225,8 @@ class EventIndexerTestCase(ZiplineTestCase):
     def test_next_event_indexer(self):
         events = self.events
         event_sids = events['sid'].values
-        event_dates = events['event_date'].values
-        event_timestamps = events['timestamp'].values
+        event_dates = events['event_date']
+        event_timestamps = events['timestamp']
 
         all_dates = pd.date_range('2014', '2014-01-31', tz='UTC')
         all_sids = np.unique(event_sids)
@@ -236,6 +236,7 @@ class EventIndexerTestCase(ZiplineTestCase):
             'US',
             time(8, 45, tzinfo=pytz.timezone('US/Eastern')),
         )
+
 
         indexer = next_event_indexer(
             all_dates,
@@ -264,8 +265,8 @@ class EventIndexerTestCase(ZiplineTestCase):
         self.assertEqual(len(relevant_events), 2)
 
         ix1, ix2 = relevant_events.index
-        e1, e2 = relevant_events['event_date'].dt.tz_localize('UTC')
-        t1, t2 = relevant_events['timestamp'].dt.tz_localize('UTC')
+        e1, e2 = relevant_events['event_date']
+        t1, t2 = relevant_events['timestamp']
 
         for date, computed_index in zip(all_dates, indexer):
             # An event is eligible to be the next event if it's between the

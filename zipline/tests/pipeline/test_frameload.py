@@ -10,6 +10,7 @@ from pandas import (
     DataFrame,
     DatetimeIndex,
     Int64Index,
+    date_range
 )
 from trading_calendars import get_calendar
 
@@ -35,7 +36,7 @@ class DataFrameLoaderTestCase(TestCase):
         self.ndates = 20
 
         self.sids = Int64Index(range(self.nsids))
-        self.dates = DatetimeIndex(
+        self.dates = date_range(
             start='2014-01-02',
             freq=self.trading_day,
             periods=self.ndates,

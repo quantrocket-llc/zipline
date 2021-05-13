@@ -616,6 +616,7 @@ class TestResampleSessionBars(WithBcolzFutureMinuteBarReader,
                 case_frame.index[-1])
             result = self.session_bar_reader.load_raw_arrays(
                 OHLCV, first, last, [sid])
+
             for i, field in enumerate(OHLCV):
                 assert_almost_equal(
                     EXPECTED_SESSIONS[sid][[field]],
@@ -647,7 +648,7 @@ class TestResampleSessionBars(WithBcolzFutureMinuteBarReader,
         for sid in self.ASSET_FINDER_FUTURE_SIDS:
             expected = EXPECTED_SESSIONS[sid]
             for dt_str, values in expected.iterrows():
-                dt = pd.Timestamp(dt_str, tz='UTC')
+                dt = pd.Timestamp(dt_str)
                 for col in OHLCV:
                     result = session_bar_reader.get_value(sid, dt, col)
                     assert_almost_equal(result,

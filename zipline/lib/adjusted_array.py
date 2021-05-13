@@ -206,7 +206,6 @@ class AdjustedArray(object):
 
     def __init__(self, data, adjustments, missing_value):
         self._data, self._view_kwargs = _normalize_array(data, missing_value)
-
         self.adjustments = adjustments
         self.missing_value = missing_value
         self._invalidated = False

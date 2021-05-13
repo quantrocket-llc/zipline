@@ -507,7 +507,7 @@ def check_internal_consistency(bar_data, assets, fields, bar_count, freq):
         for field in fields
     }
 
-    panel = bar_data.history(asset_list, field_list, bar_count, freq)
+    multiindex_df = bar_data.history(asset_list, field_list, bar_count, freq)
 
     for field in field_list:
         # make sure all the different query forms are internally
@@ -527,7 +527,7 @@ def check_internal_consistency(bar_data, assets, fields, bar_count, freq):
 
             np.testing.assert_array_equal(
                 series,
-                panel[field][asset]
+                multiindex_df[field][asset]
             )
 
 
@@ -1771,7 +1771,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         # 10 days
 
         # get the first 30 days of 2015
-        jan5 = pd.Timestamp('2015-01-05')
+        jan5 = pd.Timestamp('2015-01-05', tz='utc')
 
         # Regardless of the calendar used for this test, equities will
         # only have data on NYSE sessions.

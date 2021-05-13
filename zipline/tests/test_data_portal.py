@@ -241,9 +241,9 @@ class DataPortalTestBase(WithDataPortal,
         # first value.
         dts = trading_calendar.minutes_for_session(self.trading_days[0])
         asset = self.asset_finder.retrieve_asset(1)
-        self.assertTrue(pd.isnull(
+        self.assertTrue(
             self.data_portal.get_last_traded_dt(
-                asset, dts[0], 'minute')))
+                asset, dts[0], 'minute') is pd.NaT)
 
         # Case: Data on requested dt.
         dts = trading_calendar.minutes_for_session(self.trading_days[2])
@@ -263,9 +263,9 @@ class DataPortalTestBase(WithDataPortal,
         # Case: Missing data at front of data set, and request dt is before
         # first value.
         dts = trading_calendar.minutes_for_session(self.trading_days[0])
-        self.assertTrue(pd.isnull(
+        self.assertTrue(
             self.data_portal.get_last_traded_dt(
-                asset, dts[0], 'minute')))
+                asset, dts[0], 'minute') is pd.NaT)
 
         # Case: Data on requested dt.
         dts = trading_calendar.minutes_for_session(self.trading_days[3])
@@ -283,9 +283,9 @@ class DataPortalTestBase(WithDataPortal,
         # Case: Missing data at front of data set, and request dt is before
         # first value.
         asset = self.asset_finder.retrieve_asset(1)
-        self.assertTrue(pd.isnull(
+        self.assertTrue(
             self.data_portal.get_last_traded_dt(
-                asset, self.trading_days[0], 'daily')))
+                asset, self.trading_days[0], 'daily') is pd.NaT)
 
         # Case: Data on requested dt.
         self.assertEqual(self.trading_days[1],
@@ -532,7 +532,8 @@ class DataPortalTestBase(WithDataPortal,
             dtype=float64_dtype,
         )
 
-        assert_equal(result, expected_result)
+        assert_equal(result.index, expected_result.index)
+        assert_equal(result.values, expected_result.values)
 
 
 class TestDataPortal(DataPortalTestBase,

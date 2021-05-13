@@ -1649,7 +1649,10 @@ def handle_data(context, data):
             stats.transactions = stats.transactions.apply(
                 lambda txns: [toolz.dissoc(txn, 'order_id') for txn in txns]
             )
-        assert_equal(multi_stats, batch_stats)
+
+        assert_equal(
+            multi_stats.reindex(sorted(multi_stats.columns), axis=1),
+            batch_stats.reindex(sorted(batch_stats.columns), axis=1))
 
     def test_batch_market_order_filters_null_orders(self):
         share_counts = [50, 0]

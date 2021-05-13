@@ -570,6 +570,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
         # Spot check expectations near the AAPL split.
         # length 1 vwap for the morning before the split should be the close
         # price of the previous day.
+        split_date = split_date.tz_localize(None)
         before_split = vwaps[1][AAPL].loc[split_date -
                                           self.trading_calendar.day]
         assert_almost_equal(before_split, 647.3499, decimal=2)
@@ -651,7 +652,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
                 self.assertEqual(asset_results['filter'], should_pass_filter)
                 for length in vwaps:
                     computed = results.loc[asset, vwap_key(length)]
-                    expected = vwaps[length][asset].loc[today]
+                    expected = vwaps[length][asset].loc[today.tz_localize(None)]
                     # Only having two places of precision here is a bit
                     # unfortunate.
                     assert_almost_equal(computed, expected, decimal=2)

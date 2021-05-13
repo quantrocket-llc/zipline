@@ -114,16 +114,17 @@ class WithInternationalDailyBarData(zf.WithAssetFinder):
                 assets=assets, calendar=calendar, sessions=sessions,
             ))
 
-            panel = (pd.Panel.from_dict(cls.daily_bar_data[name])
-                     .transpose(2, 1, 0))
-
             cls.daily_bar_currency_codes[name] = cls.make_currency_codes(
                 calendar,
                 assets,
             )
+            # daily_bar_data is a dict of sid: df (sessions x fields)
+            # reader input should be a dict of field: df (sessions x sids)
+            data = pd.concat(cls.daily_bar_data[name], names=["sid", "date"])
+            data = dict((col, data[col].unstack('sid')) for col in data.columns)
 
-            cls.daily_bar_readers[name] = InMemoryDailyBarReader.from_panel(
-                panel,
+            cls.daily_bar_readers[name] = InMemoryDailyBarReader(
+                data,
                 calendar,
                 currency_codes=cls.daily_bar_currency_codes[name],
             )

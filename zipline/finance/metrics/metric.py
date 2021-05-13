@@ -680,13 +680,16 @@ class _ClassicRiskMetrics(object):
 
         end_date = end_date.tz_convert(None)
         for period_timestamp in months:
+            # to_period loses tz info, this step silences a warning
+            if period_timestamp.tz:
+                period_timestamp = period_timestamp.tz_localize(None)
             period = period_timestamp.to_period(freq='%dM' % months_per)
             if period.end_time > end_date:
                 break
 
             yield cls.risk_metric_period(
-                start_session=period.start_time,
-                end_session=min(period.end_time, end_session),
+                start_session=period.start_time.tz_localize("UTC"),
+                end_session=min(period.end_time.tz_localize("UTC"), end_session),
                 algorithm_returns=algorithm_returns,
                 benchmark_returns=benchmark_returns,
                 algorithm_leverages=algorithm_leverages,
@@ -712,7 +715,7 @@ class _ClassicRiskMetrics(object):
         periods_in_range = partial(
             cls._periods_in_range,
             months=months,
-            end_session=end_session.tz_convert(None),
+            end_session=end_session,
             end_date=end,
             algorithm_returns=algorithm_returns,
             benchmark_returns=benchmark_returns,

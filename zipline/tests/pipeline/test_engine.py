@@ -31,7 +31,7 @@ from pandas import (
     Int64Index,
     MultiIndex,
     Series,
-    Timestamp,
+    Timestamp
 )
 from pandas.compat.chainmap import ChainMap
 from pandas.testing import assert_frame_equal
@@ -1615,7 +1615,8 @@ class MaximumRegressionTest(zf.WithSeededRandomPipelineEngine,
         pipeline_max = (result.factor[result.maximum]
                         .reset_index(level=1, drop=True))
 
-        assert_equal(groupby_max, pipeline_max)
+        assert_equal(groupby_max.index.values, pipeline_max.index.values)
+        assert_equal(groupby_max.values, pipeline_max.values)
 
 
 class ResolveDomainTestCase(zf.ZiplineTestCase):

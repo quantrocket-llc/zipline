@@ -736,7 +736,7 @@ class AssetFinder(object):
         return [r.sid for r in
                 list(sa.select((fc_cols.sid,)).where(
                     (fc_cols.root_symbol == root_symbol) &
-                    (fc_cols.start_date != pd.NaT.value)).order_by(
+                    (pd.notnull(fc_cols.start_date))).order_by(
                         fc_cols.auto_close_date).execute().fetchall())]
 
     def _get_root_symbol_exchange(self, root_symbol):

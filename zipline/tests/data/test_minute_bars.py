@@ -74,8 +74,8 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
             TEST_CALENDAR_START:TEST_CALENDAR_STOP
         ]
 
-        cls.market_opens = cal.market_open
-        cls.market_closes = cal.market_close
+        cls.market_opens = cal.market_open.dt.tz_localize("UTC")
+        cls.market_closes = cal.market_close.dt.tz_localize("UTC")
 
         cls.test_calendar_start = cls.market_opens.index[0]
         cls.test_calendar_stop = cls.market_opens.index[-1]
@@ -248,6 +248,7 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
 
         self.assertEquals(50.0, volume_price)
 
+
         open_price = self.reader.get_value(sid, minute_1, 'open')
 
         self.assertEquals(11.0, open_price)
@@ -269,7 +270,7 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
         self.assertEquals(51.0, volume_price)
 
     def test_write_on_second_day(self):
-        second_day = self.test_calendar_start + 1
+        second_day = self.test_calendar_start + Timedelta(days=1)
         minute = self.market_opens[second_day]
         sid = 1
         data = DataFrame(
@@ -341,8 +342,8 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
 
         tds = self.market_opens.index
         days = tds[tds.slice_indexer(
-            start=self.test_calendar_start + 1,
-            end=self.test_calendar_start + 3
+            start=self.test_calendar_start + Timedelta(days=1),
+            end=self.test_calendar_start + Timedelta(days=3)
         )]
         minutes = DatetimeIndex([
             self.market_opens[days[0]] + timedelta(minutes=60),
@@ -1037,13 +1038,13 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
 
         tds = self.market_opens.index
         days = tds[tds.slice_indexer(
-            start=self.test_calendar_start + 1,
-            end=self.test_calendar_start + 3
+            start=self.test_calendar_start + Timedelta(days=1),
+            end=self.test_calendar_start + Timedelta(days=3)
         )]
         minutes = DatetimeIndex([
             self.market_opens[days[0]] + timedelta(minutes=60),
             self.market_opens[days[1]] + timedelta(minutes=120),
-        ])
+        ], tz="UTC")
         sid = 1
         data = DataFrame(
             data={
@@ -1098,8 +1099,8 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
 
         tds = self.market_opens.index
         days = tds[tds.slice_indexer(
-            start=self.test_calendar_start + 1,
-            end=self.test_calendar_start + 3
+            start=self.test_calendar_start + Timedelta(days=1),
+            end=self.test_calendar_start + Timedelta(days=3)
         )]
         minutes = DatetimeIndex([
             self.market_opens[days[0]] + timedelta(minutes=60),
