@@ -21,7 +21,7 @@ import numpy as np
 
 from six import iteritems, string_types
 from cpython cimport bool
-from collections import Iterable
+from collections.abc import Iterable
 
 from zipline.assets import (
     AssetConvertible,
