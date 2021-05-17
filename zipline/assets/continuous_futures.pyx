@@ -408,6 +408,8 @@ cdef class OrderedContracts(object):
             i += 1
         if curr.contract.start_date.value <= start_cap:
             return curr.contract.sid
+        elif i == 0:
+            return curr.contract.sid
         else:
             return None
 
