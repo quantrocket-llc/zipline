@@ -91,12 +91,22 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
     calendar_name = bundles.bundles[bundle].calendar_name
     trading_calendar = get_calendar(calendar_name)
 
-    start_date = pd.Timestamp(start_date, tz="UTC")
+    start_date = pd.Timestamp(start_date)
+
+    if start_date.tz:
+        start_date = start_date.tz_convert("UTC")
+    else:
+        start_date = start_date.tz_localize("UTC")
 
     if end_date:
-        end_date = pd.Timestamp(end_date, tz="UTC")
+        end_date = pd.Timestamp(end_date)
     else:
-        end_date = pd.Timestamp.now(tz="UTC").normalize()
+        end_date = pd.Timestamp.now().normalize()
+
+    if end_date.tz:
+        end_date = end_date.tz_convert("UTC")
+    else:
+        end_date = end_date.tz_localize("UTC")
 
     first_session = max(bundles.bundles[bundle].start_session, trading_calendar.first_session)
     if start_date < first_session:
