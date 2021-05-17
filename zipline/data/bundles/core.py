@@ -158,9 +158,6 @@ class UnknownBundle(LookupError):
         )
         self.name = name
 
-    def __str__(self):
-        return self.message
-
 def _make_bundle_core():
     """Create a family of data bundle functions that read from the same
     bundle mapping.
