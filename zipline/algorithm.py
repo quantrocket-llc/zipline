@@ -2058,7 +2058,7 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        zipline.finance.asset_restrictions.Restrictions
+        zipline.finance.asset_restrictions.StaticRestrictions
         """
         control = RestrictedListOrder(on_error, restrictions)
         self.register_trading_control(control)
