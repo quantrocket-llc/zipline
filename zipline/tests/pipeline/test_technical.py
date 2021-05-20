@@ -4,13 +4,8 @@ from parameterized import parameterized
 from six.moves import range
 import numpy as np
 import pandas as pd
-try:
-    import talib
-    talib_installed = True
-except ImportError:
-    talib_installed = False
+import talib
 from numpy.random import RandomState
-from unittest import skipUnless
 
 from zipline.lib.adjusted_array import AdjustedArray
 from zipline.pipeline.data import USEquityPricing
@@ -78,7 +73,6 @@ class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
         lowers = np.column_stack(lower_cols)[where]
         return uppers, middles, lowers
 
-    @skipUnless(talib_installed, "talib is not installed and is required for this test")
     @parameter_space(
         window_length={5, 10, 20},
         k={1.5, 2, 2.5},
@@ -178,7 +172,6 @@ class TestFastStochasticOscillator(ZiplineTestCase):
         # Expected %K
         assert_equal(out, np.full((3,), 200, dtype=np.float64))
 
-    @skipUnless(talib_installed, "talib is not installed")
     @parameter_space(seed=range(5))
     def test_fso_expected_with_talib(self, seed):
         """
