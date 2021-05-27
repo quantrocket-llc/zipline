@@ -605,6 +605,7 @@ class WithSimParams(WithDefaultDateBounds):
             data_frequency=cls.SIM_PARAMS_DATA_FREQUENCY,
             emission_rate=cls.SIM_PARAMS_EMISSION_RATE,
             trading_calendar=cls.trading_calendar,
+            arena="backtest"
         )
         kwargs.update(overrides)
         return SimulationParameters(**kwargs)

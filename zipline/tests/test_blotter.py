@@ -110,7 +110,7 @@ class BlotterTestCase(WithCreateBarData,
     def test_blotter_order_types(self, style_obj, expected_lmt, expected_stp):
         style_obj.asset = self.asset_24
 
-        blotter = SimulationBlotter()
+        blotter = SimulationBlotter(self.sim_params)
 
         blotter.order(self.asset_24, 100, style_obj)
         result = blotter.open_orders[self.asset_24][0]
@@ -119,7 +119,7 @@ class BlotterTestCase(WithCreateBarData,
         self.assertEqual(result.stop, expected_stp)
 
     def test_cancel(self):
-        blotter = SimulationBlotter()
+        blotter = SimulationBlotter(self.sim_params)
 
         oid_1 = blotter.order(self.asset_24, 100, MarketOrder())
         oid_2 = blotter.order(self.asset_24, 200, MarketOrder())
@@ -153,7 +153,7 @@ class BlotterTestCase(WithCreateBarData,
         self.assertEqual(list(blotter.open_orders), [self.asset_25])
 
     def test_blotter_eod_cancellation(self):
-        blotter = SimulationBlotter(cancel_policy=EODCancel())
+        blotter = SimulationBlotter(self.sim_params, cancel_policy=EODCancel())
 
         # Make two orders for the same asset, so we can test that we are not
         # mutating the orders list as we are cancelling orders
@@ -176,7 +176,7 @@ class BlotterTestCase(WithCreateBarData,
             self.assertEqual(order.status, ORDER_STATUS.CANCELLED)
 
     def test_blotter_never_cancel(self):
-        blotter = SimulationBlotter(cancel_policy=NeverCancel())
+        blotter = SimulationBlotter(self.sim_params, cancel_policy=NeverCancel())
 
         blotter.order(self.asset_24, 100, MarketOrder())
 
@@ -190,7 +190,7 @@ class BlotterTestCase(WithCreateBarData,
         self.assertEqual(blotter.new_orders[0].status, ORDER_STATUS.OPEN)
 
     def test_order_rejection(self):
-        blotter = SimulationBlotter()
+        blotter = SimulationBlotter(self.sim_params)
 
         # Reject a nonexistent order -> no order appears in new_order,
         # no exceptions raised out
@@ -219,7 +219,7 @@ class BlotterTestCase(WithCreateBarData,
 
         # Do it again, but reject it at a later time (after tradesimulation
         # pulls it from new_orders)
-        blotter = SimulationBlotter()
+        blotter = SimulationBlotter(self.sim_params)
         new_open_id = blotter.order(self.asset_24, 10, MarketOrder())
         new_open_order = blotter.open_orders[self.asset_24][0]
         self.assertEqual(new_open_id, new_open_order.id)
@@ -235,7 +235,7 @@ class BlotterTestCase(WithCreateBarData,
 
         # You can't reject a filled order.
         # Reset for paranoia
-        blotter = SimulationBlotter()
+        blotter = SimulationBlotter(self.sim_params)
         blotter.slippage_models[Equity] = FixedSlippage()
         filled_id = blotter.order(self.asset_24, 100, MarketOrder())
         filled_order = None
@@ -263,7 +263,7 @@ class BlotterTestCase(WithCreateBarData,
         status indication. When a fill happens, the order should switch
         status to OPEN/FILLED as necessary
         """
-        blotter = SimulationBlotter(equity_slippage=VolumeShareSlippage())
+        blotter = SimulationBlotter(self.sim_params, equity_slippage=VolumeShareSlippage())
 
         # Nothing happens on held of a non-existent order
         blotter.hold(56)
@@ -300,7 +300,7 @@ class BlotterTestCase(WithCreateBarData,
             expected_status = ORDER_STATUS.OPEN if expected_open else \
                 ORDER_STATUS.FILLED
 
-            blotter = SimulationBlotter(equity_slippage=VolumeShareSlippage())
+            blotter = SimulationBlotter(self.sim_params, equity_slippage=VolumeShareSlippage())
             open_id = blotter.order(self.asset_24, order_size, MarketOrder())
             open_order = blotter.open_orders[self.asset_24][0]
             self.assertEqual(open_id, open_order.id)
@@ -322,7 +322,7 @@ class BlotterTestCase(WithCreateBarData,
             self.assertEqual(filled_order.open_amount, expected_open)
 
     def test_prune_orders(self):
-        blotter = SimulationBlotter()
+        blotter = SimulationBlotter(self.sim_params)
 
         blotter.order(self.asset_24, 100, MarketOrder())
         open_order = blotter.open_orders[self.asset_24][0]
@@ -349,8 +349,8 @@ class BlotterTestCase(WithCreateBarData,
         Ensure the effect of order_batch is the same as multiple calls to
         order.
         """
-        blotter1 = SimulationBlotter()
-        blotter2 = SimulationBlotter()
+        blotter1 = SimulationBlotter(self.sim_params)
+        blotter2 = SimulationBlotter(self.sim_params)
         for i in range(1, 4):
             order_arg_lists = [
                 (self.asset_24, i * 100, MarketOrder()),
@@ -378,6 +378,7 @@ class BlotterTestCase(WithCreateBarData,
 
     def test_slippage_and_commission_dispatching(self):
         blotter = SimulationBlotter(
+            self.sim_params,
             equity_slippage=FixedSlippage(spread=0.0),
             future_slippage=FixedSlippage(spread=2.0),
             equity_commission=PerTrade(cost=1.0),

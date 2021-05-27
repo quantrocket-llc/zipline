@@ -1581,7 +1581,6 @@ def handle_data(context, data):
     def test_batch_market_order_matches_multiple_manual_orders(self):
         share_counts = pd.Series([50, 100])
 
-        multi_blotter = RecordBatchBlotter()
         multi_test_algo = self.make_algo(
             script=dedent("""\
                 from collections import OrderedDict
@@ -1605,12 +1604,11 @@ def handle_data(context, data):
                         context.placed = True
 
             """).format(share_counts=list(share_counts)),
-            blotter=multi_blotter,
+            blotter_class=RecordBatchBlotter,
         )
         multi_stats = multi_test_algo.run()
-        self.assertFalse(multi_blotter.order_batch_called)
+        self.assertFalse(multi_test_algo.blotter.order_batch_called)
 
-        batch_blotter = RecordBatchBlotter()
         batch_test_algo = self.make_algo(
             script=dedent("""\
                 import pandas as pd
@@ -1637,10 +1635,10 @@ def handle_data(context, data):
                         context.placed = True
 
             """).format(share_counts=list(share_counts)),
-            blotter=batch_blotter,
+            blotter_class=RecordBatchBlotter,
         )
         batch_stats = batch_test_algo.run()
-        self.assertTrue(batch_blotter.order_batch_called)
+        self.assertTrue(batch_test_algo.blotter.order_batch_called)
 
         for stats in (multi_stats, batch_stats):
             stats.orders = stats.orders.apply(
@@ -1657,7 +1655,6 @@ def handle_data(context, data):
     def test_batch_market_order_filters_null_orders(self):
         share_counts = [50, 0]
 
-        batch_blotter = RecordBatchBlotter()
         batch_test_algo = self.make_algo(
             script=dedent("""\
                 import pandas as pd
@@ -1683,10 +1680,10 @@ def handle_data(context, data):
                         context.placed = True
 
             """).format(share_counts=share_counts),
-            blotter=batch_blotter,
+            blotter_class=RecordBatchBlotter,
         )
         batch_test_algo.run()
-        self.assertTrue(batch_blotter.order_batch_called)
+        self.assertTrue(batch_test_algo.blotter.order_batch_called)
 
     def test_order_dead_asset(self):
         # after asset 0 is dead
@@ -3583,7 +3580,8 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
         self.assertFalse(bool(captured_warnings))
 
     def test_eod_order_cancel_daily(self):
-        # in daily mode, EODCancel does nothing.
+        # in daily mode, orders are canceled the day after they are placed.
+        # see full explanation in SimulationBlotter.execute_cancel_policy
         algo = self.prep_algo(
             "set_cancel_policy(cancel_policy.EODCancel())",
             "daily"
@@ -3592,16 +3590,34 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
         with warnings.catch_warnings(record=True) as captured_warnings:
             results = algo.run()
 
-        # order stays open throughout simulation
-        np.testing.assert_array_equal([1, 1, 1],
+        # should be an order on day1 (placed) and day2 (partially filled then
+        # canceleed), then no more orders afterwards
+        np.testing.assert_array_equal([1, 1, 0],
                                         list(map(len, results.orders)))
 
-        # one txn per day
-        np.testing.assert_array_equal([0, 1, 1],
+        # one txn on the next day, then cancelled
+        np.testing.assert_array_equal([0, 1, 0],
                                         list(map(len, results.transactions)))
 
-        self.assertFalse(bool(captured_warnings))
+        the_order_day1 = results.orders[0][0]
+        the_order_day2 = results.orders[1][0]
 
+        # Open after day 1, cancelled after day 2
+        self.assertEqual(ORDER_STATUS.OPEN, the_order_day1["status"])
+        self.assertEqual(ORDER_STATUS.CANCELLED, the_order_day2["status"])
+        # None filled on day 1, 1 filled on day 2
+        self.assertEqual(0, the_order_day1["filled"])
+        self.assertEqual(1, the_order_day2["filled"])
+
+        captured_warnings = [str(w.message) for w in captured_warnings]
+        self.assertEqual(1, len(captured_warnings))
+        self.assertEqual(
+            "Your order for 1000 shares of ASSET1 has been partially "
+            "filled. 1 shares were successfully purchased. "
+            "999 shares were not filled by the end of day and "
+            "were canceled.",
+            captured_warnings[0]
+        )
 
 class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
     """

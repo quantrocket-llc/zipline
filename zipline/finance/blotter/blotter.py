@@ -21,9 +21,10 @@ from zipline.finance.cancel_policy import NeverCancel
 @extensible
 class Blotter(with_metaclass(ABCMeta)):
 
-    def __init__(self, cancel_policy=None):
+    def __init__(self, sim_params, cancel_policy=None):
         self.cancel_policy = cancel_policy if cancel_policy else NeverCancel()
         self.current_dt = None
+        self.sim_params = sim_params
 
     def set_date(self, dt):
         self.current_dt = dt
@@ -101,7 +102,7 @@ class Blotter(with_metaclass(ABCMeta)):
 
     @abstractmethod
     def cancel_all_orders_for_asset(self, asset, warn=False,
-                                    relay_status=True):
+                                    relay_status=True, before_date=None):
         """
         Cancel all open orders for a given asset.
         """

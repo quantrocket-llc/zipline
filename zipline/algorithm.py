@@ -310,7 +310,7 @@ class TradingAlgorithm(object):
         else:
             cancel_policy = cancel_policy or NeverCancel()
             blotter_class = blotter_class or SimulationBlotter
-            self.blotter = blotter_class(cancel_policy=cancel_policy)
+            self.blotter = blotter_class(sim_params, cancel_policy=cancel_policy)
 
         # If string is passed in, execute and get reference to
         # functions.

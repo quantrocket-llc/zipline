@@ -38,12 +38,13 @@ from zipline.utils.input_validation import expect_types
 @register(Blotter, 'default')
 class SimulationBlotter(Blotter):
     def __init__(self,
+                 sim_params,
                  equity_slippage=None,
                  future_slippage=None,
                  equity_commission=None,
                  future_commission=None,
                  cancel_policy=None):
-        super(SimulationBlotter, self).__init__(cancel_policy=cancel_policy)
+        super(SimulationBlotter, self).__init__(sim_params, cancel_policy=cancel_policy)
 
         # these orders are aggregated by asset
         self.open_orders = defaultdict(list)
@@ -171,9 +172,12 @@ class SimulationBlotter(Blotter):
                 self.new_orders.append(cur_order)
 
     def cancel_all_orders_for_asset(self, asset, warn=False,
-                                    relay_status=True):
+                                    relay_status=True, before_date=None):
         """
         Cancel all open orders for a given asset.
+
+        If before_date is not None, only orders placed before that date will be
+        cancelled.
         """
         # (sadly) open_orders is a defaultdict, so this will always succeed.
         orders = self.open_orders[asset]
@@ -183,6 +187,9 @@ class SimulationBlotter(Blotter):
         # self.open_orders no longer a defaultdict.  If we do that, then we
         # should just remove the orders once here and be done with the matter.
         for order in orders[:]:
+            if before_date and not order.created.date() < before_date.date():
+                continue
+
             self.cancel(order.id, relay_status)
             if warn:
                 # Message appropriately depending on whether there's
@@ -225,15 +232,27 @@ class SimulationBlotter(Blotter):
                         )
                     )
 
-        assert not orders
-        del self.open_orders[asset]
+        if not orders:
+            del self.open_orders[asset]
 
     def execute_cancel_policy(self, event):
         if self.cancel_policy.should_cancel(event):
             warn = self.cancel_policy.warn_on_cancel
             for asset in copy(self.open_orders):
+
+                # In daily mode, we should not cancel on the same date the order was
+                # placed but on the next date. Explanation: orders submitted in daily
+                # mode are submitted in the 16:00:00 BAR event, but this doesn't mean
+                # they are actually submitted *in* that session. Rather, they are submitted
+                # *after* the session, based on the 16:00:00 BAR information, and are
+                # eligible to fill the next day. (In live trading, the orders are placed when
+                # the strategy runs, usually sometime during the following day's session.)
+                # Canceling at SESSION_END on the same day would mean the orders were
+                # immediately canceled and never had a chance to fill.
+                before_date = self.current_dt if self.sim_params.data_frequency == "daily" else None
                 self.cancel_all_orders_for_asset(asset, warn,
-                                                 relay_status=False)
+                                                 relay_status=False,
+                                                 before_date=before_date)
 
     def reject(self, order_id, reason=''):
         """

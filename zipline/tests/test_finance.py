@@ -267,7 +267,7 @@ class FinanceTestCase(zf.WithAssetFinder,
             else:
                 slippage_func = None
 
-            blotter = SimulationBlotter(slippage_func)
+            blotter = SimulationBlotter(sim_params, slippage_func)
 
             start_date = sim_params.first_open
 
@@ -366,7 +366,12 @@ class FinanceTestCase(zf.WithAssetFinder,
             )
 
     def test_blotter_processes_splits(self):
-        blotter = SimulationBlotter(equity_slippage=FixedSlippage())
+
+        sim_params = factory.create_simulation_parameters(
+                start=self.start,
+                end=self.end)
+
+        blotter = SimulationBlotter(sim_params, equity_slippage=FixedSlippage())
 
         # set up two open limit orders with very low limit prices,
         # one for sid 1 and one for sid 2

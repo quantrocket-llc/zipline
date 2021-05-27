@@ -168,18 +168,12 @@ class AlgorithmSimulator(object):
             stack.enter_context(ZiplineAPI(self.algo))
 
             if algo.data_frequency == 'minute':
-                def execute_order_cancellation_policy():
-                    algo.blotter.execute_cancel_policy(SESSION_END)
-
                 def calculate_minute_capital_changes(dt):
                     # process any capital changes that came between the last
                     # and current minutes
                     return algo.calculate_capital_changes(
                         dt, emission_rate=emission_rate, is_interday=False)
             else:
-                def execute_order_cancellation_policy():
-                    pass
-
                 def calculate_minute_capital_changes(dt):
                     return []
 
@@ -196,7 +190,7 @@ class AlgorithmSimulator(object):
                     position_assets = algo.asset_finder.retrieve_all(positions)
                     self._cleanup_expired_assets(dt, position_assets)
 
-                    execute_order_cancellation_policy()
+                    algo.blotter.execute_cancel_policy(SESSION_END)
                     algo.validate_account_controls()
 
                     yield self._get_daily_message(dt, algo, metrics_tracker)
