@@ -182,7 +182,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # long, does not trade - impacted price worse than limit price
         open_orders = [
@@ -204,7 +204,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # long, does trade
         open_orders = [
@@ -226,7 +226,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 1)
+        self.assertEqual(len(orders_txns), 1)
         txn = orders_txns[0][1]
 
         expected_txn = {
@@ -243,7 +243,7 @@ class SlippageTestCase(WithCreateBarData,
         self.assertIsNotNone(txn)
 
         for key, value in expected_txn.items():
-            self.assertEquals(value, txn[key])
+            self.assertEqual(value, txn[key])
 
         # short, does not trade
         open_orders = [
@@ -265,7 +265,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # short, does not trade - impacted price worse than limit price
         open_orders = [
@@ -287,7 +287,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # short, does trade
         open_orders = [
@@ -309,7 +309,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 1)
+        self.assertEqual(len(orders_txns), 1)
         _, txn = orders_txns[0]
 
         expected_txn = {
@@ -323,7 +323,7 @@ class SlippageTestCase(WithCreateBarData,
         self.assertIsNotNone(txn)
 
         for key, value in expected_txn.items():
-            self.assertEquals(value, txn[key])
+            self.assertEqual(value, txn[key])
 
     def test_orders_stop_limit(self):
         slippage_model = VolumeShareSlippage()
@@ -350,7 +350,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[3],
@@ -362,7 +362,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # long, does not trade - impacted price worse than limit price
         open_orders = [
@@ -385,7 +385,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[3],
@@ -397,7 +397,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # long, does trade
         open_orders = [
@@ -420,7 +420,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[3],
@@ -432,7 +432,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 1)
+        self.assertEqual(len(orders_txns), 1)
         _, txn = orders_txns[0]
 
         expected_txn = {
@@ -444,7 +444,7 @@ class SlippageTestCase(WithCreateBarData,
         }
 
         for key, value in expected_txn.items():
-            self.assertEquals(value, txn[key])
+            self.assertEqual(value, txn[key])
 
         # short, does not trade
 
@@ -468,7 +468,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[1],
@@ -480,7 +480,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # short, does not trade - impacted price worse than limit price
         open_orders = [
@@ -503,7 +503,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[1],
@@ -515,7 +515,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         # short, does trade
         open_orders = [
@@ -538,7 +538,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[1],
@@ -550,7 +550,7 @@ class SlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 1)
+        self.assertEqual(len(orders_txns), 1)
         _, txn = orders_txns[0]
 
         expected_txn = {
@@ -561,7 +561,7 @@ class SlippageTestCase(WithCreateBarData,
         }
 
         for key, value in expected_txn.items():
-            self.assertEquals(value, txn[key])
+            self.assertEqual(value, txn[key])
 
 
 class VolumeShareSlippageTestCase(WithCreateBarData,
@@ -657,7 +657,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 1)
+        self.assertEqual(len(orders_txns), 1)
         _, txn = orders_txns[0]
 
         expected_txn = {
@@ -673,7 +673,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
 
         # TODO: Make expected_txn an Transaction object and ensure there
         # is a __eq__ for that class.
-        self.assertEquals(expected_txn, txn.__dict__)
+        self.assertEqual(expected_txn, txn.__dict__)
 
         open_orders = [
             Order(
@@ -696,7 +696,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 0)
+        self.assertEqual(len(orders_txns), 0)
 
     def test_volume_share_slippage_with_future(self):
         slippage_model = VolumeShareSlippage(volume_limit=1, price_impact=0.3)
@@ -718,7 +718,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
             slippage_model.simulate(bar_data, self.ASSET1000, open_orders)
         )
 
-        self.assertEquals(len(orders_txns), 1)
+        self.assertEqual(len(orders_txns), 1)
         _, txn = orders_txns[0]
 
         # We expect to fill the order for all 10 contracts. The volume for the
@@ -737,7 +737,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
         }
 
         self.assertIsNotNone(txn)
-        self.assertEquals(expected_txn, txn.__dict__)
+        self.assertEqual(expected_txn, txn.__dict__)
 
 
 class VolatilityVolumeShareTestCase(WithCreateBarData,
@@ -1148,7 +1148,7 @@ class OrdersStopTestCase(WithSimParams,
                 self.assertIsNotNone(txn)
 
                 for key, value in expected['transaction'].items():
-                    self.assertEquals(value, txn[key])
+                    self.assertEqual(value, txn[key])
 
 
 class FixedBasisPointsSlippageTestCase(WithCreateBarData,
@@ -1227,7 +1227,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 1)
+        self.assertEqual(len(orders_txns), 1)
         _, txn = orders_txns[0]
 
         expected_txn = {
@@ -1240,7 +1240,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
         }
 
         self.assertIsNotNone(txn)
-        self.assertEquals(expected_txn, txn.__dict__)
+        self.assertEqual(expected_txn, txn.__dict__)
 
     @parameterized.expand([
         # Volume limit for the bar is 20. We've ordered 10 total shares.
@@ -1279,12 +1279,12 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
             open_orders,
         ))
 
-        self.assertEquals(len(orders_txns), 2)
+        self.assertEqual(len(orders_txns), 2)
 
         _, first_txn = orders_txns[0]
         _, second_txn = orders_txns[1]
-        self.assertEquals(first_txn['amount'], first_order_fill_amount)
-        self.assertEquals(second_txn['amount'], second_order_fill_amount)
+        self.assertEqual(first_txn['amount'], first_order_fill_amount)
+        self.assertEqual(second_txn['amount'], second_order_fill_amount)
 
     def test_broken_constructions(self):
         with self.assertRaises(ValueError) as e:

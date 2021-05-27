@@ -124,14 +124,14 @@ class AssetTestCase(TestCase):
             currency='USD'
         )
 
-        self.assertEquals({5061: 'foo'}[the_asset], 'foo')
-        self.assertEquals(the_asset, 5061)
-        self.assertEquals(5061, the_asset)
+        self.assertEqual({5061: 'foo'}[the_asset], 'foo')
+        self.assertEqual(the_asset, 5061)
+        self.assertEqual(5061, the_asset)
 
-        self.assertEquals(the_asset, the_asset)
-        self.assertEquals(int(the_asset), 5061)
+        self.assertEqual(the_asset, the_asset)
+        self.assertEqual(int(the_asset), 5061)
 
-        self.assertEquals(str(the_asset), 'Asset(5061)')
+        self.assertEqual(str(the_asset), 'Asset(5061)')
 
     def test_to_and_from_dict(self):
         asset_from_dict = Asset.from_dict(self.asset.to_dict())

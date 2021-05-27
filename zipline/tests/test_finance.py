@@ -452,7 +452,7 @@ class SimParamsTestCase(zf.WithTradingCalendars, zf.ZiplineTestCase):
         )
 
         num_expected_trading_days = 5
-        self.assertEquals(
+        self.assertEqual(
             num_expected_trading_days,
             len(params.sessions)
         )
