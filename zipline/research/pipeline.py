@@ -27,7 +27,7 @@ from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.research.exceptions import ValidationError
 from zipline.research._asset import asset_finder_cache
 from quantrocket.zipline import get_default_bundle
-from quantrocket_trading_calendars import get_calendar
+from trading_calendars import get_calendar
 
 
 def run_pipeline(pipeline, start_date, end_date=None, bundle=None):

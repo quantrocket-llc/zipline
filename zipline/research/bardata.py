@@ -23,7 +23,7 @@ from zipline.research._asset import asset_finder_cache
 from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.protocol import BarData
 from quantrocket.zipline import get_default_bundle, get_bundle_config
-from quantrocket_trading_calendars import get_calendar
+from trading_calendars import get_calendar
 
 def get_data(dt, bundle=None, data_frequency=None):
     """
