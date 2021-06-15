@@ -1,6 +1,7 @@
 from datetime import time
 from unittest import TestCase
 import pandas as pd
+from pandas.testing import assert_index_equal
 from trading_calendars import get_calendar
 from trading_calendars.utils.pandas_utils import days_at_time
 
@@ -27,6 +28,8 @@ class TestClock(TestCase):
         trading_o_and_c = cls.nyse_calendar.schedule.loc[cls.sessions]
         cls.opens = trading_o_and_c['market_open']
         cls.closes = trading_o_and_c['market_close']
+        cls.break_starts = trading_o_and_c['break_start']
+        cls.break_ends = trading_o_and_c['break_end']
 
     def test_bts_before_session(self):
         clock = MinuteSimulationClock(
@@ -34,6 +37,8 @@ class TestClock(TestCase):
             self.opens,
             self.closes,
             days_at_time(self.sessions, time(6, 17), "US/Eastern"),
+            self.break_starts,
+            self.break_ends,
             False
         )
 
@@ -124,6 +129,8 @@ class TestClock(TestCase):
             self.opens,
             self.closes,
             days_at_time(self.sessions, bts_time, "US/Eastern"),
+            self.break_starts,
+            self.break_ends,
             False
         )
 
@@ -153,6 +160,8 @@ class TestClock(TestCase):
             self.opens,
             self.closes,
             days_at_time(self.sessions, time(19, 5), "US/Eastern"),
+            self.break_starts,
+            self.break_ends,
             False
         )
 
@@ -178,3 +187,45 @@ class TestClock(TestCase):
                 self.sessions[i],
                 all_events[(i * 392): ((i + 1) * 392)]
             )
+
+    def test_market_breaks(self):
+
+        calendar = get_calendar("XTKS")
+
+        sessions = calendar.sessions_in_range(
+            pd.Timestamp("2021-06-14", tz="utc"),
+            pd.Timestamp("2021-06-15", tz="utc")
+        )
+
+        trading_o_and_c = calendar.schedule.loc[sessions]
+        opens = trading_o_and_c['market_open']
+        closes = trading_o_and_c['market_close']
+        break_starts = trading_o_and_c['break_start']
+        break_ends = trading_o_and_c['break_end']
+
+        clock = MinuteSimulationClock(
+            sessions,
+            opens,
+            closes,
+            days_at_time(sessions, time(8, 45), "Japan"),
+            break_starts,
+            break_ends,
+            False
+        )
+
+        all_events = list(clock)
+        all_events = pd.DataFrame(all_events, columns=["date", "event"]).set_index("date")
+        bar_events = all_events[all_events.event == BAR]
+
+        # XTKS is open 9am - 3pm with a 1 hour lunch break from 11:30am - 12:30pm
+        # 2 days x 300 minutes per day
+        self.assertEqual(len(bar_events), 600)
+
+        assert_index_equal(
+            bar_events.tz_convert("Japan").iloc[148:152].index,
+            pd.DatetimeIndex(
+                ['2021-06-14 11:29:00',
+                '2021-06-14 11:30:00',
+                '2021-06-14 12:31:00',
+                '2021-06-14 12:32:00'], tz="Japan", name="date")
+        )

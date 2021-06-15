@@ -32,7 +32,7 @@ cpdef enum:
 cdef class MinuteSimulationClock:
     cdef bool minute_emission
     cdef np.int64_t[:] market_opens_nanos, market_closes_nanos, bts_nanos, \
-        sessions_nanos
+        sessions_nanos, break_starts_nanos, break_ends_nanos
     cdef dict minutes_by_session
 
     def __init__(self,
@@ -40,13 +40,18 @@ cdef class MinuteSimulationClock:
                  market_opens,
                  market_closes,
                  before_trading_start_minutes,
+                 break_starts,
+                 break_ends,
                  minute_emission=False):
+
         self.minute_emission = minute_emission
 
         self.market_opens_nanos = market_opens.values.astype(np.int64)
         self.market_closes_nanos = market_closes.values.astype(np.int64)
         self.sessions_nanos = sessions.values.astype(np.int64)
         self.bts_nanos = before_trading_start_minutes.values.astype(np.int64)
+        self.break_starts_nanos = break_starts.values.astype(np.int64)
+        self.break_ends_nanos = break_ends.values.astype(np.int64)
 
         self.minutes_by_session = self.calc_minutes_by_session()
 
@@ -57,6 +62,7 @@ cdef class MinuteSimulationClock:
         cdef int session_idx
         cdef np.int64_t session_nano
         cdef np.ndarray[np.int64_t, ndim=1] minutes_nanos
+        cdef np.ndarray[np.int64_t, ndim=1] break_minutes_nanos
 
         minutes_by_session = {}
         for session_idx, session_nano in enumerate(self.sessions_nanos):
@@ -68,6 +74,18 @@ cdef class MinuteSimulationClock:
             minutes_by_session[session_nano] = pd.to_datetime(
                 minutes_nanos, utc=True
             )
+
+            # subtract breaks if applicable
+            if self.break_ends_nanos[session_idx] > self.break_starts_nanos[session_idx]:
+
+                break_minutes_nanos = np.arange(
+                    self.break_starts_nanos[session_idx] + _nanos_in_minute,
+                    self.break_ends_nanos[session_idx],
+                    _nanos_in_minute
+                )
+                minutes_by_session[session_nano] = minutes_by_session[session_nano].drop(
+                    pd.to_datetime(break_minutes_nanos, utc=True))
+
         return minutes_by_session
 
     def __iter__(self):

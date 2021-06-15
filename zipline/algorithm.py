@@ -522,12 +522,17 @@ class TradingAlgorithm(object):
                 self.trading_calendar.execution_time_from_open(market_opens)
             execution_closes = \
                 self.trading_calendar.execution_time_from_close(market_closes)
+            break_starts = trading_o_and_c['break_start']
+            break_ends = trading_o_and_c['break_end']
         else:
             # in daily mode, we want to have one bar per session, timestamped
             # as the last minute of the session.
             execution_closes = \
                 self.trading_calendar.execution_time_from_close(market_closes)
             execution_opens = execution_closes
+            # breaks aren't applicable in daily mode
+            break_starts = break_ends = pd.Series(
+                pd.NaT, index=execution_closes.index, dtype='datetime64[ns]')
 
         # FIXME generalize these values
         before_trading_start_minutes = days_at_time(
@@ -541,6 +546,8 @@ class TradingAlgorithm(object):
             execution_opens,
             execution_closes,
             before_trading_start_minutes,
+            break_starts,
+            break_ends,
             minute_emission=minutely_emission,
         )
 

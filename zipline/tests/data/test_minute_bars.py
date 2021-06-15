@@ -51,6 +51,7 @@ from zipline.testing.fixtures import (
     WithTradingCalendars,
     ZiplineTestCase,
 )
+from trading_calendars import get_calendar
 
 # Calendar is set to cover several half days, to check a case where half
 # days would be read out of order in cases of windows which spanned over
@@ -912,6 +913,85 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
             for j, sid in enumerate(sids):
                 assert_almost_equal(data[sid].loc[minutes, col],
                                     arrays[i][j][minute_locs])
+
+    def test_unadjusted_minutes_market_breaks(self):
+        """
+        Test unadjusted minute window, ensuring that market breaks are filtered
+        out.
+        """
+        MINUTES_PER_DAY = 360
+        trading_calendar = get_calendar("XTKS")
+
+        writer = BcolzMinuteBarWriter(
+            self.dest,
+            trading_calendar,
+            TEST_CALENDAR_START,
+            TEST_CALENDAR_STOP,
+            MINUTES_PER_DAY,
+        )
+
+        sample_date = Timestamp('2015-11-25', tz='UTC')
+
+        minutes = [
+            # before break
+            trading_calendar.break_starts[sample_date] - Timedelta('1 min'),
+            # after break
+            trading_calendar.break_ends[sample_date] + Timedelta('1 min'),
+            trading_calendar.break_ends[sample_date] + Timedelta('2 min')]
+        sids = [1, 2]
+        data_1 = DataFrame(
+            data={
+                'open': [
+                    15.0, 15.1, 15.2],
+                'high': [17.0, 17.1, 17.2],
+                'low': [11.0, 11.1, 11.3],
+                'close': [14.0, 14.1, 14.2],
+                'volume': [1000, 1001, 1002],
+            },
+            index=minutes)
+        writer.write_sid(sids[0], data_1)
+
+        data_2 = DataFrame(
+            data={
+                'open': [25.0, 25.1, 25.2],
+                'high': [27.0, 27.1, 27.2],
+                'low': [21.0, 21.1, 21.2],
+                'close': [24.0, 24.1, 24.2],
+                'volume': [2000, 2001, 2002],
+            },
+            index=minutes)
+        writer.write_sid(sids[1], data_2)
+
+        reader = BcolzMinuteBarReader(self.dest)
+
+        columns = ['open', 'high', 'low', 'close', 'volume']
+        sids = [sids[0], sids[1]]
+        arrays = list(map(transpose, reader.load_raw_arrays(
+            columns, minutes[0], minutes[-1], sids,
+        )))
+        print(arrays)
+        data = {sids[0]: data_1, sids[1]: data_2}
+        print('data')
+        print(data)
+
+        start_minute_loc = \
+            trading_calendar.all_minutes.get_loc(minutes[0])
+        minute_locs = [
+            trading_calendar.all_minutes.get_loc(minute)
+            - start_minute_loc
+            for minute in minutes
+        ]
+
+        for i, col in enumerate(columns):
+            for j, sid in enumerate(sids):
+                print('sid', sid, 'col', col)
+                print('i', i, 'j', j)
+                print(minutes)
+                print(minute_locs)
+                expected = data[sid].loc[minutes, col]
+                actual = arrays[i][j][minute_locs]
+                assert_almost_equal(expected,
+                                    actual)
 
     def test_adjust_non_trading_minutes(self):
         start_day = Timestamp('2015-06-01', tz='UTC')

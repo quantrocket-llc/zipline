@@ -971,7 +971,7 @@ class BcolzMinuteBarReader(MinuteBarReader):
         # fallback to the default.
         return self._default_ohlc_inverse
 
-    def _minutes_to_exclude(self):
+    def _early_close_minutes_to_exclude(self):
         """
         Calculate the minutes which should be excluded when a window
         occurs on days which had an early close, i.e. days where the close
@@ -988,22 +988,52 @@ class BcolzMinuteBarReader(MinuteBarReader):
         minutes_per_day = (market_closes - market_opens).astype(np.int64)
         early_indices = np.where(
             minutes_per_day != self._minutes_per_day - 1)[0]
-        early_opens = self._market_opens[early_indices]
         early_closes = self._market_closes[early_indices]
-        minutes = [(market_open, early_close)
-                   for market_open, early_close
-                   in zip(early_opens, early_closes)]
+        next_day_opens = self._market_opens.shift(-1).iloc[early_indices]
+        minutes = [
+            (early_close, next_day_open)
+            for early_close, next_day_open
+            in zip(early_closes, next_day_opens)
+            # if early close falls on last day of calendar (and thus
+            # no next day open), ignore it
+            if pd.notnull(next_day_open)]
+
+        return minutes
+
+
+    def _break_minutes_to_exclude(self):
+        """
+        Calculate the minutes which should be excluded due to
+        market breaks, if any.
+
+        Returns
+        -------
+        List of DatetimeIndex representing the minutes to exclude because
+        of market breaks.
+        """
+        breaks = self._schedule[
+            self._schedule.break_start.notnull() &
+            self._schedule.break_end.notnull()][["break_start", "break_end"]]
+
+        minutes = [
+            (break_start,
+            break_end)
+            for break_start, break_end
+            in breaks.apply(list, axis=1)
+        ]
+
         return minutes
 
     @lazyval
     def _minute_exclusion_tree(self):
         """
         Build an interval tree keyed by the start and end of each range
-        of positions should be dropped from windows. (These are the minutes
-        between an early close and the minute which would be the close based
-        on the regular period if there were no early close.)
-        The value of each node is the same start and end position stored as
-        a tuple.
+        of positions should be dropped from windows. (In the case of early
+        closes, these are the minutes between an early close and the minute
+        which would be the close based on the regular period if there were
+        no early close. For market breaks, they are simply the start and
+        end of the break.) The value of each node is the same start and end
+        position stored as a tuple.
 
         The data is stored as such in support of a fast answer to the question,
         does a given start and end position overlap any of the exclusion spans?
@@ -1011,20 +1041,27 @@ class BcolzMinuteBarReader(MinuteBarReader):
         Returns
         -------
         IntervalTree containing nodes which represent the minutes to exclude
-        because of early closes.
+        because of early closes and market breaks.
         """
         itree = IntervalTree()
-        for market_open, early_close in self._minutes_to_exclude():
+        for early_close, next_day_open in self._early_close_minutes_to_exclude():
+            # exclusion doesn't begin until the minute *after* the early
+            # close
             start_pos = self._find_position_of_minute(early_close) + 1
-            end_pos = (
-                self._find_position_of_minute(market_open)
-                +
-                self._minutes_per_day
-                -
-                1
-            )
+            # exclusion ends the minute *before* the next day open
+            end_pos = self._find_position_of_minute(next_day_open) - 1
             data = (start_pos, end_pos)
             itree[start_pos:end_pos + 1] = data
+
+        for break_start, break_end in self._break_minutes_to_exclude():
+            # exclusion doesn't begin until the minute *after* the break
+            # starts
+            start_pos = self._find_position_of_minute(break_start) + 1
+            # exclusion ends the minute *before* the break ends
+            end_pos = self._find_position_of_minute(break_end) - 1
+            data = (start_pos, end_pos)
+            itree[start_pos:end_pos + 1] = data
+
         return itree
 
     def _exclusion_indices_for_range(self, start_idx, end_idx):
