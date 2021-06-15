@@ -820,9 +820,9 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
             (pd.Timestamp("2016-01-06 15:59", tz="US/Eastern"), True, True),
             (pd.Timestamp("2016-01-06 16:00", tz="US/Eastern"), True, True),
             (pd.Timestamp("2016-01-06 16:01", tz="US/Eastern"), False, True),
-            (pd.Timestamp("2016-01-06 17:59", tz="US/Eastern"), False, True),
-            (pd.Timestamp("2016-01-06 18:00", tz="US/Eastern"), False, True),
-            (pd.Timestamp("2016-01-06 18:01", tz="US/Eastern"), False, False),
+            (pd.Timestamp("2016-01-06 16:59", tz="US/Eastern"), False, True),
+            (pd.Timestamp("2016-01-06 17:00", tz="US/Eastern"), False, True),
+            (pd.Timestamp("2016-01-06 17:01", tz="US/Eastern"), False, False),
         ]
 
         for info in minutes_to_check:
@@ -848,8 +848,8 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
         # False.
         minutes_to_check = [
             (pd.Timestamp('2016-01-20 00:00:00', tz='UTC'), True),
-            (pd.Timestamp('2016-01-20 23:00:00', tz='UTC'), True),
-            (pd.Timestamp('2016-01-20 23:01:00', tz='UTC'), False),
+            (pd.Timestamp('2016-01-20 22:00:00', tz='UTC'), True),
+            (pd.Timestamp('2016-01-20 22:01:00', tz='UTC'), False),
             (pd.Timestamp('2016-01-20 23:59:00', tz='UTC'), False),
             (pd.Timestamp('2016-01-21 00:00:00', tz='UTC'), False),
             (pd.Timestamp('2016-01-21 00:01:00', tz='UTC'), False),
