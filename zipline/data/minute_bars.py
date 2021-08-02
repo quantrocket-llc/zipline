@@ -1303,7 +1303,11 @@ class BcolzMinuteBarReader(MinuteBarReader):
                 out = np.zeros(shape, dtype=np.uint32)
 
             for i, sid in enumerate(sids):
-                carray = self._open_minute_file(field, sid)
+                try:
+                    carray = self._open_minute_file(field, sid)
+                except NoDataForSid:
+                    continue
+
                 values = carray[start_idx:end_idx + 1]
                 if indices_to_exclude is not None:
                     for excl_start, excl_stop in indices_to_exclude[::-1]:
