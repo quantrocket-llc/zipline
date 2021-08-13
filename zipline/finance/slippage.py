@@ -91,6 +91,37 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
     :class:`~zipline.finance.slippage.SlippageModel` and implement
     :meth:`process_order`.
 
+    The :meth:`process_order` method must return a tuple of `(execution_price,
+    execution_volume)`, which signifies the price and volume for the
+    transaction that your model wants to generate.
+
+    Your model gets passed the same data object that is passed to handle_data
+    and other functions, letting you do any price or history lookup for any
+    security in your model.
+
+    The order object has the following properties: `amount` (float), `asset`
+    (Asset), `stop` and `limit` (float), and `stop_reached` and `limit_reached`
+    (boolean).
+
+    The `create_transaction` method takes the given order, the data
+    object, and the price and amount calculated by your slippage model, and
+    returns the newly constructed transaction.
+
+    Many slippage models' behavior depends on how much of the total volume
+    traded is being captured by the algorithm. You can use
+    :meth:`volume_for_bar` to see how many shares of the current security
+    have been traded so far during this bar. If your algorithm has many
+    different orders for the same stock in the same bar, this is useful for
+    making sure you don't take an unrealistically large fraction of the traded
+    volume.
+
+    If your slippage model doesn't place a transaction for the full amount of
+    the order, the order stays open with an updated amount value, and will be
+    passed to :meth:`process_order` on the next bar. Orders that have limits
+    that have not been reached will not be passed to :meth:`process_order`.
+    If your transaction has 0 shares or more shares than the original order
+    amount, an exception will be thrown.
+
     Attributes
     ----------
     volume_for_bar : int
