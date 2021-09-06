@@ -1029,8 +1029,14 @@ class TradingAlgorithm(object):
             is 'volume'.
 
         adjustment : str, optional
-            Method for adjusting lookback prices between rolls. Possible choices:
-            'mul', 'add', None. Default is 'mul'.
+            Method for adjusting lookback prices between rolls. Possible
+            choices: 'mul', 'add', None. 'mul' calculates the ratio of front
+            and back contracts on the roll date ((back - front)/front) and
+            multiplies front contract prices by (1 + ratio). 'add' calculates
+            the difference between back and front contracts on the roll date
+            (back - front) and adds the difference to front contract prices.
+            None concatenates contracts without any adjustment. Default is
+            'mul'.
 
         Returns
         -------
