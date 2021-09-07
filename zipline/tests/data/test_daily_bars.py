@@ -350,13 +350,12 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
     ])
     def test_read_only_unknown_sids(self, query_assets):
         columns = ['close', 'volume']
-        with self.assertRaises(ValueError):
-            self.daily_bar_reader.load_raw_arrays(
-                columns,
-                TEST_QUERY_START,
-                TEST_QUERY_STOP,
-                query_assets,
-            )
+        self._check_read_results(
+            columns,
+            query_assets,
+            start_date=TEST_QUERY_START,
+            end_date=TEST_QUERY_STOP,
+        )
 
     def test_unadjusted_get_value(self):
         """Test get_value() on both a price field ('close') and 'volume'."""
