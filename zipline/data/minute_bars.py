@@ -576,7 +576,12 @@ class BcolzMinuteBarWriter(object):
         sidpath = self.sidpath(sid)
         if not os.path.exists(sidpath):
             return self._init_ctable(sidpath)
-        return bcolz.ctable(rootdir=sidpath, mode='a')
+        try:
+            return bcolz.ctable(rootdir=sidpath, mode='a')
+        except FileNotFoundError:
+            # Sometimes, the sid directory exists but nothing else does,
+            # in which case create everything
+            return self._init_ctable(sidpath)
 
     def _zerofill(self, table, numdays):
         # Compute the number of minutes to be filled, accounting for the
