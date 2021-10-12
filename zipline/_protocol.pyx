@@ -23,11 +23,12 @@ from six import iteritems, string_types
 from cpython cimport bool
 from collections.abc import Iterable
 
+from trading_calendars.errors import InvalidCalendarName
 from zipline.assets import (
     AssetConvertible,
     PricingDataAssociable,
 )
-from zipline.assets._assets cimport Asset, Future
+from zipline.assets._assets cimport Asset
 from zipline.assets.continuous_futures import ContinuousFuture
 from zipline.utils.pandas_utils import normalize_date
 from zipline.zipline_warnings import ZiplineDeprecationWarning
@@ -490,7 +491,14 @@ cdef class BarData:
                 dt_to_use_for_exchange_check = \
                     self._trading_calendar.next_open(dt)
 
-            if not asset.is_exchange_open(dt_to_use_for_exchange_check):
+            try:
+                is_exchange_open = asset.is_exchange_open(dt_to_use_for_exchange_check)
+            except InvalidCalendarName:
+                # if the asset doesn't have a valid exchange of its own, just assume
+                # it's using the simulation calendar
+                is_exchange_open = True
+
+            if not is_exchange_open:
                 return False
 
         # is there a last price?
