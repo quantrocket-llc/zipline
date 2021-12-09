@@ -578,9 +578,9 @@ class BcolzMinuteBarWriter(object):
             return self._init_ctable(sidpath)
         try:
             return bcolz.ctable(rootdir=sidpath, mode='a')
-        except FileNotFoundError:
+        except (FileNotFoundError, OSError):
             # Sometimes, the sid directory exists but nothing else does,
-            # in which case create everything
+            # or the data directory is missing, in which case create everything
             return self._init_ctable(sidpath)
 
     def _zerofill(self, table, numdays):
