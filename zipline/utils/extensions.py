@@ -71,7 +71,7 @@ def load_extensions(code=None):
         return
 
     _load_extensions(
-        default=False,
+        default=True,
         extensions=extensions,
         strict=True,
         environ=os.environ,
