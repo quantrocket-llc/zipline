@@ -67,9 +67,6 @@ def load_extensions(code=None):
         if extension_path not in extensions and code in zipline.data.bundles.bundles:
             zipline.data.bundles.unregister(code)
 
-    if not extensions:
-        return
-
     _load_extensions(
         default=True,
         extensions=extensions,
