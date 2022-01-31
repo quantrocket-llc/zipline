@@ -28,10 +28,7 @@ from numpy.testing import assert_almost_equal
 import pandas as pd
 from pandas import Timestamp, DataFrame
 
-from zipline.assets.continuous_futures import (
-    OrderedContracts,
-    delivery_predicate
-)
+from zipline.assets.continuous_futures import OrderedContracts
 from zipline.assets.roll_finder import (
     ROLL_DAYS_FOR_CURRENT_CONTRACT,
     VolumeRollFinder,
@@ -53,10 +50,6 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
     TRADING_CALENDAR_STRS = ('us_futures',)
     TRADING_CALENDAR_PRIMARY_CAL = 'us_futures'
-
-    ASSET_FINDER_FUTURE_CHAIN_PREDICATES = {
-        'BZ': partial(delivery_predicate, set(['F', 'H'])),
-    }
 
     @classmethod
     def make_root_symbols_info(self):
@@ -1821,23 +1814,6 @@ class OrderedContractsTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
         chain = oc.active_chain(4, pd.Timestamp('2015-01-04', tz='UTC').value)
         self.assertEqual([4], list(chain),
                           "[4] should be active beginning at its start date.")
-
-    def test_delivery_predicate(self):
-        contract_sids = range(5, 8)
-        contracts = deque(self.asset_finder.retrieve_all(contract_sids))
-
-        oc = OrderedContracts('BA', contracts,
-                              chain_predicate=partial(delivery_predicate,
-                                                      set(['F', 'H'])))
-
-        # Test sid 1 as days increment, as the sessions march forward
-        # a contract should be added per day, until all defined contracts
-        # are returned.
-        chain = oc.active_chain(5, pd.Timestamp('2015-01-05', tz='UTC').value)
-        self.assertEqual(
-            [5, 7], list(chain),
-            "Contract BAG16 (sid=6) should be ommitted from chain, since "
-            "it does not satisfy the roll predicate.")
 
     def test_auto_close_before_start(self):
         contract_sids = array([8, 9, 10, 11], dtype=int64)

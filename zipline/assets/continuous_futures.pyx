@@ -37,41 +37,6 @@ from pandas import Timestamp
 from trading_calendars import get_calendar
 import warnings
 
-
-def delivery_predicate(codes, contract):
-    # This relies on symbols that are construct following a pattern of
-    # root symbol + delivery code + year, e.g. PLF16
-    # This check would be more robust if the future contract class had
-    # a 'delivery_month' member.
-    delivery_code = contract.symbol[-3]
-    return delivery_code in codes
-
-march_cycle_delivery_predicate = partial(delivery_predicate,
-                                         set(['H', 'M', 'U', 'Z']))
-
-CHAIN_PREDICATES = {
-    'EL': march_cycle_delivery_predicate,
-    'ME': march_cycle_delivery_predicate,
-    'PL': partial(delivery_predicate, set(['F', 'J', 'N', 'V'])),
-    'PA': march_cycle_delivery_predicate,
-
-    # The majority of trading in these currency futures is done on a
-    # March quarterly cycle (Mar, Jun, Sep, Dec) but contracts are
-    # listed for the first 3 consecutive months from the present day. We
-    # want the continuous futures to be composed of just the quarterly
-    # contracts.
-    'JY': march_cycle_delivery_predicate,
-    'CD': march_cycle_delivery_predicate,
-    'AD': march_cycle_delivery_predicate,
-    'BP': march_cycle_delivery_predicate,
-
-    # Gold and silver contracts trade on an unusual specific set of months.
-    'GC': partial(delivery_predicate, set(['G', 'J', 'M', 'Q', 'V', 'Z'])),
-    'XG': partial(delivery_predicate, set(['G', 'J', 'M', 'Q', 'V', 'Z'])),
-    'SV': partial(delivery_predicate, set(['H', 'K', 'N', 'U', 'Z'])),
-    'YS': partial(delivery_predicate, set(['H', 'K', 'N', 'U', 'Z'])),
-}
-
 ADJUSTMENT_STYLES = {'add', 'mul', None}
 
 

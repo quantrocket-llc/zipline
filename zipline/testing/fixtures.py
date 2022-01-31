@@ -17,7 +17,6 @@ from trading_calendars import (
 import zipline
 from zipline.algorithm import TradingAlgorithm
 from zipline.assets import Equity, Future
-from zipline.assets.continuous_futures import CHAIN_PREDICATES
 from zipline.data.benchmarks import get_benchmark_returns_from_file
 from zipline.data.fx import DEFAULT_FX_RATE
 from zipline.finance.asset_restrictions import NoRestrictions
@@ -357,7 +356,6 @@ class WithAssetFinder(WithDefaultDateBounds):
     ASSET_FINDER_EQUITY_EXCHANGE = 'TEST'
     ASSET_FINDER_EQUITY_START_DATE = alias('START_DATE')
     ASSET_FINDER_EQUITY_END_DATE = alias('END_DATE')
-    ASSET_FINDER_FUTURE_CHAIN_PREDICATES = CHAIN_PREDICATES
     ASSET_FINDER_COUNTRY_CODE = '??'
 
     @classmethod
@@ -416,7 +414,6 @@ class WithAssetFinder(WithDefaultDateBounds):
             futures=futures,
             exchanges=exchanges,
             root_symbols=root_symbols,
-            future_chain_predicates=cls.ASSET_FINDER_FUTURE_CHAIN_PREDICATES,
         ))
 
     @classmethod

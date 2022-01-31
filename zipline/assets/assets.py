@@ -49,7 +49,6 @@ from . import (
 )
 from . continuous_futures import (
     ADJUSTMENT_STYLES,
-    CHAIN_PREDICATES,
     ContinuousFuture,
     OrderedContracts,
 )
@@ -287,7 +286,7 @@ class AssetFinder(object):
     :class:`zipline.assets.AssetDBWriter`
     """
     @preprocess(engine=coerce_string_to_eng(require_exists=True))
-    def __init__(self, engine, future_chain_predicates=CHAIN_PREDICATES):
+    def __init__(self, engine, future_chain_predicates=None):
         self.engine = engine
         metadata = sa.MetaData(bind=engine)
         metadata.reflect(only=asset_db_table_names)
