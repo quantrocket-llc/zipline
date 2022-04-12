@@ -54,9 +54,9 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
     @classmethod
     def make_root_symbols_info(self):
         return pd.DataFrame({
-            'root_symbol': ['FO', 'BZ', 'MA', 'DF'],
-            'root_symbol_id': [1, 2, 3, 4],
-            'exchange': ['CMES', 'CMES', 'CMES', 'CMES']})
+            'root_symbol': ['FO', 'MA', 'DF'],
+            'root_symbol_id': [1, 3, 4],
+            'exchange': ['CMES', 'CMES', 'CMES']})
 
     @classmethod
     def make_futures_info(self):
@@ -112,35 +112,6 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
             'tick_size': [0.001] * 7,
             'multiplier': [1000.0] * 7,
             'exchange': ['CMES'] * 7,
-        })
-
-        # BZ is set up to test chain predicates, for futures such as PL which
-        # only use a subset of contracts for the roll chain.
-        bz_frame = DataFrame({
-            'symbol': ['BZF16', 'BZG16', 'BZH16'],
-            'root_symbol': ['BZ'] * 3,
-            'asset_name': ['Baz'] * 3,
-            'sid': range(10, 13),
-            'real_sid': [str(i) for i in range(10, 13)],
-            'currency': ['USD' for i in range(10, 13)],
-            'start_date': [Timestamp('2005-01-01', tz='UTC'),
-                           Timestamp('2005-01-21', tz='UTC'),
-                           Timestamp('2005-01-21', tz='UTC')],
-            'end_date': [Timestamp('2016-08-19', tz='UTC'),
-                         Timestamp('2016-11-21', tz='UTC'),
-                         Timestamp('2016-10-19', tz='UTC')],
-            'notice_date': [Timestamp('2016-01-11', tz='UTC'),
-                            Timestamp('2016-02-08', tz='UTC'),
-                            Timestamp('2016-03-09', tz='UTC')],
-            'expiration_date': [Timestamp('2016-01-11', tz='UTC'),
-                                Timestamp('2016-02-08', tz='UTC'),
-                                Timestamp('2016-03-09', tz='UTC')],
-            'auto_close_date': [Timestamp('2016-01-11', tz='UTC'),
-                                Timestamp('2016-02-08', tz='UTC'),
-                                Timestamp('2016-03-09', tz='UTC')],
-            'tick_size': [0.001] * 3,
-            'multiplier': [1000.0] * 3,
-            'exchange': ['CMES'] * 3,
         })
 
         # MA is set up to test a contract which is has no active volume.
@@ -201,7 +172,7 @@ class ContinuousFuturesTestCase(zf.WithCreateBarData,
             'exchange': ['CMES'] * 3,
         })
 
-        return pd.concat([fo_frame, bz_frame, ma_frame, df_frame])
+        return pd.concat([fo_frame, ma_frame, df_frame])
 
     @classmethod
     def make_future_minute_bar_data(cls):
@@ -705,27 +676,6 @@ def record_current_contract(algo, data):
         self.assertEqual(window.loc['2016-03-28', cf],
                          3,
                          "Should be FOJ16 on session after roll.")
-
-    def test_history_sid_session_delivery_predicate(self):
-        cf = self.data_portal.asset_finder.create_continuous_future(
-            'BZ', 0, 'calendar', None)
-        window = self.data_portal.get_history_window(
-            [cf],
-            Timestamp('2016-01-11 18:01', tz='US/Eastern').tz_convert('UTC'),
-            3, '1d', 'sid', 'minute')
-
-        self.assertEqual(window.loc['2016-01-08', cf],
-                         10,
-                         "Should be BZF16 at beginning of window.")
-
-        self.assertEqual(window.loc['2016-01-11', cf],
-                         12,
-                         "Should be BZH16 after first roll, having skipped "
-                         "over BZG16.")
-
-        self.assertEqual(window.loc['2016-01-12', cf],
-                         12,
-                         "Should have remained BZG16")
 
     def test_history_sid_session_secondary(self):
         cf = self.data_portal.asset_finder.create_continuous_future(
