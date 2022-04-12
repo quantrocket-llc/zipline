@@ -198,7 +198,8 @@ cdef class ContinuousFuture:
             'end_date': self.end_date,
             'offset': self.offset,
             'roll_style': self.roll_style,
-            'exchange': self.exchange,
+            'exchange_info': self.exchange_info,
+            'adjustment': self.adjustment,
         }
 
     @classmethod
