@@ -1591,6 +1591,7 @@ class SummaryTestCase(BaseUSEquityPipelineTestCase, ZiplineTestCase):
             expected=expected,
             initial_workspace=workspace,
             mask=self.build_mask(ones(shape)),
+            check=check_allclose
         )
 
     @parameter_space(
@@ -1744,6 +1745,7 @@ class SummaryTestCase(BaseUSEquityPipelineTestCase, ZiplineTestCase):
             expected=expected,
             initial_workspace=workspace,
             mask=root_mask,
+            check=check_allclose
         )
 
     def test_repr(self):

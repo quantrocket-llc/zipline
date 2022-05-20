@@ -105,6 +105,7 @@ class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
                 ),
             },
             mask=self.build_mask(mask),
+            check=check_allclose
         )
 
     def test_bollinger_bands_output_ordering(self):
