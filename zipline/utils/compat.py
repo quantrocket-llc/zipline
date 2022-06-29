@@ -8,6 +8,12 @@ from html import escape as escape_html
 from types import MappingProxyType as mappingproxy
 from math import ceil
 
+# Help Sphinx autoapi understand these definitions
+mappingproxy = mappingproxy
+contextmanager = contextmanager
+escape_html = escape_html
+
+
 def exc_clear():
     # exc_clear was removed in Python 3. The except statement automatically
     # clears the exception.

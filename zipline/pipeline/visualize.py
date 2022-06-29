@@ -13,7 +13,10 @@ from networkx import topological_sort
 from six import iteritems
 
 from zipline.pipeline.data import BoundColumn
-from zipline.pipeline import Filter, Factor, Classifier, Term
+from zipline.pipeline.filters.filter import Filter
+from zipline.pipeline.factors.factor import Factor
+from zipline.pipeline.classifiers.classifier import Classifier
+from zipline.pipeline.term import Term
 from zipline.pipeline.term import AssetExists
 
 

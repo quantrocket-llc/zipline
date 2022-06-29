@@ -104,3 +104,9 @@ def _make_metrics_set_core():
 
 
 metrics_sets, register, unregister, load = _make_metrics_set_core()
+
+# Help Sphinx autoapi understand these definitions
+metrics_sets = metrics_sets
+register = register
+unregister = unregister
+load = load

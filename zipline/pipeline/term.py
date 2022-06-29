@@ -37,12 +37,6 @@ from zipline.utils.numpy_utils import (
     default_missing_value_for_dtype,
     float64_dtype,
 )
-from zipline.utils.sharedoc import (
-    templated_docstring,
-    PIPELINE_ALIAS_NAME_DOC,
-    PIPELINE_DOWNSAMPLING_FREQUENCY_DOC,
-)
-
 from .domain import Domain, GENERIC, infer_domain
 from .downsample_helpers import expect_downsample_frequency
 from .sentinels import NotSpecified
@@ -713,27 +707,32 @@ class ComputableTerm(Term):
         ).values
 
     @expect_downsample_frequency
-    @templated_docstring(frequency=PIPELINE_DOWNSAMPLING_FREQUENCY_DOC)
     def downsample(self, frequency):
         """
         Make a term that computes from ``self`` at lower-than-daily frequency.
 
         Parameters
         ----------
-        {frequency}
+        frequency : {'year_start', 'quarter_start', 'month_start', 'week_start'}
+            A string indicating desired sampling dates:
+
+            * 'year_start'    -> first trading day of each year
+            * 'quarter_start' -> first trading day of January, April, July, October
+            * 'month_start'   -> first trading day of each month
+            * 'week_start'    -> first trading_day of each week
         """
         from .mixins import DownsampledMixin
         downsampled_type = type(self)._with_mixin(DownsampledMixin)
         return downsampled_type(term=self, frequency=frequency)
 
-    @templated_docstring(name=PIPELINE_ALIAS_NAME_DOC)
     def alias(self, name):
         """
         Make a term from ``self`` that names the expression.
 
         Parameters
         ----------
-        {name}
+        name : str
+            The name to alias this term as.
 
         Returns
         -------

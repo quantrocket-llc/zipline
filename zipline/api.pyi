@@ -1,6 +1,5 @@
 import collections
 from zipline.assets import Asset, Equity, Future
-from zipline.assets.futures import FutureChain
 from zipline.finance.asset_restrictions import Restrictions
 from zipline.finance.cancel_policy import CancelPolicy
 from zipline.pipeline import Pipeline
@@ -127,27 +126,31 @@ def get_environment(field='platform'):
 
     Parameters
     ----------
-    field : {'platform', 'arena', 'data_frequency',
-             'start', 'end', 'capital_base', 'platform', '*'}
+    field : {'platform', 'arena', 'data_frequency', 'start', 'end', 'capital_base', 'platform', '*'}
         The field to query. The options have the following meanings:
-          arena : str
-              The arena from the simulation parameters. This will normally
-              be ``'backtest'`` but some systems may use this distinguish
-              live trading from backtesting.
-          data_frequency : {'daily', 'minute'}
-              data_frequency tells the algorithm if it is running with
-              daily data or minute data.
-          start : datetime
-              The start date for the simulation.
-          end : datetime
-              The end date for the simulation.
-          capital_base : float
-              The starting capital for the simulation.
-          platform : str
-              The platform that the code is running on. By default this
-              will be the string 'zipline'.
-          * : dict[str -> any]
-              Returns all of the fields in a dictionary.
+            arena : str
+                The arena from the simulation parameters. ``'backtest'`` or ``'trade'``.
+
+            data_frequency : {'daily', 'minute'}
+                data_frequency tells the algorithm if it is running with
+                daily data or minute data.
+
+            start : datetime
+                The start date for the simulation.
+
+            end : datetime
+                The end date for the simulation.
+
+            capital_base : float
+                The starting capital for the simulation.
+
+            platform : str
+                The platform that the code is running on. By default this
+                will be the string 'zipline'.
+
+            * : dict[str -> any]
+                Returns all of the fields in a dictionary.
+
 
     Returns
     -------
@@ -158,6 +161,14 @@ def get_environment(field='platform'):
     ------
     ValueError
         Raised when ``field`` is not a valid option.
+
+    Examples
+    --------
+    Only perform a certain action in live trading:
+
+    >>> import zipline.api as algo
+    >>> if algo.get_environment("arena") == "trade":    # doctest: +SKIP
+    >>>     ...                                         # doctest: +SKIP
     """
 
 def get_open_orders(asset=None):
@@ -233,9 +244,15 @@ def order(asset, amount, limit_price=None, stop_price=None, style=None):
 
     See Also
     --------
-    :class:`zipline.finance.execution.ExecutionStyle`
+    :class:`zipline.finance.execution.MarketOrder`
+    :class:`zipline.finance.execution.LimitOrder`
+    :class:`zipline.finance.execution.StopOrder`
+    :class:`zipline.finance.execution.StopLimitOrder`
     :func:`zipline.api.order_value`
     :func:`zipline.api.order_percent`
+    :func:`zipline.api.order_target`
+    :func:`zipline.api.order_target_value`
+    :func:`zipline.api.order_target_percent`
     """
 
 def order_percent(asset, percent, limit_price=None, stop_price=None, style=None):
@@ -268,9 +285,15 @@ def order_percent(asset, percent, limit_price=None, stop_price=None, style=None)
 
     See Also
     --------
-    :class:`zipline.finance.execution.ExecutionStyle`
-    :func:`zipline.api.order`
+    :class:`zipline.finance.execution.MarketOrder`
+    :class:`zipline.finance.execution.LimitOrder`
+    :class:`zipline.finance.execution.StopOrder`
+    :class:`zipline.finance.execution.StopLimitOrder`
     :func:`zipline.api.order_value`
+    :func:`zipline.api.order`
+    :func:`zipline.api.order_target`
+    :func:`zipline.api.order_target_value`
+    :func:`zipline.api.order_target_percent`
     """
 
 def order_target(asset, target, limit_price=None, stop_price=None, style=None):
@@ -318,10 +341,15 @@ def order_target(asset, target, limit_price=None, stop_price=None, style=None):
 
     See Also
     --------
-    :class:`zipline.finance.execution.ExecutionStyle`
+    :class:`zipline.finance.execution.MarketOrder`
+    :class:`zipline.finance.execution.LimitOrder`
+    :class:`zipline.finance.execution.StopOrder`
+    :class:`zipline.finance.execution.StopLimitOrder`
+    :func:`zipline.api.order_value`
     :func:`zipline.api.order`
-    :func:`zipline.api.order_target_percent`
+    :func:`zipline.api.order_percent`
     :func:`zipline.api.order_target_value`
+    :func:`zipline.api.order_target_percent`
     """
 
 def order_target_percent(asset, target, limit_price=None, stop_price=None, style=None):
@@ -370,8 +398,13 @@ def order_target_percent(asset, target, limit_price=None, stop_price=None, style
 
     See Also
     --------
-    :class:`zipline.finance.execution.ExecutionStyle`
+    :class:`zipline.finance.execution.MarketOrder`
+    :class:`zipline.finance.execution.LimitOrder`
+    :class:`zipline.finance.execution.StopOrder`
+    :class:`zipline.finance.execution.StopLimitOrder`
+    :func:`zipline.api.order_value`
     :func:`zipline.api.order`
+    :func:`zipline.api.order_percent`
     :func:`zipline.api.order_target`
     :func:`zipline.api.order_target_value`
     """
@@ -422,26 +455,30 @@ def order_target_value(asset, target, limit_price=None, stop_price=None, style=N
 
     See Also
     --------
-    :class:`zipline.finance.execution.ExecutionStyle`
+    :class:`zipline.finance.execution.MarketOrder`
+    :class:`zipline.finance.execution.LimitOrder`
+    :class:`zipline.finance.execution.StopOrder`
+    :class:`zipline.finance.execution.StopLimitOrder`
+    :func:`zipline.api.order_value`
     :func:`zipline.api.order`
+    :func:`zipline.api.order_percent`
     :func:`zipline.api.order_target`
     :func:`zipline.api.order_target_percent`
     """
 
 def order_value(asset, value, limit_price=None, stop_price=None, style=None):
-    """Place an order by desired value rather than desired number of
-    shares.
+    """
+    Place an order for a fixed amount of money.
+
+    Equivalent to ``order(asset, value / data.current(asset, 'price'))``.
 
     Parameters
     ----------
     asset : Asset
         The asset that this order is for.
     value : float
-        If the requested asset exists, the requested value is
-        divided by its price to imply the number of shares to transact.
-        If the Asset being ordered is a Future, the 'value' calculated
-        is actually the exposure, as Futures have no 'value'.
-
+        Amount of value of ``asset`` to be transacted. The number of shares
+        bought or sold will be equal to ``value / current_price``.
         value > 0 :: Buy/Cover
         value < 0 :: Sell/Short
     limit_price : float, optional
@@ -463,9 +500,15 @@ def order_value(asset, value, limit_price=None, stop_price=None, style=None):
 
     See Also
     --------
-    :class:`zipline.finance.execution.ExecutionStyle`
+    :class:`zipline.finance.execution.MarketOrder`
+    :class:`zipline.finance.execution.LimitOrder`
+    :class:`zipline.finance.execution.StopOrder`
+    :class:`zipline.finance.execution.StopLimitOrder`
     :func:`zipline.api.order`
     :func:`zipline.api.order_percent`
+    :func:`zipline.api.order_target`
+    :func:`zipline.api.order_target_value`
+    :func:`zipline.api.order_target_percent`
     """
 
 def pipeline_output(name):
@@ -491,7 +534,6 @@ def pipeline_output(name):
     See Also
     --------
     :func:`zipline.api.attach_pipeline`
-    :meth:`zipline.pipeline.engine.PipelineEngine.run_pipeline`
     """
 
 def record(*args, **kwargs):
@@ -504,32 +546,237 @@ def record(*args, **kwargs):
 
     Notes
     -----
-    These values will appear in the performance packets and the performance
-    dataframe passed to ``analyze`` and returned from
-    :func:`~zipline.run_algorithm`.
+    These values will appear in the results CSV returned in backtests.
     """
 
-def schedule_function(func, date_rule=None, time_rule=None, half_days=True, calendar=None):
-    """Schedules a function to be called according to some timed rules.
+def set_realtime_db(code, fields={}):
+    """
+    Sets the realtime database to use for querying up-to-date minute bars in
+    live trading.
 
     Parameters
     ----------
-    func : callable[(context, data) -> None]
-        The function to execute when the rule is triggered.
-    date_rule : EventRule, optional
-        The rule for the dates to execute this function.
-    time_rule : EventRule, optional
-        The rule for the times to execute this function.
+    code : str, required
+        the realtime database code. Must be an aggregate database with
+        1-minute bars.
+
+    fields : dict, optional
+        dict mapping expected Zipline field names ('close', 'high', 'low', 'open',
+        'volume') to realtime database field names
+
+    Returns
+    -------
+    None
+
+    Examples
+    --------
+    Set the realtime database and map fields:
+
+    >>> algo.set_realtime_db(                 # doctest: +SKIP
+            "us-stk-tick-1min",
+            fields={
+                "close": "LastPriceClose",
+                "open": "LastPriceOpen",
+                "high": "LastPriceHigh",
+                "low": "LastPriceLow",
+                "volume": "LastSizeSum"})
+    """
+    ...
+
+def schedule_function(func, date_rule=None, time_rule=None, half_days=True, calendar=None):
+    """
+    Schedule a function to be called repeatedly in the future.
+
+    Parameters
+    ----------
+    func : callable
+        The function to execute when the rule is triggered. ``func`` should
+        have the same signature as ``handle_data``.
+    date_rule : zipline.utils.events.EventRule, optional
+        Rule for the dates on which to execute ``func``. If not
+        passed, the function will run every trading day.
+    time_rule : zipline.utils.events.EventRule, optional
+        Rule for the time at which to execute ``func``. If not passed, the
+        function will execute at the end of the first market minute of the
+        day.
     half_days : bool, optional
-        Should this rule fire on half days?
+        Should this rule fire on half days? Default is True.
     calendar : Sentinel, optional
-        Calendar used to reconcile date and time rules.
+        Calendar used to compute rules that depend on the trading calendar.
+
+    Examples
+    --------
+    Schedule a function called rebalance to run every trading day 30 minutes
+    after the open:
+
+    >>> import zipline.api as algo
+    >>> algo.schedule_function(                          # doctest: +SKIP
+            rebalance,
+            algo.date_rules.every_day(),
+            algo.time_rules.market_open(minutes=30))
 
     See Also
     --------
     :class:`zipline.api.date_rules`
     :class:`zipline.api.time_rules`
     """
+
+class date_rules:
+    """
+    Factories for date-based :func:`~zipline.api.schedule_function` rules.
+
+    See Also
+    --------
+    :func:`~zipline.api.schedule_function`
+    """
+
+    def every_day():
+        """Create a rule that triggers every day.
+
+        Returns
+        -------
+        rule : zipline.utils.events.EventRule
+        """
+        ...
+
+    def month_start(days_offset=0):
+        """
+        Create a rule that triggers a fixed number of trading days after the
+        start of each month.
+
+        Parameters
+        ----------
+        days_offset : int, optional
+            Number of trading days to wait before triggering each
+            month. Default is 0, i.e., trigger on the first trading day of the
+            month.
+
+        Returns
+        -------
+        rule : zipline.utils.events.EventRule
+        """
+        ...
+
+    def month_end(days_offset=0):
+        """
+        Create a rule that triggers a fixed number of trading days before the
+        end of each month.
+
+        Parameters
+        ----------
+        days_offset : int, optional
+            Number of trading days prior to month end to trigger. Default is 0,
+            i.e., trigger on the last day of the month.
+
+        Returns
+        -------
+        rule : zipline.utils.events.EventRule
+        """
+        ...
+
+    def week_start(days_offset=0):
+        """
+        Create a rule that triggers a fixed number of trading days after the
+        start of each week.
+
+        Parameters
+        ----------
+        days_offset : int, optional
+            Number of trading days to wait before triggering each week. Default
+            is 0, i.e., trigger on the first trading day of the week.
+        """
+        ...
+
+    def week_end(days_offset=0):
+        """
+        Create a rule that triggers a fixed number of trading days before the
+        end of each week.
+
+        Parameters
+        ----------
+        days_offset : int, optional
+            Number of trading days prior to week end to trigger. Default is 0,
+            i.e., trigger on the last trading day of the week.
+        """
+        ...
+
+class time_rules:
+    """Factories for time-based :func:`~zipline.api.schedule_function` rules.
+
+    See Also
+    --------
+    :func:`~zipline.api.schedule_function`
+    """
+
+    def market_open(offset=None, hours=None, minutes=None):
+        """
+        Create a rule that triggers at a fixed offset from market open.
+
+        The offset can be specified either as a :class:`datetime.timedelta`, or
+        as a number of hours and minutes.
+
+        Parameters
+        ----------
+        offset : datetime.timedelta, optional
+            If passed, the offset from market open at which to trigger. Must be
+            at least 1 minute.
+        hours : int, optional
+            If passed, number of hours to wait after market open.
+        minutes : int, optional
+            If passed, number of minutes to wait after market open.
+
+        Returns
+        -------
+        rule : zipline.utils.events.EventRule
+
+        Notes
+        -----
+        If no arguments are passed, the default offset is one minute after
+        market open.
+
+        If ``offset`` is passed, ``hours`` and ``minutes`` must not be
+        passed. Conversely, if either ``hours`` or ``minutes`` are passed,
+        ``offset`` must not be passed.
+        """
+        ...
+
+    def market_close(offset=None, hours=None, minutes=None):
+        """
+        Create a rule that triggers at a fixed offset from market close.
+
+        The offset can be specified either as a :class:`datetime.timedelta`, or
+        as a number of hours and minutes.
+
+        Parameters
+        ----------
+        offset : datetime.timedelta, optional
+            If passed, the offset from market close at which to trigger. Must
+            be at least 1 minute.
+        hours : int, optional
+            If passed, number of hours to wait before market close.
+        minutes : int, optional
+            If passed, number of minutes to wait before market close.
+
+        Returns
+        -------
+        rule : zipline.utils.events.EventRule
+
+        Notes
+        -----
+        If no arguments are passed, the default offset is one minute before
+        market close.
+
+        If ``offset`` is passed, ``hours`` and ``minutes`` must not be
+        passed. Conversely, if either ``hours`` or ``minutes`` are passed,
+        ``offset`` must not be passed.
+        """
+        ...
+
+    def every_minute():
+        """
+        Create a rule that always triggers.
+        """
+        ...
 
 def set_asset_restrictions(restrictions, on_error='fail'):
     """Set a restriction on which assets can be ordered.
@@ -541,7 +788,7 @@ def set_asset_restrictions(restrictions, on_error='fail'):
 
     See Also
     --------
-    zipline.finance.asset_restrictions.Restrictions
+    zipline.finance.asset_restrictions.StaticRestrictions
     """
 
 def set_benchmark(benchmark):
@@ -551,6 +798,14 @@ def set_benchmark(benchmark):
     ----------
     benchmark : Asset
         The asset to set as the new benchmark.
+
+    Examples
+    --------
+    Set the benchmark to SPY:
+
+    >>> import zipline.api as algo
+    >>> spy = algo.sid("FIBBG000BDTBL9")    # doctest: +SKIP
+    >>> algo.set_benchmark(spy)             # doctest: +SKIP
 
     Notes
     -----
@@ -572,6 +827,36 @@ def set_cancel_policy(cancel_policy):
     :class:`zipline.api.NeverCancel`
     """
 
+class EODCancel:
+    """
+    This policy cancels open orders at the end of the day. This is the default
+    policy and does not need to be explicitly set. In live trading, this cancel
+    policy will cause orders to be submitted with a Tif (time-in-force) of DAY.
+
+    Parameters
+    ----------
+    warn_on_cancel : bool, optional
+        Should a warning be raised if this causes an order to be cancelled?
+    """
+    def __init__(self, warn_on_cancel=True):
+        ...
+
+class NeverCancel:
+    """
+    With this policy, orders are never automatically canceled. In live trading, this
+    cancel policy will cause orders to be submitted with a Tif (time-in-force) of GTC
+    (Good-till-canceled).
+
+    Examples
+    --------
+    Set the cancel policy to NeverCancel:
+
+    >>> from zipline.api import set_cancel_policy, cancel_policy    # doctest: +SKIP
+    >>> def initialize(context):                                    # doctest: +SKIP
+            set_cancel_policy(cancel_policy.NeverCancel())
+    """
+    ...
+
 def set_commission(us_equities=None, us_futures=None):
     """Sets the commission models for the simulation.
 
@@ -581,6 +866,19 @@ def set_commission(us_equities=None, us_futures=None):
         The commission model to use for trading US equities.
     us_futures : FutureCommissionModel
         The commission model to use for trading US futures.
+
+    Notes
+    -----
+    This function can only be called during
+    :func:`~zipline.api.initialize`.
+
+    Examples
+    --------
+    Set the equities commission to 0.001 per share:
+
+    >>> import zipline.api as algo
+    >>> from zipline.finance import commission
+    >>> algo.set_commission(commission.PerShare(cost=0.001))    # doctest: +SKIP
 
     See Also
     --------
@@ -676,6 +974,19 @@ def set_slippage(us_equities=None, us_futures=None):
         The slippage model to use for trading US equities.
     us_futures : FutureSlippageModel
         The slippage model to use for trading US futures.
+
+    Examples
+    --------
+    Set the equities slippage to 5 basis points:
+
+    >>> import zipline.api as algo
+    >>> from zipline.finance import slippage
+    >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))    # doctest: +SKIP
+
+    Notes
+    -----
+    This function can only be called during
+    :func:`~zipline.api.initialize`.
 
     See Also
     --------

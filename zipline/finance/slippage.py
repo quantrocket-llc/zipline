@@ -39,7 +39,6 @@ LIMIT = 1 << 3
 
 SQRT_252 = math.sqrt(252)
 
-DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT = 0.025
 DEFAULT_FUTURE_VOLUME_SLIPPAGE_BAR_LIMIT = 0.05
 
 
@@ -122,15 +121,6 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
     If your transaction has 0 shares or more shares than the original order
     amount, an exception will be thrown.
 
-    Attributes
-    ----------
-    volume_for_bar : int
-        Number of shares that have already been filled for the
-        currently-filling asset in the current minute. This attribute is
-        maintained automatically by the base class. It can be used by
-        subclasses to keep track of the total amount filled if there are
-        multiple open orders for a single asset.
-
     Notes
     -----
     Subclasses that define their own constructors should call
@@ -146,6 +136,13 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
 
     @property
     def volume_for_bar(self):
+        """
+        int: Number of shares that have already been filled for the
+        currently-filling asset in the current minute. This attribute is
+        maintained automatically by the base class. It can be used by
+        subclasses to keep track of the total amount filled if there are
+        multiple open orders for a single asset.
+        """
         return self._volume_for_bar
 
     @abstractmethod
@@ -315,7 +312,7 @@ class VolumeShareSlippage(SlippageModel):
         price impact. Default is 0.1.
     """
     def __init__(self,
-                 volume_limit=DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT,
+                 volume_limit=0.025,
                  price_impact=0.1):
 
         super(VolumeShareSlippage, self).__init__()

@@ -70,6 +70,15 @@ except ImportError:
     nanargmin = np.nanargmin
     nanmedian = np.nanmedian
 
+# Help Sphinx autoapi understand these definitions
+nanmean = nanmean
+nanstd = nanstd
+nansum = nansum
+nanmax = nanmax
+nanmin = nanmin
+nanargmax = nanargmax
+nanargmin = nanargmin
+nanmedian = nanmedian
 
 def round_if_near_integer(a, epsilon=1e-4):
     """

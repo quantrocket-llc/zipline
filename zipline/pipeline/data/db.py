@@ -76,38 +76,33 @@ class Database(DataSet):
     --------
     Define a Pipeline dataset that points to a database of custom fundamentals:
 
-        from zipline.pipeline.data.db import Database, Column
-        class CustomFundamentals(Database):
-
-            CODE = "custom-fundamentals"
-
-            Revenue = Column(float)
-
-            EPS = Column(float)
-
-            Currency = Column(object)
-
-            TotalAssets = Column(float)
+    >>> from zipline.pipeline.data.db import Database, Column
+    >>> class CustomFundamentals(Database):                      # doctest: +SKIP
+    >>>     CODE = "custom-fundamentals"                         # doctest: +SKIP
+    >>>     Revenue = Column(float)                              # doctest: +SKIP
+    >>>     EPS = Column(float)                                  # doctest: +SKIP
+    >>>     Currency = Column(object)                            # doctest: +SKIP
+    >>>     TotalAssets = Column(float)                          # doctest: +SKIP
 
     Instantiate a column from the dataset:
 
-        revenues = CustomFundamentals.Revenue.latest
+    >>> revenues = CustomFundamentals.Revenue.latest             # doctest: +SKIP
 
     Columns can have different data types.Use float for semantically-numeric data,
     even if it's always integral valued (see Notes section below). The default
     missing value for floats is NaN.
 
-        Revenue = Column(float)
+    >>> Revenue = Column(float)                                  # doctest: +SKIP
 
     Use object for string columns. The default missing value for object-dtype columns
     is an empty string.
 
-        Currency = Column(object)
+    >>> Currency = Column(object)                                # doctest: +SKIP
 
     Use bool for boolean-valued flags. Note that the default missing value for
     bool-dtype columns is False.
 
-        IsEtf = Column(bool)
+    >>> IsEtf = Column(bool)                                     # doctest: +SKIP
 
     Notes
     -----

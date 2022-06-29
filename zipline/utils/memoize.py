@@ -12,6 +12,8 @@ from trading_calendars.utils.memoize import lazyval
 
 from zipline.utils.compat import wraps
 
+# Help Sphinx autoapi understand this re-export
+lazyval = lazyval
 
 class classlazyval(lazyval):
     """ Decorator that marks that an attribute of a class should not be

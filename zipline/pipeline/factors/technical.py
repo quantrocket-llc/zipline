@@ -15,7 +15,7 @@ from numpy import (
 from numexpr import evaluate
 
 from zipline.pipeline.data import EquityPricing
-from zipline.pipeline.factors import CustomFactor
+from zipline.pipeline.factors.factor import CustomFactor
 from zipline.pipeline.mixins import SingleInputMixin
 from zipline.utils.input_validation import expect_bounded
 from zipline.utils.math_utils import (
@@ -302,7 +302,7 @@ class TrueRange(CustomFactor):
         )
 
 
-class MovingAverageConvergenceDivergenceSignal(CustomFactor):
+class MACDSignal(CustomFactor):
     """
     Moving Average Convergence/Divergence (MACD) Signal line
     https://en.wikipedia.org/wiki/MACD
@@ -357,7 +357,7 @@ class MovingAverageConvergenceDivergenceSignal(CustomFactor):
                 )
             )
 
-        return super(MovingAverageConvergenceDivergenceSignal, cls).__new__(
+        return super(MACDSignal, cls).__new__(
             cls,
             fast_period=fast_period,
             slow_period=slow_period,
@@ -389,4 +389,4 @@ class MovingAverageConvergenceDivergenceSignal(CustomFactor):
 
 
 # Convenience aliases.
-MACDSignal = MovingAverageConvergenceDivergenceSignal
+MovingAverageConvergenceDivergenceSignal = MACDSignal

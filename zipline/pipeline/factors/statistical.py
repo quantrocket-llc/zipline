@@ -8,7 +8,7 @@ from scipy.stats import (
 
 from zipline.assets import Asset
 from zipline.errors import IncompatibleTerms
-from zipline.pipeline.factors import CustomFactor
+from zipline.pipeline.factors.factor import CustomFactor
 from zipline.pipeline.filters import SingleAsset
 from zipline.pipeline.mixins import StandardOutputs
 from zipline.pipeline.sentinels import NotSpecified

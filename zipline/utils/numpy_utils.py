@@ -29,6 +29,21 @@ from numpy import (
 from numpy.lib.stride_tricks import as_strided
 from toolz import flip
 
+# Help Sphinx autoapi understand these definitions
+array_equal = array_equal
+broadcast = broadcast
+busday_count = busday_count
+datetime64 = datetime64
+diff = diff
+dtype = dtype
+empty = empty
+flatnonzero = flatnonzero
+hstack = hstack
+isnan = isnan
+nan = nan
+vectorize = vectorize
+where = where
+
 numpy_version = StrictVersion(np.__version__)
 
 uint8_dtype = dtype('uint8')

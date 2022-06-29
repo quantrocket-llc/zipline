@@ -23,12 +23,7 @@ from zipline.finance.constants import FUTURE_EXCHANGE_FEES_BY_SYMBOL
 from zipline.finance.shared import AllowedAssetMarker, FinancialModelMeta
 from zipline.utils.dummy import DummyMapping
 
-DEFAULT_PER_SHARE_COST = 0.001               # 0.1 cents per share
 DEFAULT_PER_CONTRACT_COST = 0.85             # $0.85 per future contract
-DEFAULT_PER_DOLLAR_COST = 0.0015             # 0.15 cents per dollar
-DEFAULT_MINIMUM_COST_PER_EQUITY_TRADE = 0.0  # $0 per trade
-DEFAULT_MINIMUM_COST_PER_FUTURE_TRADE = 0.0  # $0 per trade
-
 
 class CommissionModel(with_metaclass(FinancialModelMeta)):
     """Abstract base class for commission models.
@@ -161,8 +156,8 @@ class PerShare(EquityCommissionModel):
     """
 
     def __init__(self,
-                 cost=DEFAULT_PER_SHARE_COST,
-                 min_trade_cost=DEFAULT_MINIMUM_COST_PER_EQUITY_TRADE):
+                 cost=0.001,
+                 min_trade_cost=0.0):
         self.cost_per_share = float(cost)
         self.min_trade_cost = min_trade_cost or 0
 
@@ -212,7 +207,7 @@ class PerContract(FutureCommissionModel):
     def __init__(self,
                  cost,
                  exchange_fee,
-                 min_trade_cost=DEFAULT_MINIMUM_COST_PER_FUTURE_TRADE):
+                 min_trade_cost=0.0):
         # If 'cost' or 'exchange fee' are constants, use a dummy mapping to
         # treat them as a dictionary that always returns the same value.
         # NOTE: These dictionary does not handle unknown root symbols, so it
@@ -290,7 +285,7 @@ class PerTrade(CommissionModel):
         The flat amount of commissions paid per equity trade.
     """
 
-    def __init__(self, cost=DEFAULT_MINIMUM_COST_PER_EQUITY_TRADE):
+    def __init__(self, cost=0.0):
         """
         Cost parameter is the cost of a trade, regardless of share count.
         $5.00 per trade is fairly typical of discount brokers.
@@ -332,7 +327,7 @@ class PerFutureTrade(PerContract):
         symbols to the commission cost for trading contracts of that symbol.
     """
 
-    def __init__(self, cost=DEFAULT_MINIMUM_COST_PER_FUTURE_TRADE):
+    def __init__(self, cost=0.0):
         # The per-trade cost can be represented as the exchange fee in a
         # per-contract model because the exchange fee is just a one time cost
         # incurred on the first fill.
@@ -362,7 +357,7 @@ class PerDollar(EquityCommissionModel):
         The flat amount of commissions paid per dollar of equities
         traded. Default is a commission of $0.0015 per dollar transacted.
     """
-    def __init__(self, cost=DEFAULT_PER_DOLLAR_COST):
+    def __init__(self, cost=0.0015):
         """
         Cost parameter is the cost of a trade per-dollar. 0.0015
         on $1 million means $1,500 commission (=1M * 0.0015)

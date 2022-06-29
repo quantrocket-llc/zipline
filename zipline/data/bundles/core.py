@@ -473,3 +473,10 @@ def _make_bundle_core():
 
 
 bundles, register, unregister, ingest, load = _make_bundle_core()
+
+# Help Sphinx autoapi understand these definitions
+bundles = bundles
+register = register
+unregister = unregister
+ingest = ingest
+load = load

@@ -28,7 +28,6 @@ from zipline.finance.execution import (
 )
 from zipline.finance.order import ORDER_STATUS, Order
 from zipline.finance.slippage import (
-    DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT,
     FixedSlippage,
     VolumeShareSlippage,
 )
@@ -294,6 +293,8 @@ class BlotterTestCase(WithCreateBarData,
             dt = data[1]
 
             order_size = 100
+            # should match VolumeShareSlippage default volume_limit
+            DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT = 0.025
             expected_filled = int(trade_amt *
                                   DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT)
             expected_open = order_size - expected_filled

@@ -1213,9 +1213,15 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        :class:`zipline.finance.execution.ExecutionStyle`
+        :class:`zipline.finance.execution.MarketOrder`
+        :class:`zipline.finance.execution.LimitOrder`
+        :class:`zipline.finance.execution.StopOrder`
+        :class:`zipline.finance.execution.StopLimitOrder`
         :func:`zipline.api.order_value`
         :func:`zipline.api.order_percent`
+        :func:`zipline.api.order_target`
+        :func:`zipline.api.order_target_value`
+        :func:`zipline.api.order_target_percent`
         """
         if not self._can_order_asset(asset):
             return None
@@ -1353,9 +1359,15 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        :class:`zipline.finance.execution.ExecutionStyle`
+        :class:`zipline.finance.execution.MarketOrder`
+        :class:`zipline.finance.execution.LimitOrder`
+        :class:`zipline.finance.execution.StopOrder`
+        :class:`zipline.finance.execution.StopLimitOrder`
         :func:`zipline.api.order`
         :func:`zipline.api.order_percent`
+        :func:`zipline.api.order_target`
+        :func:`zipline.api.order_target_value`
+        :func:`zipline.api.order_target_percent`
         """
         if not self._can_order_asset(asset):
             return None
@@ -1609,9 +1621,15 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        :class:`zipline.finance.execution.ExecutionStyle`
-        :func:`zipline.api.order`
+        :class:`zipline.finance.execution.MarketOrder`
+        :class:`zipline.finance.execution.LimitOrder`
+        :class:`zipline.finance.execution.StopOrder`
+        :class:`zipline.finance.execution.StopLimitOrder`
         :func:`zipline.api.order_value`
+        :func:`zipline.api.order`
+        :func:`zipline.api.order_target`
+        :func:`zipline.api.order_target_value`
+        :func:`zipline.api.order_target_percent`
         """
         if not self._can_order_asset(asset):
             return None
@@ -1678,10 +1696,15 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        :class:`zipline.finance.execution.ExecutionStyle`
+        :class:`zipline.finance.execution.MarketOrder`
+        :class:`zipline.finance.execution.LimitOrder`
+        :class:`zipline.finance.execution.StopOrder`
+        :class:`zipline.finance.execution.StopLimitOrder`
+        :func:`zipline.api.order_value`
         :func:`zipline.api.order`
-        :func:`zipline.api.order_target_percent`
+        :func:`zipline.api.order_percent`
         :func:`zipline.api.order_target_value`
+        :func:`zipline.api.order_target_percent`
         """
         if not self._can_order_asset(asset):
             return None
@@ -1752,8 +1775,13 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        :class:`zipline.finance.execution.ExecutionStyle`
+        :class:`zipline.finance.execution.MarketOrder`
+        :class:`zipline.finance.execution.LimitOrder`
+        :class:`zipline.finance.execution.StopOrder`
+        :class:`zipline.finance.execution.StopLimitOrder`
+        :func:`zipline.api.order_value`
         :func:`zipline.api.order`
+        :func:`zipline.api.order_percent`
         :func:`zipline.api.order_target`
         :func:`zipline.api.order_target_percent`
         """
@@ -1816,8 +1844,13 @@ class TradingAlgorithm(object):
 
         See Also
         --------
-        :class:`zipline.finance.execution.ExecutionStyle`
+        :class:`zipline.finance.execution.MarketOrder`
+        :class:`zipline.finance.execution.LimitOrder`
+        :class:`zipline.finance.execution.StopOrder`
+        :class:`zipline.finance.execution.StopLimitOrder`
         :func:`zipline.api.order`
+        :func:`zipline.api.order_value`
+        :func:`zipline.api.order_percent`
         :func:`zipline.api.order_target`
         :func:`zipline.api.order_target_value`
         """
@@ -2162,7 +2195,6 @@ class TradingAlgorithm(object):
         See Also
         --------
         :func:`zipline.api.attach_pipeline`
-        :meth:`zipline.pipeline.engine.PipelineEngine.run_pipeline`
         """
         try:
             pipe, chunks, _ = self._pipelines[name]

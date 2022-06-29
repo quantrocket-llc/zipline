@@ -44,10 +44,10 @@ from zipline.errors import (
     SidsNotFound,
     SymbolNotFound,
 )
-from . import (
+from ._assets import (
     Asset, Equity, Future,
 )
-from . continuous_futures import (
+from .continuous_futures import (
     ADJUSTMENT_STYLES,
     ContinuousFuture,
     OrderedContracts,

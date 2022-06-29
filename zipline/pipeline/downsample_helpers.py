@@ -5,10 +5,6 @@ from operator import attrgetter
 
 from zipline.utils.input_validation import expect_element
 from zipline.utils.numpy_utils import changed_locations
-from zipline.utils.sharedoc import (
-    templated_docstring,
-    PIPELINE_DOWNSAMPLING_FREQUENCY_DOC,
-)
 
 _dt_to_period = {
     'year_start': attrgetter('year'),
@@ -26,7 +22,6 @@ expect_downsample_frequency = expect_element(
 
 
 @expect_downsample_frequency
-@templated_docstring(frequency=PIPELINE_DOWNSAMPLING_FREQUENCY_DOC)
 def select_sampling_indices(dates, frequency):
     """
     Choose entries from ``dates`` to use for downsampling at ``frequency``.
@@ -35,7 +30,13 @@ def select_sampling_indices(dates, frequency):
     ----------
     dates : pd.DatetimeIndex
         Dates from which to select sample choices.
-    {frequency}
+    frequency : {'year_start', 'quarter_start', 'month_start', 'week_start'}
+        A string indicating desired sampling dates:
+
+        * 'year_start'    -> first trading day of each year
+        * 'quarter_start' -> first trading day of January, April, July, October
+        * 'month_start'   -> first trading day of each month
+        * 'week_start'    -> first trading_day of each week
 
     Returns
     -------

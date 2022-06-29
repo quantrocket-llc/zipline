@@ -79,12 +79,12 @@ from six import itervalues
 
 from zipline.algorithm import TradingAlgorithm
 from zipline.api import (
-    FixedSlippage,
     order,
     set_slippage,
     record,
     sid,
 )
+from zipline.finance.slippage import FixedSlippage
 from zipline.errors import UnsupportedOrderParameters
 from zipline.finance.execution import (
     LimitOrder,

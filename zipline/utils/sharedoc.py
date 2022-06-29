@@ -4,27 +4,7 @@ across different functions.
 """
 import re
 from six import iteritems
-from textwrap import dedent
 from toolz import curry
-
-PIPELINE_DOWNSAMPLING_FREQUENCY_DOC = dedent(
-    """\
-    frequency : {'year_start', 'quarter_start', 'month_start', 'week_start'}
-        A string indicating desired sampling dates:
-
-        * 'year_start'    -> first trading day of each year
-        * 'quarter_start' -> first trading day of January, April, July, October
-        * 'month_start'   -> first trading day of each month
-        * 'week_start'    -> first trading_day of each week
-    """
-)
-
-PIPELINE_ALIAS_NAME_DOC = dedent(
-    """\
-    name : str
-        The name to alias this term as.
-    """,
-)
 
 
 def pad_lines_after_first(prefix, s):
@@ -80,25 +60,6 @@ def format_docstring(owner_name, docstring, formatters):
         )
 
     return docstring.format(**format_params)
-
-
-def templated_docstring(**docs):
-    """
-    Decorator allowing the use of templated docstrings.
-
-    Examples
-    --------
-    >>> @templated_docstring(foo='bar')
-    ... def my_func(self, foo):
-    ...     '''{foo}'''
-    ...
-    >>> my_func.__doc__
-    'bar'
-    """
-    def decorator(f):
-        f.__doc__ = format_docstring(f.__name__, f.__doc__, docs)
-        return f
-    return decorator
 
 
 @curry

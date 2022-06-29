@@ -18,7 +18,8 @@ from zipline.errors import (
     UnsupportedDataType,
 )
 from zipline.lib.labelarray import LabelArray
-from zipline.lib.rank import is_missing, grouped_masked_is_maximal
+from zipline.lib.rank import grouped_masked_is_maximal
+from zipline.utils.numpy_utils import is_missing
 from zipline.pipeline.dtypes import (
     CLASSIFIER_DTYPES,
     FACTOR_DTYPES,

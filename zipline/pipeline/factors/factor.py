@@ -67,7 +67,6 @@ from zipline.utils.numpy_utils import (
     float64_dtype,
     is_missing,
 )
-from zipline.utils.sharedoc import templated_docstring
 
 
 _RANK_METHODS = frozenset(['average', 'min', 'max', 'dense', 'ordinal'])
@@ -375,19 +374,6 @@ float64_only = restrict_to_dtype(
         "{method_name}() is only defined on Factors of dtype {expected_dtype},"
         " but it was called on a Factor of dtype {received_dtype}."
     )
-)
-
-
-CORRELATION_METHOD_NOTE = dedent(
-    """\
-    This method can only be called on expressions which are deemed safe for use
-    as inputs to windowed :class:`~zipline.pipeline.Factor` objects. Examples
-    of such expressions include This includes
-    :class:`~zipline.pipeline.data.BoundColumn`
-    :class:`~zipline.pipeline.factors.Returns` and any factors created from
-    :meth:`~zipline.pipeline.Factor.rank` or
-    :meth:`~zipline.pipeline.Factor.zscore`.
-    """
 )
 
 
@@ -790,7 +776,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     @expect_types(
         target=Term, correlation_length=int, mask=(Filter, NotSpecifiedType),
     )
-    @templated_docstring(CORRELATION_METHOD_NOTE=CORRELATION_METHOD_NOTE)
     def pearsonr(self, target, correlation_length, mask=NotSpecified):
         """
         Construct a new Factor that computes rolling pearson correlation
@@ -818,7 +803,13 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
         Notes
         -----
-        {CORRELATION_METHOD_NOTE}
+        This method can only be called on expressions which are deemed safe for use
+        as inputs to windowed :class:`~zipline.pipeline.Factor` objects. Examples
+        of such expressions include This includes
+        :class:`~zipline.pipeline.data.BoundColumn`
+        :class:`~zipline.pipeline.factors.Returns` and any factors created from
+        :meth:`~zipline.pipeline.Factor.rank` or
+        :meth:`~zipline.pipeline.Factor.zscore`.
 
         Examples
         --------
@@ -856,7 +847,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     @expect_types(
         target=Term, correlation_length=int, mask=(Filter, NotSpecifiedType),
     )
-    @templated_docstring(CORRELATION_METHOD_NOTE=CORRELATION_METHOD_NOTE)
     def spearmanr(self, target, correlation_length, mask=NotSpecified):
         """
         Construct a new Factor that computes rolling spearman rank correlation
@@ -884,7 +874,13 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
         Notes
         -----
-        {CORRELATION_METHOD_NOTE}
+        This method can only be called on expressions which are deemed safe for use
+        as inputs to windowed :class:`~zipline.pipeline.Factor` objects. Examples
+        of such expressions include This includes
+        :class:`~zipline.pipeline.data.BoundColumn`
+        :class:`~zipline.pipeline.factors.Returns` and any factors created from
+        :meth:`~zipline.pipeline.Factor.rank` or
+        :meth:`~zipline.pipeline.Factor.zscore`.
 
         Examples
         --------
@@ -921,7 +917,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     @expect_types(
         target=Term, regression_length=int, mask=(Filter, NotSpecifiedType),
     )
-    @templated_docstring(CORRELATION_METHOD_NOTE=CORRELATION_METHOD_NOTE)
     def linear_regression(self, target, regression_length, mask=NotSpecified):
         """
         Construct a new Factor that performs an ordinary least-squares
@@ -948,7 +943,13 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
         Notes
         -----
-        {CORRELATION_METHOD_NOTE}
+        This method can only be called on expressions which are deemed safe for use
+        as inputs to windowed :class:`~zipline.pipeline.Factor` objects. Examples
+        of such expressions include This includes
+        :class:`~zipline.pipeline.data.BoundColumn`
+        :class:`~zipline.pipeline.factors.Returns` and any factors created from
+        :meth:`~zipline.pipeline.Factor.rank` or
+        :meth:`~zipline.pipeline.Factor.zscore`.
 
         Examples
         --------

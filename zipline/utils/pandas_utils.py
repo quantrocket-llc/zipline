@@ -12,6 +12,9 @@ import pandas as pd
 from distutils.version import StrictVersion
 from trading_calendars.utils.pandas_utils import days_at_time  # noqa: reexport
 
+# Help Sphinx autoapi understand this definition
+days_at_time = days_at_time
+
 pandas_version = StrictVersion(pd.__version__)
 new_pandas = pandas_version >= StrictVersion('0.19')
 skip_pipeline_new_pandas = \
