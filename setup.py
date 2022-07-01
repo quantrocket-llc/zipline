@@ -108,8 +108,8 @@ ext_modules = [
 def get_package_data():
     data = {
         root.replace(os.sep, '.'):
-        # .csv and .zip are for test fixtures
-        ['*.pyi', '*.pyx', '*.pxi', '*.pxd', '*.csv', '*.zip']
+        # .csv, .zip, and .joblib are for test fixtures
+        ['*.pyi', '*.pyx', '*.pxi', '*.pxd', '*.csv', '*.zip', '*.joblib']
         for root, dirnames, filenames in os.walk('zipline')
         if '__pycache__' not in root
     }

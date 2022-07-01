@@ -4,7 +4,7 @@ from parameterized import parameterized
 from six.moves import range
 import numpy as np
 import pandas as pd
-import talib
+import joblib
 from numpy.random import RandomState
 
 from zipline.lib.adjusted_array import AdjustedArray
@@ -21,7 +21,11 @@ from zipline.pipeline.factors import (
     AnnualizedVolatility,
     RSI,
 )
-from zipline.testing import check_allclose, parameter_space
+from zipline.testing import (
+    check_allclose,
+    parameter_space,
+    test_resource_path
+)
 from zipline.testing.fixtures import ZiplineTestCase
 from zipline.testing.predicates import assert_equal
 from .base import BaseUSEquityPipelineTestCase
@@ -35,44 +39,6 @@ class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
             data[:, -1] = np.nan
         return data
 
-    def expected_bbands(self, window_length, k, closes):
-        """Compute the expected data (without adjustments) for the given
-        window, k, and closes array.
-
-        This uses talib.BBANDS to generate the expected data.
-        """
-        lower_cols = []
-        middle_cols = []
-        upper_cols = []
-
-        ndates, nassets = closes.shape
-
-        for n in range(nassets):
-            close_col = closes[:, n]
-            if np.isnan(close_col).all():
-                # ta-lib doesn't deal well with all nans.
-                upper, middle, lower = [np.full(ndates, np.nan)] * 3
-            else:
-                upper, middle, lower = talib.BBANDS(
-                    close_col,
-                    window_length,
-                    k,
-                    k,
-                )
-
-            upper_cols.append(upper)
-            middle_cols.append(middle)
-            lower_cols.append(lower)
-
-        # Stack all of our uppers, middles, lowers into three 2d arrays
-        # whose columns are the sids. After that, slice off only the
-        # rows we care about.
-        where = np.s_[window_length - 1:]
-        uppers = np.column_stack(upper_cols)[where]
-        middles = np.column_stack(middle_cols)[where]
-        lowers = np.column_stack(lower_cols)[where]
-        return uppers, middles, lowers
-
     @parameter_space(
         window_length={5, 10, 20},
         k={1.5, 2, 2.5},
@@ -84,7 +50,15 @@ class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
         mask = ~np.isnan(closes)
         bbands = BollingerBands(window_length=window_length, k=k)
 
-        expected = self.expected_bbands(window_length, k, closes)
+        # load expected bbands from fixtures (originally generated with
+        # talib using self.expected_bbands method, removed July 2022 to
+        # eliminate talib dependency, see Git log to re-create fixtures)
+        filename = test_resource_path(
+            "technical",
+            "bbands",
+            f"talib_BBANDS__window_length-{window_length}__k-{k}__mask_last_sid-{mask_last_sid}.joblib")
+        with open(filename, "rb") as f:
+            expected = joblib.load(f)
 
         self.check_terms(
             terms={
@@ -93,9 +67,9 @@ class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
                 'lower': bbands.lower,
             },
             expected={
-                'upper': expected[0],
-                'middle': expected[1],
-                'lower': expected[2],
+                'upper': expected['upper'],
+                'middle': expected['middle'],
+                'lower': expected['lower'],
             },
             initial_workspace={
                 USEquityPricing.close: AdjustedArray(
@@ -194,18 +168,28 @@ class TestFastStochasticOscillator(ZiplineTestCase):
         # Values from 6 to 8.
         lows = 6.0 + (rng.random_sample(input_size) * 2.0)
 
-        expected_out_k = []
-        for i in range(nassets):
-            fastk, fastd = talib.STOCHF(
-                high=highs[:, i],
-                low=lows[:, i],
-                close=closes[:, i],
-                fastk_period=window_length,
-                fastd_period=1,
-            )
+        # load expected values from fixture. Fixtures were originally
+        # created with talib using this code:
+        #
+        # expected_out_k = []
+        # for i in range(nassets):
+        #     fastk, fastd = talib.STOCHF(
+        #         high=highs[:, i],
+        #         low=lows[:, i],
+        #         close=closes[:, i],
+        #         fastk_period=window_length,
+        #         fastd_period=1,
+        #     )
 
-            expected_out_k.append(fastk[-1])
-        expected_out_k = np.array(expected_out_k)
+        #     expected_out_k.append(fastk[-1])
+        # expected_out_k = np.array(expected_out_k)
+
+        filename = test_resource_path(
+            "technical",
+            "stochastic",
+            f"talib_STOCHF__seed-{seed}.joblib")
+        with open(filename, "rb") as f:
+            expected_out_k = joblib.load(f)
 
         today = pd.Timestamp('2015')
         out = np.empty(shape=(nassets,), dtype=np.float)
