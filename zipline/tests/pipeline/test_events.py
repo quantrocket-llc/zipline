@@ -3,7 +3,6 @@ Tests for setting up an EventsLoader.
 """
 from datetime import time
 from itertools import product
-from unittest import skipIf, skipUnless
 
 import numpy as np
 import pandas as pd
@@ -34,7 +33,6 @@ from zipline.utils.numpy_utils import (
     float64_dtype,
     int64_dtype,
 )
-from zipline.utils.pandas_utils import new_pandas, skip_pipeline_new_pandas
 
 
 class EventDataSet(DataSet):
@@ -51,8 +49,8 @@ class EventDataSet(DataSet):
     previous_int = Column(dtype=int64_dtype, missing_value=-1)
     next_int = Column(dtype=int64_dtype, missing_value=-1)
 
-    previous_string = Column(dtype=categorical_dtype, missing_value=None)
-    next_string = Column(dtype=categorical_dtype, missing_value=None)
+    previous_string = Column(dtype=categorical_dtype, missing_value="")
+    next_string = Column(dtype=categorical_dtype, missing_value="")
 
     previous_string_custom_missing = Column(
         dtype=categorical_dtype,
@@ -309,7 +307,6 @@ class EventsLoaderEmptyTestCase(WithAssetFinder,
                 frame[c.name] = frame[c.name].astype('category')
         return frame
 
-    @skipIf(new_pandas, skip_pipeline_new_pandas)
     def test_load_empty(self):
         """
         For the case where raw data is empty, make sure we have a result for
@@ -365,7 +362,7 @@ class EventsLoaderEmptyTestCase(WithAssetFinder,
             columns=EventDataSet_US.columns,
         )
 
-        assert_equal(results, expected)
+        assert_equal(results.sort_index(axis=1), expected.sort_index(axis=1))
 
 
 class EventsLoaderTestCase(WithAssetFinder,
@@ -418,7 +415,6 @@ class EventsLoaderTestCase(WithAssetFinder,
             default_domain=US_EQUITIES,
         )
 
-    @skipIf(new_pandas, skip_pipeline_new_pandas)
     def test_load_with_trading_calendar(self):
         results = self.engine.run_pipeline(
             Pipeline({c.name: c.latest for c in EventDataSet_US.columns}),
@@ -442,7 +438,6 @@ class EventsLoaderTestCase(WithAssetFinder,
             else:
                 raise AssertionError("Unexpected column %s." % c)
 
-    @skipIf(new_pandas, skip_pipeline_new_pandas)
     def test_load_properly_forward_fills(self):
 
         # Cut the dates in half so we need to forward fill some data which
@@ -486,9 +481,6 @@ class EventsLoaderTestCase(WithAssetFinder,
         self.assert_result_contains_all_sids(results)
 
         events = self.raw_events_no_nulls
-        # Remove timezone info from trading days, since the outputs
-        # from pandas won't be tz_localized.
-        dates = dates.tz_localize(None)
 
         for asset, asset_result in results.iteritems():
             relevant_events = events[events.sid == asset.sid]
@@ -503,6 +495,8 @@ class EventsLoaderTestCase(WithAssetFinder,
             )
 
             for date, computed_value in zip(dates, asset_result):
+                if isinstance(computed_value, pd.Timestamp):
+                    computed_value = computed_value.tz_localize("UTC")
                 if date >= event2_first_eligible:
                     # If we've seen event 2, it should win even if we've seen
                     # event 1, because events are sorted by event_date.
@@ -528,9 +522,7 @@ class EventsLoaderTestCase(WithAssetFinder,
         self.assert_result_contains_all_sids(results)
 
         events = self.raw_events_no_nulls
-        # Remove timezone info from trading days, since the outputs
-        # from pandas won't be tz_localized.
-        dates = dates.tz_localize(None)
+
         for asset, asset_result in results.iteritems():
             relevant_events = events[events.sid == asset.sid]
             self.assertEqual(len(relevant_events), 2)
@@ -540,6 +532,8 @@ class EventsLoaderTestCase(WithAssetFinder,
             t1, t2 = relevant_events['timestamp']
 
             for date, computed_value in zip(dates, asset_result):
+                if isinstance(computed_value, pd.Timestamp):
+                    computed_value = computed_value.tz_localize("UTC")
                 if t1 <= date <= e1:
                     # If we've seen event 2, it should win even if we've seen
                     # event 1, because events are sorted by event_date.

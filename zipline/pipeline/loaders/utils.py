@@ -63,8 +63,8 @@ def next_event_indexer(all_dates,
     sid_ixs = all_sids.searchsorted(event_sids)
     # side='right' here ensures that we include the event date itself
     # if it's in all_dates.
-    dt_ixs = all_dates.searchsorted(event_dates, side='right')
-    ts_ixs = data_query_cutoff.searchsorted(event_timestamps, side='right')
+    dt_ixs = all_dates.searchsorted(event_dates.tolist(), side='right')
+    ts_ixs = data_query_cutoff.searchsorted(event_timestamps.tolist(), side='right')
 
     # Walk backward through the events, writing the index of the event into
     # slots ranging from the event's timestamp to its asof.  This depends for
@@ -121,8 +121,8 @@ def previous_event_indexer(data_query_cutoff_times,
     )
 
     eff_dts = np.maximum(event_dates, event_timestamps)
-    sid_ixs = all_sids.searchsorted(event_sids)
-    dt_ixs = data_query_cutoff_times.searchsorted(eff_dts, side='right')
+    sid_ixs = all_sids.searchsorted(event_sids.tolist())
+    dt_ixs = data_query_cutoff_times.searchsorted(eff_dts.tolist(), side='right')
 
     # Walk backwards through the events, writing the index of the event into
     # slots ranging from max(event_date, event_timestamp) to the start of the

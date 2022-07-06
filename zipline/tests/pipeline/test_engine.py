@@ -5,7 +5,6 @@ from __future__ import division
 from collections import OrderedDict
 from itertools import product
 from operator import add, sub
-from unittest import skipIf
 
 from parameterized import parameterized
 import numpy as np
@@ -91,7 +90,6 @@ from zipline.testing.core import create_simple_domain
 from zipline.testing.predicates import assert_equal
 from zipline.utils.memoize import lazyval
 from zipline.utils.numpy_utils import bool_dtype, datetime64ns_dtype
-from zipline.utils.pandas_utils import new_pandas, skip_pipeline_new_pandas
 
 
 class RollingSumDifference(CustomFactor):
@@ -1298,7 +1296,6 @@ class StringColumnTestCase(zf.WithSeededRandomPipelineEngine,
     ASSET_FINDER_COUNTRY_CODE = 'US'
     SEEDED_RANDOM_PIPELINE_DEFAULT_DOMAIN = US_EQUITIES
 
-    @skipIf(new_pandas, skip_pipeline_new_pandas)
     def test_string_classifiers_produce_categoricals(self):
         """
         Test that string-based classifiers produce pandas categoricals as their
@@ -1524,13 +1521,10 @@ class ChunkedPipelineTestCase(zf.WithSeededRandomPipelineEngine,
                     inputs=[TestingDataSet.float_col],
                     window_length=10,
                 ),
+                'categorical': TestingDataSet.categorical_col.latest
             },
             domain=US_EQUITIES,
         )
-
-        if not new_pandas:
-            # Categoricals only work on old pandas.
-            pipe.add(TestingDataSet.categorical_col.latest, 'categorical')
 
         pipeline_result = self.run_pipeline(
             pipe,
@@ -1563,16 +1557,13 @@ class ChunkedPipelineTestCase(zf.WithSeededRandomPipelineEngine,
             columns={
                 'float': TestingDataSet.float_col.latest,
                 'bool': TestingDataSet.bool_col.latest,
+                'categorical': TestingDataSet.categorical_col.latest
             },
             # Define a screen that's False for all assets a significant portion
             # of the time.
             screen=FalseOnOddMonths(),
             domain=US_EQUITIES,
         )
-
-        if not new_pandas:
-            # Categoricals only work on old pandas.
-            pipe.add(TestingDataSet.categorical_col.latest, 'categorical')
 
         self.run_chunked_pipeline(
             pipeline=pipe,

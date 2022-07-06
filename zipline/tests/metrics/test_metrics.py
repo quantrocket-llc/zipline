@@ -98,7 +98,8 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             cls.asset_finder.equities_sids[0],
         )
         cls.future = cls.asset_finder.retrieve_asset(
-            cls.asset_finder.futures_sids[0],
+            # Grab the June contract, which is the 6th one
+            cls.asset_finder.futures_sids[5],
         )
 
         cls.trading_minutes = pd.Index(
@@ -943,7 +944,6 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             check_names=False,
         )
 
-    @unittest.skip("Needs fix to calendar mismatch.")
     @parameter_space(
         direction=['long', 'short'],
         # checking the portfolio forces a sync; we want to ensure that the
@@ -1340,7 +1340,8 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             cls.asset_finder.equities_sids[0],
         )
         cls.future = cls.asset_finder.retrieve_asset(
-            cls.asset_finder.futures_sids[0],
+            # Grab the June contract, which is the 6th one
+            cls.asset_finder.futures_sids[5],
         )
 
         cls.equity_minutes = pd.Index(
@@ -1887,7 +1888,6 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
                 msg=field,
             )
 
-    @unittest.skip("Needs fix to calendar mismatch.")
     @parameter_space(
         direction=['long', 'short'],
         # checking the portfolio forces a sync; we want to ensure that the
@@ -1991,11 +1991,14 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             # the portfolio on the bar of the order, only the following bars
             check_portfolio(data, context, first_bar)
 
+        sim_params = self.make_simparams(trading_calendar=self.trading_calendars[Future])
+
         perf = self.run_algorithm(
             initialize=initialize,
             handle_data=handle_data,
             trading_calendar=self.trading_calendars[Future],
             data_portal=self.futures_data_portal,
+            sim_params=sim_params
         )
 
         zeros = pd.Series(0.0, index=self.future_closes)
@@ -2164,6 +2167,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'id': wildcard,
             'limit': None,
             'limit_reached': False,
+            'open': False,
             'reason': None,
             'sid': self.future,
             'status': 1,

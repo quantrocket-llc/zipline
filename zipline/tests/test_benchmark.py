@@ -104,10 +104,10 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
             'sid': np.array([4], dtype=np.int64),
             'payment_sid': np.array([5], dtype=np.int64),
             'ratio': np.array([2], dtype=np.float64),
-            'declared_date': np.array([declared_date], dtype='datetime64[ns]'),
-            'ex_date': np.array([ex_date], dtype='datetime64[ns]'),
-            'record_date': np.array([record_date], dtype='datetime64[ns]'),
-            'pay_date': np.array([pay_date], dtype='datetime64[ns]'),
+            'declared_date': np.array([declared_date.tz_localize(None)], dtype='datetime64[ns]'),
+            'ex_date': np.array([ex_date.tz_localize(None)], dtype='datetime64[ns]'),
+            'record_date': np.array([record_date.tz_localize(None)], dtype='datetime64[ns]'),
+            'pay_date': np.array([pay_date.tz_localize(None)], dtype='datetime64[ns]'),
         })
 
     def test_normal(self):
@@ -210,7 +210,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
             days_to_use = self.sim_params.sessions
 
             # first value should be 0.0, coming from daily data
-            self.assertAlmostEquals(0.0, source.get_value(days_to_use[0]))
+            self.assertAlmostEqual(0.0, source.get_value(days_to_use[0]))
 
             manually_calculated = data_portal.get_history_window(
                 [2], days_to_use[-1],

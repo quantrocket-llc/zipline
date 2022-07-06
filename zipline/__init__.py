@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from distutils.version import StrictVersion
 import os
 import numpy as np
 
@@ -24,8 +23,6 @@ from . import data
 from . import finance
 from . import gens
 from . import utils
-from .utils.numpy_utils import numpy_version
-from .utils.pandas_utils import new_pandas
 from .utils.run_algo import run_algorithm
 from ._version import get_versions
 
@@ -90,39 +87,22 @@ __all__ = [
 ]
 
 
-def setup(self,
-          np=np,
-          numpy_version=numpy_version,
-          StrictVersion=StrictVersion,
-          new_pandas=new_pandas):
+def setup(self, np=np):
     """Lives in zipline.__init__ for doctests."""
 
-    if numpy_version >= StrictVersion('1.14'):
-        self.old_opts = np.get_printoptions()
-        np.set_printoptions(legacy='1.13')
-    else:
-        self.old_opts = None
+    self.old_opts = np.get_printoptions()
+    np.set_printoptions(legacy='1.13')
 
-    if new_pandas:
-        self.old_err = np.geterr()
-        # old pandas has numpy compat that sets this
-        np.seterr(all='ignore')
-    else:
-        self.old_err = None
+    self.old_err = np.geterr()
+    np.seterr(all='ignore')
 
 
 def teardown(self, np=np):
     """Lives in zipline.__init__ for doctests."""
 
-    if self.old_err is not None:
-        np.seterr(**self.old_err)
-
-    if self.old_opts is not None:
-        np.set_printoptions(**self.old_opts)
+    np.seterr(**self.old_err)
+    np.set_printoptions(**self.old_opts)
 
 
 del os
 del np
-del numpy_version
-del StrictVersion
-del new_pandas

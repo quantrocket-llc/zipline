@@ -192,8 +192,8 @@ class TestFastStochasticOscillator(ZiplineTestCase):
             expected_out_k = joblib.load(f)
 
         today = pd.Timestamp('2015')
-        out = np.empty(shape=(nassets,), dtype=np.float)
-        assets = np.arange(nassets, dtype=np.float)
+        out = np.empty(shape=(nassets,), dtype=float)
+        assets = np.arange(nassets, dtype=float)
 
         fso = FastStochasticOscillator()
         fso.compute(

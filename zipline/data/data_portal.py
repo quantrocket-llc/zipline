@@ -989,8 +989,10 @@ class DataPortal(object):
         else:
             return_array = np.zeros((bar_count, len(assets)), dtype=dtype)
 
-        if field != "volume":
-            # volumes default to 0, so we don't need to put NaNs in the array
+        if field not in ("volume", "sid"):
+            # volumes default to 0, so we don't need to put NaNs in the array;
+            # sid (which is a valid field for continuous future bar readers)
+            # won't be empty so it doesn't matter what the prefill is
             return_array[:] = np.NAN
 
         if bar_count != 0:

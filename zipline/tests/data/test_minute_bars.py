@@ -751,7 +751,7 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
             'close': array([40.0, 41.0]),
             'volume': array([50.0, 51.0])
         }
-        dts = array([minute_0, minute_1], dtype='datetime64[s]')
+        dts = array([minute_0.tz_localize(None), minute_1.tz_localize(None)], dtype='datetime64[s]')
         self.writer.write_cols(sid, dts, cols)
 
         open_price = self.reader.get_value(sid, minute_0, 'open')
@@ -795,7 +795,7 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
         self.assertEqual(51.0, volume_price)
 
     def test_write_cols_mismatch_length(self):
-        dts = date_range(self.market_opens[self.test_calendar_start],
+        dts = date_range(self.market_opens[self.test_calendar_start].tz_localize(None),
                          periods=2, freq='min').asi8.astype('datetime64[s]')
         sid = 1
         cols = {
@@ -1008,7 +1008,7 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
         dts = array(self.trading_calendar.minutes_for_sessions_in_range(
             self.trading_calendar.minute_to_session_label(start_day),
             self.trading_calendar.minute_to_session_label(end_day)
-        ))
+        ).tz_localize(None))
 
         self.writer.write_cols(sid, dts, cols)
 
@@ -1056,7 +1056,7 @@ class BcolzMinuteBarTestCase(WithTradingCalendars,
             self.trading_calendar.minutes_for_sessions_in_range(
                 self.trading_calendar.minute_to_session_label(start_day),
                 self.trading_calendar.minute_to_session_label(end_day)
-            )
+            ).tz_localize(None)
         )
 
         self.writer.write_cols(sid, dts, cols)

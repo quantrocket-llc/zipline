@@ -1,39 +1,27 @@
 """
 Utilities for working with pandas objects.
 """
-from contextlib import contextmanager
 from copy import deepcopy
 from itertools import product
 import operator as op
-import warnings
 
 import numpy as np
 import pandas as pd
-from distutils.version import StrictVersion
 from trading_calendars.utils.pandas_utils import days_at_time  # noqa: reexport
 
 # Help Sphinx autoapi understand this definition
 days_at_time = days_at_time
 
-pandas_version = StrictVersion(pd.__version__)
-new_pandas = pandas_version >= StrictVersion('0.19')
-skip_pipeline_new_pandas = \
-    'Pipeline categoricals are not yet compatible with pandas >=0.19'
+def normalize_date(dt):
+    """
+    Normalize datetime.datetime value to midnight. Returns datetime.date as
+    a datetime.datetime at midnight
 
-if pandas_version >= StrictVersion('0.20'):
-    def normalize_date(dt):
-        """
-        Normalize datetime.datetime value to midnight. Returns datetime.date as
-        a datetime.datetime at midnight
-
-        Returns
-        -------
-        normalized : datetime.datetime or Timestamp
-        """
-        return dt.normalize()
-else:
-    from pandas.tseries.tools import normalize_date  # noqa
-
+    Returns
+    -------
+    normalized : datetime.datetime or Timestamp
+    """
+    return dt.normalize()
 
 def july_5th_holiday_observance(datetime_index):
     return datetime_index[datetime_index.year != 2013]
@@ -209,18 +197,6 @@ def timedelta_to_integral_minutes(delta):
     return timedelta_to_integral_seconds(delta) // 60
 
 
-@contextmanager
-def ignore_pandas_nan_categorical_warning():
-    with warnings.catch_warnings():
-        # Pandas >= 0.18 doesn't like null-ish values in categories, but
-        # avoiding that requires a broader change to how missing values are
-        # handled in pipeline, so for now just silence the warning.
-        warnings.filterwarnings(
-            'ignore',
-            category=FutureWarning,
-        )
-        yield
-
 def categorical_df_concat(df_list, inplace=False):
     """
     Prepare list of pandas DataFrames to be used as input to pd.concat.
@@ -245,7 +221,13 @@ def categorical_df_concat(df_list, inplace=False):
 
     # Assert each dataframe has the same columns/dtypes
     df = df_list[0]
-    if not all([(df.dtypes.equals(df_i.dtypes)) for df_i in df_list[1:]]):
+    if not all([
+        (df.select_dtypes(exclude="category").dtypes.equals(df_i.select_dtypes(exclude="category").dtypes)
+        # categorical columns with different categories aren't considered equal,
+        # so they have to be compared with the below line, rather than the above
+        and df.columns[df.dtypes == 'category'].equals(df_i.columns[df_i.dtypes == 'category'])
+        )
+        for df_i in df_list[1:]]):
         raise ValueError("Input DataFrames must have the same columns/dtypes.")
 
     categorical_columns = df.columns[df.dtypes == 'category']
@@ -255,9 +237,8 @@ def categorical_df_concat(df_list, inplace=False):
             _union_all(frame[col].cat.categories for frame in df_list)
         )
 
-        with ignore_pandas_nan_categorical_warning():
-            for df in df_list:
-                df[col].cat.set_categories(new_categories, inplace=True)
+        for df in df_list:
+            df[col] = df[col].cat.set_categories(new_categories)
 
     return pd.concat(df_list)
 

@@ -939,7 +939,7 @@ class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
         expected_position_weights = [
             # No positions held on the first day.
-            pd.Series({}),
+            pd.Series({}, dtype="float64"),
             # Each equity's position value is its price times the number of
             # shares held. In this example, we hold a long position in 2 shares
             # of equity_1 so its weight is (95.0 * 2) = 190.0 divided by the
@@ -3825,16 +3825,16 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
             self.trading_calendar.session_close(self.test_days[1])
 
         for asset, txn in zip(assets, initial_fills):
-            self.assertDictContainsSubset(
-                {
-                    'amount': order_size,
-                    'commission': None,
-                    'dt': last_minute_of_session,
-                    'price': initial_fill_prices[asset],
-                    'sid': asset,
-                },
-                txn,
-            )
+            expected = {
+                'amount': order_size,
+                'commission': None,
+                'dt': last_minute_of_session,
+                'price': initial_fill_prices[asset],
+                'sid': asset,
+            }
+            # replacement syntax for deprecated assertDictContainsSubset;
+            # hat tip: https://stackoverflow.com/a/59777678
+            self.assertEqual(txn, txn | expected)
             # This will be a UUID.
             self.assertIsInstance(txn['order_id'], str)
 
@@ -3936,8 +3936,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
         last_close_for_asset = \
             algo.trading_calendar.session_close(first_asset_end_date)
 
-        self.assertDictContainsSubset(
-            {
+        expected = {
                 'amount': 10,
                 'commission': 0.0,
                 'created': last_close_for_asset,
@@ -3945,25 +3944,30 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 'sid': assets[0],
                 'status': ORDER_STATUS.OPEN,
                 'filled': 0,
-            },
+            }
+        # replacement syntax for deprecated assertDictContainsSubset;
+        # hat tip: https://stackoverflow.com/a/59777678
+        self.assertEqual(
             original_open_orders[0],
+            original_open_orders[0] | expected
         )
 
         orders_after_auto_close = orders_for_date(first_asset_auto_close_date)
         assert len(orders_after_auto_close) == 1
-        self.assertDictContainsSubset(
-            {
-                'amount': 10,
-                'commission': 0.0,
-                'created': last_close_for_asset,
-                'dt': algo.trading_calendar.session_close(
-                    first_asset_auto_close_date,
-                ),
-                'sid': assets[0],
-                'status': ORDER_STATUS.CANCELLED,
-                'filled': 0,
-            },
+        expected = {
+            'amount': 10,
+            'commission': 0.0,
+            'created': last_close_for_asset,
+            'dt': algo.trading_calendar.session_close(
+                first_asset_auto_close_date,
+            ),
+            'sid': assets[0],
+            'status': ORDER_STATUS.CANCELLED,
+            'filled': 0,
+        }
+        self.assertEqual(
             orders_after_auto_close[0],
+            orders_after_auto_close[0] | expected
         )
 
 
@@ -4152,16 +4156,16 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
         initial_fills = transactions.iloc[0]
         self.assertEqual(len(initial_fills), len(assets))
         for asset, txn in zip(assets, initial_fills):
-            self.assertDictContainsSubset(
-                {
-                    'amount': order_size,
-                    'commission': None,
-                    'dt': backtest_minutes[1],
-                    'price': initial_fill_prices[asset],
-                    'sid': asset,
-                },
-                txn,
-            )
+            expected = {
+                'amount': order_size,
+                'commission': None,
+                'dt': backtest_minutes[1],
+                'price': initial_fill_prices[asset],
+                'sid': asset,
+            }
+            # replacement syntax for deprecated assertDictContainsSubset;
+            # hat tip: https://stackoverflow.com/a/59777678
+            self.assertEqual(txn, txn | expected)
             # This will be a UUID.
             self.assertIsInstance(txn['order_id'], str)
 

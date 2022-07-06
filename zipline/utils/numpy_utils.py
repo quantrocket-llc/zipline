@@ -44,8 +44,6 @@ nan = nan
 vectorize = vectorize
 where = where
 
-numpy_version = StrictVersion(np.__version__)
-
 uint8_dtype = dtype('uint8')
 bool_dtype = dtype('bool')
 

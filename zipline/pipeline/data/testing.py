@@ -27,10 +27,10 @@ class TestingDataSet(DataSet):
 
     int_col = Column(dtype=int64_dtype, missing_value=0)
 
-    categorical_col = Column(dtype=categorical_dtype)
+    categorical_col = Column(dtype=categorical_dtype, missing_value="")
     categorical_default_explicit_None = Column(
         dtype=categorical_dtype,
-        missing_value=None,
+        missing_value="",
     )
     categorical_default_NULL_string = Column(
         dtype=categorical_dtype,

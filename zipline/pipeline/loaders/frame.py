@@ -13,10 +13,15 @@ from pandas import (
     DatetimeIndex,
     Index,
     Int64Index,
+    to_datetime
 )
 from zipline.lib.adjusted_array import AdjustedArray
 from zipline.lib.adjustment import make_adjustment_from_labels
-from zipline.utils.numpy_utils import as_column
+from zipline.utils.numpy_utils import (
+    as_column,
+    datetime64ns_dtype,
+    datetime64D_dtype
+)
 from .base import PipelineLoader
 
 ADJUSTMENT_COLUMNS = Index([
@@ -61,7 +66,14 @@ class DataFrameLoader(implements(PipelineLoader)):
 
     def __init__(self, column, baseline, adjustments=None):
         self.column = column
-        self.baseline = baseline.values.astype(self.column.dtype)
+        if column.dtype in (datetime64ns_dtype, datetime64D_dtype):
+            # For datetime columns, a roundabout syntax is required to
+            # avoid various errors
+            self.baseline = baseline.apply(to_datetime, utc=True)\
+                .apply(lambda x: x.dt.tz_localize(None))\
+                    .astype(self.column.dtype).values
+        else:
+            self.baseline = baseline.values.astype(self.column.dtype)
         self.dates = baseline.index
         self.assets = baseline.columns
 

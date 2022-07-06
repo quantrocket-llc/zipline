@@ -125,7 +125,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
             shape=(num_days, num_assets), fill_value=True, dtype=bool_dtype,
         )
 
-    @parameter_space(returns_length=[2, 3], correlation_length=[3, 4])
+    @parameter_space(returns_length=[2, 3], correlation_length=[3, 5])
     def test_correlation_factors(self, returns_length, correlation_length):
         """
         Tests for the built-in factors `RollingPearsonOfReturns` and
@@ -449,7 +449,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
             " .*Asset for argument 'target',"
             " but got str instead."
         )
-        self.assertRegexpMatches(result, expected)
+        self.assertRegex(result, expected)
 
         with self.assertRaises(ValueError) as e:
             SimpleBeta(
@@ -653,7 +653,7 @@ class StatisticalMethodsTestCase(zf.WithSeededRandomPipelineEngine,
                 correlation_length=correlation_length,
             )
 
-    @parameter_space(returns_length=[2, 3], regression_length=[3, 4])
+    @parameter_space(returns_length=[2, 3], regression_length=[3, 5])
     def test_factor_regression_method(self, returns_length, regression_length):
         """
         Ensure that `Factor.linear_regression` is consistent with the built-in
