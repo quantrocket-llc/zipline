@@ -75,7 +75,7 @@ def cluster(f, name, **attrs):
 
 def roots(g):
     "Get nodes from graph G with indegree 0"
-    return set(n for n, d in iteritems(g.in_degree()) if d == 0)
+    return set(n for n, d in dict(g.in_degree).items() if d == 0)
 
 
 def filter_nodes(include_asset_exists, nodes):

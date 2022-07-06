@@ -4,7 +4,7 @@ Dependency-Graph representation of Pipeline API terms.
 import uuid
 
 import networkx as nx
-from six import iteritems, itervalues
+from six import itervalues
 from zipline.utils.memoize import lazyval
 from zipline.pipeline.visualize import display_graph
 
@@ -173,7 +173,7 @@ class TermGraph(object):
         nodes get one extra reference to ensure that they're still in the graph
         at the end of execution.
         """
-        refcounts = self.graph.out_degree()
+        refcounts = dict(self.graph.out_degree)
         for t in self.outputs.values():
             refcounts[t] += 1
 
@@ -453,14 +453,14 @@ class ExecutionPlan(TermGraph):
         """
         return {
             term: attrs['extra_rows']
-            for term, attrs in iteritems(self.graph.node)
+            for term, attrs in self.graph.nodes(data=True)
         }
 
     def _ensure_extra_rows(self, term, N):
         """
         Ensure that we're going to compute at least N extra rows of `term`.
         """
-        attrs = self.graph.node[term]
+        attrs = self.graph.nodes[term]
         attrs['extra_rows'] = max(N, attrs.get('extra_rows', 0))
 
     def mask_and_dates_for_term(self,
@@ -503,7 +503,7 @@ class ExecutionPlan(TermGraph):
     def _assert_all_loadable_terms_specialized_to(self, domain):
         """Make sure that we've specialized all loadable terms in the graph.
         """
-        for term in self.graph.node:
+        for term in self.graph:
             if isinstance(term, LoadableTerm):
                 assert term.domain is domain
 
