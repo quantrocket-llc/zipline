@@ -52,8 +52,10 @@ class Fundamentals(DataSetFamily):
       AR=As Reported, MR=Most Recent Reported, Q=Quarterly, Y=Annual, and
       T=Trailing Twelve Month.
 
-    - `period_offset` : must be set to 0. In the future this dimension will
-      allow requesting data from earlier periods.
+    - `period_offset` : which fiscal period to return data for. If period_offset
+        is 0 (the default), returns the most recent point-in-time fundamentals.
+        If period_offset is -1, returns fundamentals for the prior fiscal period;
+        if -2, two fiscal periods ago, etc. Value should be a negative integer or 0.
 
     Attributes
     ----------
@@ -643,7 +645,7 @@ class Fundamentals(DataSetFamily):
     """
     extra_dims = [
         ('dimension', {'ARQ', 'ART', 'ARY', 'MRQ', 'MRT', 'MRY'}),
-        ('period_offset', {0}),
+        ('period_offset', set(range(-127,1))),
     ]
 
     domain = US_EQUITIES

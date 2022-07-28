@@ -40,18 +40,24 @@ class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
 
         out = {}
 
-        columns_by_dimension = defaultdict(list)
+        # group columns by dimension, period_offset, and dtype, to make
+        # different calls to get_sharadar_fundamentals_reindexed_like
+        # for each column group
+        column_groups = defaultdict(list)
         for column in columns:
             dimension = column.dataset.extra_coords["dimension"]
-            columns_by_dimension[dimension].append(column)
+            period_offset = column.dataset.extra_coords["period_offset"]
+            dtype = column.dtype
+            column_groups[(dimension, period_offset, dtype)].append(column)
 
-        for dimension, columns in columns_by_dimension.items():
+        for (dimension, period_offset, _), columns in column_groups.items():
 
             fields = list({c.name for c in columns})
 
             try:
                 fundamentals = get_sharadar_fundamentals_reindexed_like(
-                    reindex_like, fields=fields, dimension=dimension)
+                    reindex_like, fields=fields, dimension=dimension,
+                    period_offset=period_offset)
             except NoFundamentalData:
                 fundamentals = None
 
