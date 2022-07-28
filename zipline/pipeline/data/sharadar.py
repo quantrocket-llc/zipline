@@ -644,21 +644,21 @@ class Fundamentals(DataSetFamily):
     --------
     Select stocks with low enterprise multiples using quarterly fundamentals:
 
-    >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(
+    >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(                   # doctest: +SKIP
         dimension='ARQ', period_offset=0).EVEBITDA.latest.percentile_between(0, 20)    # doctest: +SKIP
 
     Create a boolean filter indicating whether assets increased in the current
     year relative to the prior year:
 
-    >>> current_year_fundamentals = sharadar.Fundamentals.slice(
-            dimension='ARY',
-            period_offset=0)
-    >>> previous_year_fundamentals = sharadar.Fundamentals.slice(
-            dimension='ARY',
-            period_offset=-1)
-    >>> total_assets = current_year_fundamentals.ASSETS.latest
-    >>> previous_total_assets = previous_year_fundamentals.ASSETS.latest
-    >>> assets_increased = total_assets > previous_total_assets
+    >>> current_year_fundamentals = sharadar.Fundamentals.slice(                       # doctest: +SKIP
+            dimension='ARY',                                                           # doctest: +SKIP
+            period_offset=0)                                                           # doctest: +SKIP
+    >>> previous_year_fundamentals = sharadar.Fundamentals.slice(                      # doctest: +SKIP
+            dimension='ARY',                                                           # doctest: +SKIP
+            period_offset=-1)                                                          # doctest: +SKIP
+    >>> total_assets = current_year_fundamentals.ASSETS.latest                         # doctest: +SKIP
+    >>> previous_total_assets = previous_year_fundamentals.ASSETS.latest               # doctest: +SKIP
+    >>> assets_increased = total_assets > previous_total_assets                        # doctest: +SKIP
     """
     extra_dims = [
         ('dimension', {'ARQ', 'ART', 'ARY', 'MRQ', 'MRT', 'MRY'}),
