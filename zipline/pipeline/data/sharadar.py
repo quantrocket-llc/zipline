@@ -53,9 +53,12 @@ class Fundamentals(DataSetFamily):
       T=Trailing Twelve Month.
 
     - `period_offset` : which fiscal period to return data for. If period_offset
-        is 0 (the default), returns the most recent point-in-time fundamentals.
-        If period_offset is -1, returns fundamentals for the prior fiscal period;
-        if -2, two fiscal periods ago, etc. Value should be a negative integer or 0.
+      is 0, returns the most recent point-in-time fundamentals. If period_offset
+      is -1, returns fundamentals for the prior fiscal period; if -2, two fiscal
+      periods ago, etc. For quarterly and trailing-twelve-month dimensions,
+      previous period means previous quarter, while for annual dimensions,
+      previous period means previous year. Value should be a negative integer or
+      0.
 
     Attributes
     ----------
@@ -641,7 +644,21 @@ class Fundamentals(DataSetFamily):
     --------
     Select stocks with low enterprise multiples using quarterly fundamentals:
 
-    >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(dimension='ARQ', period_offset=0).EVEBITDA.latest.percentile_between(0, 20)    # doctest: +SKIP
+    >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(
+        dimension='ARQ', period_offset=0).EVEBITDA.latest.percentile_between(0, 20)    # doctest: +SKIP
+
+    Create a boolean filter indicating whether assets increased in the current
+    year relative to the prior year:
+
+    >>> current_year_fundamentals = sharadar.Fundamentals.slice(
+            dimension='ARY',
+            period_offset=0)
+    >>> previous_year_fundamentals = sharadar.Fundamentals.slice(
+            dimension='ARY',
+            period_offset=-1)
+    >>> total_assets = current_year_fundamentals.ASSETS.latest
+    >>> previous_total_assets = previous_year_fundamentals.ASSETS.latest
+    >>> assets_increased = total_assets > previous_total_assets
     """
     extra_dims = [
         ('dimension', {'ARQ', 'ART', 'ARY', 'MRQ', 'MRT', 'MRY'}),
