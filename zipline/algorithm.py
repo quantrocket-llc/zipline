@@ -31,7 +31,6 @@ from six import (
     itervalues,
     string_types,
 )
-from trading_calendars.utils.pandas_utils import days_at_time
 from trading_calendars import get_calendar
 
 from zipline._protocol import handle_non_market_minutes
@@ -99,7 +98,6 @@ from zipline.utils.input_validation import (
     expect_dtypes,
     expect_types,
     optional,
-    optionally,
 )
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.utils.pandas_utils import normalize_date
@@ -505,10 +503,11 @@ class TradingAlgorithm(object):
         trading_o_and_c = self.trading_calendar.schedule.loc[
             self.sim_params.sessions]
         market_closes = trading_o_and_c['market_close']
+        market_opens = trading_o_and_c['market_open']
+
         minutely_emission = False
 
         if self.sim_params.data_frequency == 'minute':
-            market_opens = trading_o_and_c['market_open']
             minutely_emission = self.sim_params.emission_rate == "minute"
 
             # The calendar's execution times are the minutes over which we
@@ -534,12 +533,7 @@ class TradingAlgorithm(object):
             break_starts = break_ends = pd.Series(
                 pd.NaT, index=execution_closes.index, dtype='datetime64[ns]')
 
-        # FIXME generalize these values
-        before_trading_start_minutes = days_at_time(
-            self.sim_params.sessions,
-            time(8, 45),
-            "US/Eastern"
-        )
+        before_trading_start_minutes = market_opens - pd.Timedelta(minutes=46)
 
         return MinuteSimulationClock(
             self.sim_params.sessions,
@@ -2209,7 +2203,13 @@ class TradingAlgorithm(object):
         """
         Internal implementation of `pipeline_output`.
         """
-        today = normalize_date(self.get_datetime())
+        # normalize algo datetime to session label; this requires converting
+        # to calendar tz, normalizing to midnight, then localizing back to UTC.
+        # Otherwise, the normalized date could be wrong with a country like Japan
+        # because the UTC time falls before midnight on the previous date.
+        today = self.get_datetime().tz_convert(
+            self.trading_calendar.tz).normalize().tz_localize(
+                None).tz_localize("UTC")
         try:
             data = self._pipeline_cache.get(name, today)
         except KeyError:
