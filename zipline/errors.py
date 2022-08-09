@@ -751,3 +751,6 @@ class IncompatibleTerms(ZiplineError):
 
 class CannotStoreAssetInInitialize(ZiplineError):
     msg = "{msg}"
+
+class UnknownParameter(ZiplineError):
+    msg = "cannot set param {param} because {reason}"

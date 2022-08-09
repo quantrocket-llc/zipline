@@ -16,7 +16,8 @@ from collections import namedtuple
 from collections.abc import Iterable
 from copy import copy
 import warnings
-from datetime import tzinfo, time
+from datetime import tzinfo
+import inspect
 import logging
 import pytz
 import pandas as pd
@@ -55,7 +56,8 @@ from zipline.errors import (
     UnsupportedDatetimeFormat,
     UnsupportedOrderParameters,
     ZeroCapitalError,
-    CannotStoreAssetInInitialize
+    CannotStoreAssetInInitialize,
+    UnknownParameter,
 )
 from zipline.finance.blotter import SimulationBlotter
 from zipline.finance.controls import (
@@ -161,6 +163,10 @@ class TradingAlgorithm(object):
     algo_filename : str, optional
         The filename for the algoscript. This will be used in exception
         tracebacks. default: '<string>'.
+    params : dict of PARAM:VALUE, optional
+        one or more strategy parameters (defined as module-level attributes
+        in the algo file) to set on the fly before backtesting (pass as
+        {param:value}). Only supported when passing `script`.
     data_frequency : {'daily', 'minute'}, optional
         The duration of the bars.
     equities_metadata : dict or DataFrame or file-like object, optional
@@ -212,6 +218,7 @@ class TradingAlgorithm(object):
                  namespace=None,
                  script=None,
                  algo_filename=None,
+                 params=None,
                  initialize=None,
                  handle_data=None,
                  before_trading_start=None,
@@ -350,6 +357,35 @@ class TradingAlgorithm(object):
                 algo_filename = '<string>'
             code = compile(self.algoscript, algo_filename, 'exec')
             exec_(code, self.namespace)
+
+            if params:
+                for param, value in params.items():
+                    # params in imported modules can be set by passing
+                    # 'module_name.PARAM_NAME'
+                    if "." in param:
+                        module_name, param = param.split(".", maxsplit=1)
+                        if module_name not in self.namespace:
+                            raise UnknownParameter(
+                                param=f"{module_name}.{param}",
+                                reason=f"{strategy}.py does not import a module named {module_name}"
+                                )
+                        module = self.namespace[module_name]
+                        if not inspect.ismodule(module):
+                            raise UnknownParameter(
+                                param=f"{module_name}.{param}",
+                                reason=f"attribute {module_name} in {strategy}.py is not a module"
+                                )
+                        if not hasattr(module, param):
+                            raise UnknownParameter(
+                                param=f"{module_name}.{param}",
+                                reason=f"imported module {module_name} has no parameter named {param}")
+                        setattr(module, param, value)
+                    else:
+                        if param not in self.namespace:
+                            raise UnknownParameter(
+                                param=param,
+                                reason=f"{strategy}.py has no module-level parameter named {param}")
+                        self.namespace[param] = value
 
             self._initialize = self.namespace.get('initialize', noop)
             self._handle_data = self.namespace.get('handle_data', noop)
