@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import warnings
 import datetime
 from functools import partial
 import operator as op
@@ -419,7 +420,14 @@ class ReturnsStatistic(object):
                    dt,
                    session_ix,
                    data_portal):
-        res = self._function(ledger.daily_returns_array[:session_ix + 1])
+        with warnings.catch_warnings():
+            # numpy via ep.sharpe_ratio and ep.sortino_ratio warns
+            # when daily returns are all 0
+            warnings.filterwarnings(
+                action='ignore',
+                category=RuntimeWarning,
+                message='invalid value encountered in true_divide')
+            res = self._function(ledger.daily_returns_array[:session_ix + 1])
         if not np.isfinite(res):
             res = None
         packet['cumulative_risk_metrics'][self._field_name] = res
