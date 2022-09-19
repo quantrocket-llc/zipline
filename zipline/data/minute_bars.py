@@ -958,7 +958,8 @@ class BcolzMinuteBarReader(MinuteBarReader):
 
     @lazyval
     def last_available_dt(self):
-        _, close = self.calendar.open_and_close_for_session(self._end_session)
+        _, close = self.calendar.open_and_close_for_session(
+            min([self._end_session, self.calendar.last_session]))
         return close
 
     @property
