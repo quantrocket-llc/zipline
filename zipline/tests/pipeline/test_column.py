@@ -49,19 +49,22 @@ class LatestTestCase(WithSeededRandomPipelineEngine,
 
         if column.dtype.kind in ('O', 'S', 'U'):
             # For string columns, we expect a categorical in the output.
-            return LabelArray(
+            expected = LabelArray(
                 values,
                 missing_value=column.missing_value,
             ).as_categorical_frame(
                 index=index,
                 columns=columns,
             )
-
-        return DataFrame(
-            loader.values(column.dtype, self.trading_days, self.sids)[slice_],
-            index=self.trading_days[slice_],
-            columns=self.assets,
-        )
+        else:
+            expected = DataFrame(
+                loader.values(column.dtype, self.trading_days, self.sids)[slice_],
+                index=self.trading_days[slice_],
+                columns=self.assets,
+            )
+        expected.index.set_names("date", inplace=True)
+        expected.columns.set_names("asset", inplace=True)
+        return expected
 
     def test_latest(self):
         columns = TDS.columns

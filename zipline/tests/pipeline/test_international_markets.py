@@ -263,7 +263,8 @@ class InternationalEquityTestCase(WithInternationalPricingPipelineEngine,
             result_data = result[col].unstack()
 
             # Check indices.
-            assert_equal(pd.Index(expected_assets), result_data.columns)
+            assert_equal(pd.Index(expected_assets, name="asset"), result_data.columns)
+            expected_dates.set_names("date", inplace=True)
             assert_equal(expected_dates, result_data.index)
 
             # Check values.

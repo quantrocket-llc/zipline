@@ -777,7 +777,9 @@ class SimplePipelineEngine(PipelineEngine):
                     name: array([], dtype=arr.dtype)
                     for name, arr in iteritems(data)
                 },
-                index=MultiIndex.from_arrays([empty_dates, empty_assets]),
+                index=MultiIndex.from_arrays(
+                    [empty_dates, empty_assets],
+                    names=["date", "asset"]),
             )
 
         final_columns = {}
@@ -934,7 +936,6 @@ def _pipeline_output_index(dates, assets, mask):
     return MultiIndex(
         [dates, assets],
         [date_labels, asset_labels],
-        # TODO: We should probably add names for these.
-        names=[None, None],
+        names=["date", "asset"],
         verify_integrity=False,
     )

@@ -358,7 +358,7 @@ class EventsLoaderEmptyTestCase(WithAssetFinder,
         dates = self.trading_days
 
         expected = self.frame_containing_all_missing_values(
-            index=pd.MultiIndex.from_product([dates, assets]),
+            index=pd.MultiIndex.from_product([dates, assets], names=["date", "asset"]),
             columns=EventDataSet_US.columns,
         )
 

@@ -671,6 +671,8 @@ class DownsampledPipelineTestCase(WithSeededRandomPipelineEngine,
         for frequency in expected_results:
             result = results[frequency].unstack()
             expected = expected_results[frequency]
+            expected.index.set_names("date", inplace=True)
+            expected.columns.set_names("asset", inplace=True)
             assert_frame_equal(result, expected)
 
     def test_downsample_windowed_factor(self):

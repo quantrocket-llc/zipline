@@ -214,6 +214,8 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
                 index=dates[start_date_index:end_date_index + 1],
                 columns=assets,
             )
+            expected_pearson_results.index.set_names("date", inplace=True)
+            expected_pearson_results.columns.set_names("asset", inplace=True)
             assert_frame_equal(pearson_results, expected_pearson_results)
 
             expected_spearman_results = DataFrame(
@@ -221,6 +223,8 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
                 index=dates[start_date_index:end_date_index + 1],
                 columns=assets,
             )
+            expected_spearman_results.index.set_names("date", inplace=True)
+            expected_spearman_results.columns.set_names("asset", inplace=True)
             assert_frame_equal(spearman_results, expected_spearman_results)
 
     @parameter_space(returns_length=[2, 3], regression_length=[3, 4])
@@ -317,6 +321,8 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
                     index=dates[start_date_index:end_date_index + 1],
                     columns=assets,
                 )
+                expected_output_result.index.set_names("date", inplace=True)
+                expected_output_result.columns.set_names("asset", inplace=True)
                 assert_frame_equal(output_result, expected_output_result)
 
     def test_simple_beta_matches_regression(self):
@@ -820,6 +826,8 @@ class StatisticalMethodsTestCase(zf.WithSeededRandomPipelineEngine,
             index=dates[start_date_index:end_date_index + 1],
             columns=assets,
         )
+        expected_pearson_results.index.set_names("date", inplace=True)
+        expected_pearson_results.columns.set_names("asset", inplace=True)
         assert_frame_equal(pearson_results, expected_pearson_results)
 
         expected_spearman_results = DataFrame(
@@ -827,6 +835,8 @@ class StatisticalMethodsTestCase(zf.WithSeededRandomPipelineEngine,
             index=dates[start_date_index:end_date_index + 1],
             columns=assets,
         )
+        expected_spearman_results.index.set_names("date", inplace=True)
+        expected_spearman_results.columns.set_names("asset", inplace=True)
         assert_frame_equal(spearman_results, expected_spearman_results)
 
     @parameter_space(regression_length=[2, 3, 4])
@@ -924,6 +934,8 @@ class StatisticalMethodsTestCase(zf.WithSeededRandomPipelineEngine,
                 index=dates[start_date_index:end_date_index + 1],
                 columns=assets,
             )
+            expected_output_result.index.set_names("date", inplace=True)
+            expected_output_result.columns.set_names("asset", inplace=True)
             assert_frame_equal(output_result, expected_output_result)
 
 

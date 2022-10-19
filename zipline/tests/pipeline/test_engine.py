@@ -289,11 +289,10 @@ class ConstantInputTestCase(WithConstantInputs,
             expected_sids = asset_ids[asset_ids <= asset_id]
             expected_assets = self.asset_finder.retrieve_all(expected_sids)
             expected_result = DataFrame(
-                index=MultiIndex.from_product([dates, expected_assets]),
+                index=MultiIndex.from_product([dates, expected_assets], names=["date", "asset"]),
                 data=tile(expected_sids.astype(float), [len(dates)]),
                 columns=['f'],
             )
-
             assert_frame_equal(result, expected_result)
 
     def test_single_factor(self):
@@ -392,23 +391,32 @@ class ConstantInputTestCase(WithConstantInputs,
 
         high_low_result = results['high_low'].unstack()
         expected_high_low = 3.0 * (constants[high] - constants[low])
+        expected_high_low = DataFrame(expected_high_low, index=dates, columns=self.assets)
+        expected_high_low.index.set_names("date", inplace=True)
+        expected_high_low.columns.set_names("asset", inplace=True)
         assert_frame_equal(
             high_low_result,
-            DataFrame(expected_high_low, index=dates, columns=self.assets),
+            expected_high_low,
         )
 
         open_close_result = results['open_close'].unstack()
         expected_open_close = 3.0 * (constants[open] - constants[close])
+        expected_open_close = DataFrame(expected_open_close, index=dates, columns=self.assets)
+        expected_open_close.index.set_names("date", inplace=True)
+        expected_open_close.columns.set_names("asset", inplace=True)
         assert_frame_equal(
             open_close_result,
-            DataFrame(expected_open_close, index=dates, columns=self.assets),
+            expected_open_close
         )
 
         avg_result = results['avg'].unstack()
         expected_avg = (expected_high_low + expected_open_close) / 2.0
+        expected_avg = DataFrame(expected_avg, index=dates, columns=self.assets)
+        expected_avg.index.set_names("date", inplace=True)
+        expected_avg.columns.set_names("asset", inplace=True)
         assert_frame_equal(
             avg_result,
-            DataFrame(expected_avg, index=dates, columns=self.assets),
+            expected_avg
         )
 
     def test_masked_factor(self):
@@ -433,7 +441,10 @@ class ConstantInputTestCase(WithConstantInputs,
 
         def create_expected_results(expected_value, mask):
             expected_values = where(mask, expected_value, nan)
-            return DataFrame(expected_values, index=dates, columns=assets)
+            expected_df = DataFrame(expected_values, index=dates, columns=assets)
+            expected_df.index.set_names("date", inplace=True)
+            expected_df.columns.set_names("asset", inplace=True)
+            return expected_df
 
         cascading_mask = AssetIDPlusDay() < (asset_ids[-1] + dates[0].day)
         expected_cascading_mask_result = make_cascading_boolean_array(
@@ -580,6 +591,8 @@ class ConstantInputTestCase(WithConstantInputs,
             expected_results = DataFrame(
                 expected_values, index=dates, columns=assets, dtype=float64,
             )
+            expected_results.index.set_names("date", inplace=True)
+            expected_results.columns.set_names("asset", inplace=True)
             assert_frame_equal(column_results, expected_results)
 
     def test_factor_with_multiple_outputs(self):
@@ -594,7 +607,10 @@ class ConstantInputTestCase(WithConstantInputs,
 
         def create_expected_results(expected_value, mask):
             expected_values = where(mask, expected_value, nan)
-            return DataFrame(expected_values, index=dates, columns=assets)
+            expected_df = DataFrame(expected_values, index=dates, columns=assets)
+            expected_df.index.set_names("date", inplace=True)
+            expected_df.columns.set_names("asset", inplace=True)
+            return expected_df
 
         cascading_mask = AssetIDPlusDay() < (asset_ids[-1] + dates[0].day)
         expected_cascading_mask_result = make_cascading_boolean_array(
@@ -654,6 +670,8 @@ class ConstantInputTestCase(WithConstantInputs,
         expected_results = DataFrame(
             expected_values, index=dates, columns=assets, dtype=float64,
         )
+        expected_results.index.set_names("date", inplace=True)
+        expected_results.columns.set_names("asset", inplace=True)
 
         multiple_outputs = MultipleOutputs()
         pipeline = Pipeline(columns={'instance': multiple_outputs})
@@ -672,7 +690,10 @@ class ConstantInputTestCase(WithConstantInputs,
             expected_values = full(
                 (num_dates, num_assets), expected_value, float64,
             )
-            return DataFrame(expected_values, index=dates, columns=assets)
+            expected_df = DataFrame(expected_values, index=dates, columns=assets)
+            expected_df.index.set_names("date", inplace=True)
+            expected_df.columns.set_names("asset", inplace=True)
+            return expected_df
 
         for window_length in range(1, 3):
             sum_, diff = OpenCloseSumAndDiff(
@@ -757,7 +778,7 @@ class ConstantInputTestCase(WithConstantInputs,
                        * pipe_col.window_length)
                 for name, pipe_col in iteritems(columns)}
 
-        index = MultiIndex.from_product([self.dates[2:], self.assets])
+        index = MultiIndex.from_product([self.dates[2:], self.assets], names=["date", "asset"])
 
         def expected_for_col(col):
             val = vals[col]
@@ -778,7 +799,6 @@ class ConstantInputTestCase(WithConstantInputs,
             index=index,
             columns=columns,
         )
-
         assert_frame_equal(result, expected)
 
         self.assertEqual(set(loader1.load_calls),
@@ -902,9 +922,13 @@ class FrameInputTestCase(zf.WithAssetFinder,
                 iloc_bounds = slice(start, stop + 1)  # +1 to include end date
 
                 low_results = results.unstack()['low']
+                low_base.index.set_names("date", inplace=True)
+                low_base.columns.set_names("asset", inplace=True)
                 assert_frame_equal(low_results, low_base.iloc[iloc_bounds])
 
                 high_results = results.unstack()['high']
+                high_base.index.set_names("date", inplace=True)
+                high_base.columns.set_names("asset", inplace=True)
                 assert_frame_equal(high_results, high_base.iloc[iloc_bounds])
 
 
@@ -1023,6 +1047,8 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
             index=dates_to_test,  # dates_to_test is dates[window_length:]
             columns=self.asset_finder.retrieve_all(asset_ids),
         )
+        expected.index.set_names("date", inplace=True)
+        expected.columns.set_names("asset", inplace=True)
         self.write_nans(expected)
         result = results['sma'].unstack()
         assert_frame_equal(result, expected)
@@ -1060,6 +1086,9 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
             index=dates_to_test,
             columns=self.asset_finder.retrieve_all(asset_ids),
         )
+        expected.index.set_names("date", inplace=True)
+        expected.columns.set_names("asset", inplace=True)
+
         self.write_nans(expected)
         result = results['drawdown'].unstack()
 
@@ -1191,10 +1220,14 @@ class ParameterizedFactorTestCase(zf.WithAssetFinder,
         for decay_rate in decay_rates:
             ewma_result = all_results[ewma_name(decay_rate)].unstack()
             ewma_expected = self.expected_ewma(window_length, decay_rate)
+            ewma_expected.index.set_names("date", inplace=True)
+            ewma_expected.columns.set_names("asset", inplace=True)
             assert_frame_equal(ewma_result, ewma_expected)
 
             ewmstd_result = all_results[ewmstd_name(decay_rate)].unstack()
             ewmstd_expected = self.expected_ewmstd(window_length, decay_rate)
+            ewmstd_expected.index.set_names("date", inplace=True)
+            ewmstd_expected.columns.set_names("asset", inplace=True)
             assert_frame_equal(ewmstd_result, ewmstd_expected)
 
     @staticmethod
@@ -1271,9 +1304,13 @@ class ParameterizedFactorTestCase(zf.WithAssetFinder,
         )
 
         expected_1 = (self.raw_data[5:] ** 2) * 2
+        expected_1.index.set_names("date", inplace=True)
+        expected_1.columns.set_names("asset", inplace=True)
         assert_frame_equal(results['dv1'].unstack(), expected_1)
 
         expected_5 = ((self.raw_data ** 2) * 2).rolling(5).mean()[5:]
+        expected_5.index.set_names("date", inplace=True)
+        expected_5.columns.set_names("asset", inplace=True)
         assert_frame_equal(results['dv5'].unstack(), expected_5)
 
         # The following two use EquityPricing.open and .volume as inputs.
@@ -1281,6 +1318,8 @@ class ParameterizedFactorTestCase(zf.WithAssetFinder,
         # .raw_data * 2.  Thus we multiply instead of squaring as above.
         expected_1_nan = (self.raw_data_with_nans[5:]
                           * self.raw_data[5:] * 2).fillna(0)
+        expected_1_nan.index.set_names("date", inplace=True)
+        expected_1_nan.columns.set_names("asset", inplace=True)
         assert_frame_equal(results['dv1_nan'].unstack(), expected_1_nan)
 
         expected_5_nan = ((self.raw_data_with_nans * self.raw_data * 2)
@@ -1288,6 +1327,8 @@ class ParameterizedFactorTestCase(zf.WithAssetFinder,
                           .rolling(5).mean()
                           [5:])
 
+        expected_5_nan.index.set_names("date", inplace=True)
+        expected_5_nan.columns.set_names("asset", inplace=True)
         assert_frame_equal(results['dv5_nan'].unstack(), expected_5_nan)
 
 
@@ -1320,6 +1361,8 @@ class StringColumnTestCase(zf.WithSeededRandomPipelineEngine,
             index=run_dates,
             columns=self.asset_finder.retrieve_all(self.asset_finder.sids),
         )
+        expected_final_result.index.set_names("date", inplace=True)
+        expected_final_result.columns.set_names("asset", inplace=True)
         assert_frame_equal(result.c.unstack(), expected_final_result)
 
 
@@ -1371,6 +1414,8 @@ class WindowSafetyPropagationTestCase(zf.WithSeededRandomPipelineEngine,
             .mean()
             .dropna(how='any')
         )
+        expected_result.index.set_names("date", inplace=True)
+        expected_result.columns.set_names("asset", inplace=True)
 
         for colname in results.columns.levels[0]:
             assert_equal(expected_result, results[colname])
