@@ -101,7 +101,8 @@ class SharadarInstitutionsPipelineLoader(implements(PipelineLoader)):
             institutions = get_sharadar_institutions_reindexed_like(
                 reindex_like, fields=fields)
         except NoFundamentalData:
-            institutions = reindex_like
+            institutions = pd.concat(
+                {column.name:reindex_like for column in columns})
 
         out = {}
 

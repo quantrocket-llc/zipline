@@ -17,7 +17,11 @@ from unittest.mock import patch
 import pandas as pd
 import numpy as np
 from zipline.pipeline.data import sharadar
-from zipline.pipeline.loaders.sharadar import SharadarFundamentalsPipelineLoader
+from zipline.pipeline.loaders.sharadar import (
+    SharadarFundamentalsPipelineLoader,
+    SharadarInstitutionsPipelineLoader,
+    SharadarSP500PipelineLoader)
+from quantrocket.fundamental import NoFundamentalData
 
 class SharadarFundamentalsLoaderTestCase(unittest.TestCase):
 
@@ -151,3 +155,189 @@ class SharadarFundamentalsLoaderTestCase(unittest.TestCase):
         np.testing.assert_array_equal(
             array[arq_revenue].data,
             np.array([[5e10, 1e10], [5e10, 1e10]]))
+
+    def test_no_data(self):
+        """
+        Tests handling when get_sharadar_fundamentals_reindexed_like returns no data.
+        """
+        sharadar_arq = sharadar.Fundamentals.slice(dimension="ARQ", period_offset=0)
+
+        arq_eps = sharadar_arq.EPS
+        arq_revenue = sharadar_arq.REVENUE
+
+        zipline_sids_to_real_sids = {
+            1: "FI12345",
+            2: "FI23456"
+        }
+        loader = SharadarFundamentalsPipelineLoader(zipline_sids_to_real_sids)
+        domain = arq_eps.domain
+        columns = [arq_eps, arq_revenue]
+        dates = pd.date_range(start="2022-07-25", periods=2)
+        sids= pd.Int64Index([1, 2])
+        mask = np.array([[True, True], [True, True]])
+
+
+        def mock_get_sharadar_fundamentals_reindexed_like(
+            reindex_like,
+            fields=None,
+            dimension="ART",
+            period_offset=0):
+
+            raise NoFundamentalData("no fundamental data match the query parameters")
+
+        with patch('zipline.pipeline.loaders.sharadar.get_sharadar_fundamentals_reindexed_like', new=mock_get_sharadar_fundamentals_reindexed_like):
+
+            array = loader.load_adjusted_array(
+                domain,
+                columns,
+                dates,
+                sids,
+                mask
+            )
+
+        np.testing.assert_array_equal(
+            array[arq_eps].data,
+            np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        np.testing.assert_array_equal(
+            array[arq_revenue].data,
+            np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+
+class SharadarInstitutionsLoaderTestCase(unittest.TestCase):
+
+    def test_institutions_data(self):
+        """
+        Tests loading data from get_sharadar_institutions_reindexed_like.
+        """
+        total_val = sharadar.Institutions.slice(period_offset=0).TOTALVALUE
+        fund_val = sharadar.Institutions.slice(period_offset=0).FNDVALUE
+
+        zipline_sids_to_real_sids = {
+            1: "FI12345",
+            2: "FI23456"
+        }
+        loader = SharadarInstitutionsPipelineLoader(zipline_sids_to_real_sids)
+        domain = total_val.domain
+        columns = [total_val, fund_val]
+        dates = pd.date_range(start="2022-07-25", periods=2)
+        sids= pd.Int64Index([1, 2])
+        mask = np.array([[True, True], [True, True]])
+
+
+        def mock_get_sharadar_institutions_reindexed_like(
+            reindex_like,
+            fields=None,
+            shift=45):
+
+            return pd.DataFrame(
+                dict(
+                    FI12345=[1.35, 1.36, 5e10, 6e10],
+                    FI23456=[0.10, 0.12, 1e10, 2e10],
+                ),
+                index=pd.MultiIndex.from_product(
+                    [["TOTALVALUE", "FNDVALUE"], dates],
+                    names=["Field", "Date"]
+                )
+            )
+
+        with patch('zipline.pipeline.loaders.sharadar.get_sharadar_institutions_reindexed_like', new=mock_get_sharadar_institutions_reindexed_like):
+
+            array = loader.load_adjusted_array(
+                domain,
+                columns,
+                dates,
+                sids,
+                mask
+            )
+
+        np.testing.assert_array_equal(
+            array[total_val].data,
+            np.array([[1.35, 0.10], [1.36, 0.12]]))
+        np.testing.assert_array_equal(
+            array[fund_val].data,
+            np.array([[5e10, 1e10], [6e10, 2e10]]))
+
+    def test_no_data(self):
+        """
+        Tests handling when get_sharadar_institutions_reindexed_like returns no data.
+        """
+        total_val = sharadar.Institutions.slice(period_offset=0).TOTALVALUE
+        fund_val = sharadar.Institutions.slice(period_offset=0).FNDVALUE
+
+        zipline_sids_to_real_sids = {
+            1: "FI12345",
+            2: "FI23456"
+        }
+        loader = SharadarInstitutionsPipelineLoader(zipline_sids_to_real_sids)
+        domain = total_val.domain
+        columns = [total_val, fund_val]
+        dates = pd.date_range(start="2022-07-25", periods=2)
+        sids= pd.Int64Index([1, 2])
+        mask = np.array([[True, True], [True, True]])
+
+
+        def mock_get_sharadar_institutions_reindexed_like(
+            reindex_like,
+            fields=None,
+            shift=45):
+
+            raise NoFundamentalData("no fundamental data match the query parameters")
+
+        with patch('zipline.pipeline.loaders.sharadar.get_sharadar_institutions_reindexed_like', new=mock_get_sharadar_institutions_reindexed_like):
+
+            array = loader.load_adjusted_array(
+                domain,
+                columns,
+                dates,
+                sids,
+                mask
+            )
+
+        np.testing.assert_array_equal(
+            array[total_val].data,
+            np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        np.testing.assert_array_equal(
+            array[fund_val].data,
+            np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+
+class SharadarSP500LoaderTestCase(unittest.TestCase):
+
+    def test_sp500_data(self):
+        """
+        Tests loading data from get_sharadar_sp500_reindexed_like.
+        """
+        in_sp500 = sharadar.SP500.in_sp500
+
+        zipline_sids_to_real_sids = {
+            1: "FI12345",
+            2: "FI23456"
+        }
+        loader = SharadarSP500PipelineLoader(zipline_sids_to_real_sids)
+        domain = in_sp500.domain
+        columns = [in_sp500]
+        dates = pd.date_range(start="2022-07-25", periods=2)
+        sids= pd.Int64Index([1, 2])
+        mask = np.array([[True, True], [True, True]])
+
+
+        def mock_get_sharadar_sp500_reindexed_like(reindex_like):
+
+            return pd.DataFrame(
+                dict(
+                    FI12345=[True, True],
+                    FI23456=[False, False],
+                ),
+                index=dates)
+
+        with patch('zipline.pipeline.loaders.sharadar.get_sharadar_sp500_reindexed_like', new=mock_get_sharadar_sp500_reindexed_like):
+
+            array = loader.load_adjusted_array(
+                domain,
+                columns,
+                dates,
+                sids,
+                mask
+            )
+
+        np.testing.assert_array_equal(
+            array[in_sp500].data,
+            np.array([[True, False], [True, False]]))
