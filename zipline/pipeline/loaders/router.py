@@ -30,7 +30,10 @@ from zipline.pipeline.loaders.sharadar import (
     SharadarInstitutionsPipelineLoader
 )
 from zipline.pipeline.loaders.alpaca import AlpacaETBPipelineLoader
-from zipline.pipeline.loaders.ibkr import IBKRShortableSharesPipelineLoader
+from zipline.pipeline.loaders.ibkr import (
+    IBKRAggregateShortableSharesPipelineLoader,
+    IBKRBorrowFeesPipelineLoader
+)
 from zipline.pipeline.loaders.master import SecuritiesMasterPipelineLoader
 from zipline.pipeline.loaders.db import DatabasePipelineLoader
 
@@ -68,7 +71,9 @@ class QuantRocketPipelineLoaderRouter:
             zipline_sids_to_real_sids)
 
         # IBKR
-        self.ibkr_shortable_shares_loader = IBKRShortableSharesPipelineLoader(
+        self.ibkr_shortable_shares_loader = IBKRAggregateShortableSharesPipelineLoader(
+            zipline_sids_to_real_sids)
+        self.ibkr_borrow_fees_loader = IBKRBorrowFeesPipelineLoader(
             zipline_sids_to_real_sids)
 
         # Master
@@ -120,10 +125,10 @@ class QuantRocketPipelineLoaderRouter:
             return self.alpaca_etb_loader
 
         # IBKR
-        elif (
-            hasattr(column.dataset, "dataset_family")
-            and column.dataset.dataset_family == ibkr.ShortableShares):
+        elif self.isin(column, ibkr.ShortableShares):
             return self.ibkr_shortable_shares_loader
+        elif self.isin(column, ibkr.BorrowFees):
+            return self.ibkr_borrow_fees_loader
 
         # Database
         elif issubclass(column.dataset, Database):

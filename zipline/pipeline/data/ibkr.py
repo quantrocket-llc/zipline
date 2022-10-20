@@ -12,38 +12,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pandas as pd
 from zipline.utils.numpy_utils import float64_dtype
-from zipline.pipeline.data import Column, DataSetFamily
+from zipline.pipeline.data import Column, DataSet
 
-class ShortableShares(DataSetFamily):
+class ShortableShares(DataSet):
     """
-    DataSetFamily representing IBKR shortable shares. In order to use
-    the data in a pipeline, it must first be sliced to generate a regular
-    pipeline DataSet.
-
-    ShortableShares can be sliced along one dimension:
-
-    - `time` : the time of day (in the bundle timezone) as of which shortable
-      shares should be returned, formatted as HH:MM:SS, for example 08:45:00.
+    DataSet representing the previous day's shortable shares.
 
     Attributes
     ----------
-    shares : float
-        number of shortable shares
+    MinQuantity : float
+        minimum quantity of shortable shares for the day
+
+    MaxQuantity : float
+        maximum quantity of shortable shares for the day
+
+    MeanQuantity : float
+        average quantity of shortable shares for the day
+
+    LastQuantity : float
+        last quantity of shortable shares for the day
 
     Examples
     --------
-    Get shortable shares as of 8:45 AM:
+    Get the number of shortable shares for the previous day:
 
-    >>> shares = ibkr.ShortableShares.slice(time="08:45:00").shares.latest    # doctest: +SKIP
+    >>> shares = ibkr.ShortableShares.LastQuantity.latest    # doctest: +SKIP
     """
-    extra_dims = [
-        ('time', set(pd.date_range(
-                    start=pd.Timestamp.today().normalize().replace(hour=0, minute=0),
-                    end=pd.Timestamp.today().normalize().replace(hour=23, minute=59),
-                    freq="1min"
-                ).strftime("%H:%M:%S")))
-    ]
+    MinQuantity = Column(float64_dtype)
+    MaxQuantity = Column(float64_dtype)
+    MeanQuantity = Column(float64_dtype)
+    LastQuantity = Column(float64_dtype)
 
-    shares = Column(float64_dtype)
+class BorrowFees(DataSet):
+    """
+    DataSet representing the previous day's borrow fees.
+
+    Attributes
+    ----------
+    FeeRate : float
+        The annualized interest rate on short positions. For example, 1.0198
+        indicates an annualized interest rate of 1.0198%.
+
+    Examples
+    --------
+    Get the previous day's borrow fees:
+
+    >>> fees = ibkr.BorrowFee.FeeRate.latest    # doctest: +SKIP
+    """
+    FeeRate = Column(float64_dtype)

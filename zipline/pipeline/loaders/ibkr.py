@@ -14,51 +14,70 @@
 # limitations under the License.
 
 from interface import implements
-from collections import defaultdict
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
 from quantrocket.fundamental import (
     get_ibkr_shortable_shares_reindexed_like,
+    get_ibkr_borrow_fees_reindexed_like,
     NoFundamentalData)
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
-class IBKRShortableSharesPipelineLoader(implements(PipelineLoader)):
+class IBKRAggregateShortableSharesPipelineLoader(implements(PipelineLoader)):
 
     def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
 
     def load_adjusted_array(self, domain, columns, dates, sids, mask):
 
-        # Get tz from domain calendar (we cast the dates to this tz (from UTC)
-        # and pass the tz to get_ibkr_shortable_shares_reindexed_like)
-        tz = domain.calendar.tz.zone
+        fields = [c.name for c in columns]
+        real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
+        reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
+        reindex_like.index.name = "Date"
+
+        try:
+            shortables = get_ibkr_shortable_shares_reindexed_like(
+                reindex_like, aggregate=True, fields=fields, shift=1)
+        except NoFundamentalData:
+            shortables = pd.concat(
+                {column.name:reindex_like for column in columns})
 
         out = {}
 
+        for column in columns:
+            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+            out[column] = AdjustedArray(
+                shortables.loc[column.name].astype(column.dtype).fillna(missing_value).values,
+                adjustments={},
+                missing_value=missing_value
+            )
+
+        return out
+
+class IBKRBorrowFeesPipelineLoader(implements(PipelineLoader)):
+
+    def __init__(self, zipline_sids_to_real_sids):
+        self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
+
+    def load_adjusted_array(self, domain, columns, dates, sids, mask):
+
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
-        reindex_like = pd.DataFrame(None, index=dates.tz_convert(tz), columns=real_sids)
+        reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 
-        columns_by_time = defaultdict(list)
+        try:
+            fees = get_ibkr_borrow_fees_reindexed_like(reindex_like, shift=1)
+        except NoFundamentalData:
+            fees = reindex_like
+
+        out = {}
+
         for column in columns:
-            time = column.dataset.extra_coords["time"]
-            columns_by_time[time].append(column)
-
-        for time, columns in columns_by_time.items():
-
-            try:
-                shortable_shares = get_ibkr_shortable_shares_reindexed_like(
-                    reindex_like, time=time + " " + tz)
-            except NoFundamentalData:
-                shortable_shares = reindex_like
-
-            for column in columns:
-                missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
-                out[column] = AdjustedArray(
-                    shortable_shares.astype(column.dtype).fillna(missing_value).values,
-                    adjustments={},
-                    missing_value=missing_value
-                )
+            missing_value = MISSING_VALUES_BY_DTYPE[column.dtype]
+            out[column] = AdjustedArray(
+                fees.astype(column.dtype).fillna(missing_value).values,
+                adjustments={},
+                missing_value=missing_value
+            )
 
         return out
