@@ -2257,7 +2257,9 @@ class TradingAlgorithm(object):
 
         # Now that we have a cached result, try to return the data for today.
         try:
-            return data.loc[today]
+            # copy() to avoid possible SettingWithCopyWarning if user subsequently
+            # assigns to pipeline output
+            return data.loc[today].copy()
         except KeyError:
             # This happens if no assets passed the pipeline screen on a given
             # day.
