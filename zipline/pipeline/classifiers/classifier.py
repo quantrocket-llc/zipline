@@ -246,7 +246,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         """
         return Relabel(term=self, relabeler=relabeler)
 
-    def element_of(self, choices):
+    def isin(self, choices):
         """
         Construct a Filter indicating whether values are in ``choices``.
 
@@ -281,7 +281,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
                     mv=self.missing_value,
                     typename=(type(self).__name__),
                     choices=sorted(choices),
-                    meth_name=self.element_of.__name__,
+                    meth_name=self.isin.__name__,
                 )
             )
 
@@ -297,7 +297,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
                 )
             else:
                 raise TypeError(
-                    "Found non-int in choices for {typename}.element_of.\n"
+                    "Found non-int in choices for {typename}.isin.\n"
                     "Supplied choices were {choices}.".format(
                         typename=type(self).__name__,
                         choices=choices,
@@ -307,18 +307,21 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
             if only_contains((bytes, unicode), choices):
                 return ArrayPredicate(
                     term=self,
-                    op=LabelArray.element_of,
+                    op=LabelArray.isin,
                     opargs=(choices,),
                 )
             else:
                 raise TypeError(
-                    "Found non-string in choices for {typename}.element_of.\n"
+                    "Found non-string in choices for {typename}.isin.\n"
                     "Supplied choices were {choices}.".format(
                         typename=type(self).__name__,
                         choices=choices,
                     )
                 )
-        assert False, "Unknown dtype in Classifier.element_of %s." % self.dtype
+        assert False, "Unknown dtype in Classifier.isin %s." % self.dtype
+
+    # backwards-compat after renaming element_of to isin to match pandas/numpy
+    element_of = isin
 
     def postprocess(self, data):
         if self.dtype == int64_dtype:

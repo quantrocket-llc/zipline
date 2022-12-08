@@ -783,9 +783,9 @@ class LabelArray(ndarray):
     # These types all implement an O(N) __contains__, so pre-emptively
     # coerce to `set`.
     @preprocess(container=coerce((list, tuple, np.ndarray), set))
-    def element_of(self, container):
+    def isin(self, container):
         """
-        Check if each element of self is an of ``container``.
+        Check if each element of self is in ``container``.
 
         Parameters
         ----------

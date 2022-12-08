@@ -337,7 +337,7 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
         container_type=(set, list, tuple, frozenset),
         labelarray_dtype=(categorical_dtype, bytes_dtype, unicode_dtype),
     )
-    def test_element_of_strings(self, container_type, labelarray_dtype):
+    def test_isin_strings(self, container_type, labelarray_dtype):
 
         missing = labelarray_dtype.type("not in the array")
 
@@ -372,7 +372,7 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
         def make_expected(choice_set):
             return np.vectorize(choice_set.__contains__, otypes=[bool])(raw)
 
-        terms = {str(i): c.element_of(s) for i, s in enumerate(choices)}
+        terms = {str(i): c.isin(s) for i, s in enumerate(choices)}
         expected = {str(i): make_expected(s) for i, s in enumerate(choices)}
 
         self.check_terms(
@@ -382,9 +382,9 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
             mask=self.build_mask(self.ones_mask(shape=data.shape)),
         )
 
-    def test_element_of_integral(self):
+    def test_isin_integral(self):
         """
-        Element of is well-defined for integral classifiers.
+        isin() is well-defined for integral classifiers.
         """
         class C(Classifier):
             dtype = int64_dtype
@@ -404,7 +404,7 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
         terms = {}
         expected = {}
         for choices in [(0,), (0, 1), (0, 1, 2)]:
-            terms[str(choices)] = c.element_of(choices)
+            terms[str(choices)] = c.isin(choices)
             expected[str(choices)] = reduce(
                 op.or_,
                 (data == elem for elem in choices),
@@ -418,9 +418,9 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
             mask=self.build_mask(self.ones_mask(shape=data.shape)),
         )
 
-    def test_element_of_rejects_missing_value(self):
+    def test_isin_rejects_missing_value(self):
         """
-        Test that element_of raises a useful error if we attempt to pass it an
+        Test that isin raises a useful error if we attempt to pass it an
         array of choices that include the classifier's missing_value.
         """
         missing = "not in the array"
@@ -435,11 +435,11 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
 
         for bad_elems in ([missing], [missing, 'random other value']):
             with self.assertRaises(ValueError) as e:
-                c.element_of(bad_elems)
+                c.isin(bad_elems)
             errmsg = str(e.exception)
             expected = (
                 "Found self.missing_value ('not in the array') in choices"
-                " supplied to C.element_of().\n"
+                " supplied to C.isin().\n"
                 "Missing values have NaN semantics, so the requested"
                 " comparison would always produce False.\n"
                 "Use the isnull() method to check for missing values.\n"
@@ -448,7 +448,7 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
             self.assertEqual(errmsg, expected)
 
     @parameter_space(dtype_=Classifier.ALLOWED_DTYPES)
-    def test_element_of_rejects_unhashable_type(self, dtype_):
+    def test_isin_rejects_unhashable_type(self, dtype_):
 
         class C(Classifier):
             dtype = dtype_
@@ -459,7 +459,7 @@ class ClassifierTestCase(BaseUSEquityPipelineTestCase):
         c = C()
 
         with self.assertRaises(TypeError) as e:
-            c.element_of([{'a': 1}])
+            c.isin([{'a': 1}])
 
         errmsg = str(e.exception)
         expected = (
