@@ -353,7 +353,7 @@ class Financials(DataSetFamily):
     """
     extra_dims = [
         ('interim', {True, False}),
-        ('period_offset', {0}),
+        ('period_offset', {0}, 0),
     ]
 
     SCMS = Column(float64_dtype) # Common Stock, Total
@@ -584,7 +584,7 @@ class Estimates(DataSetFamily):
     extra_dims = [
         ('period_type', {'Q', 'A', 'S'}),
         ('field', {'Actual', 'Mean', 'High', 'Low', 'Median', 'NumOfEst', 'StdDev'}),
-        ('period_offset', {0}),
+        ('period_offset', {0}, 0),
     ]
 
     BVPS = Column(float64_dtype) # Book Value Per Share

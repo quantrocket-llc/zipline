@@ -276,10 +276,42 @@ class TestDataSetFamily(ZiplineTestCase):
             ),
         )
 
+    def test_extra_dim_defaults(self):
+        class MD(DataSetFamily):
+            extra_dims = [
+                ('dim_0', {'a', 'b', 'c'}, 'b'),
+                ('dim_1', {'c', 'd', 'e'}, 'c'),
+            ]
+        assert_equal(
+            MD.slice().extra_coords,
+            OrderedDict([('dim_0', 'b'), ('dim_1', 'c')])
+        )
+
+        assert_equal(
+            MD.slice('a').extra_coords,
+            OrderedDict([('dim_0', 'a'), ('dim_1', 'c')])
+        )
+
+        assert_equal(
+            MD.slice(dim_1='e').extra_coords,
+            OrderedDict([('dim_0', 'b'), ('dim_1', 'e')])
+        )
+
+        # define default on only one dimension
+        class MD(DataSetFamily):
+            extra_dims = [
+                ('dim_0', {'a', 'b', 'c'}),
+                ('dim_1', {'c', 'd', 'e'}, 'c'),
+            ]
+        assert_equal(
+            MD.slice('c').extra_coords,
+            OrderedDict([('dim_0', 'c'), ('dim_1', 'c')])
+        )
+
     def test_inheritance(self):
         class Parent(DataSetFamily):
             extra_dims = [
-                ('dim_0', {'a', 'b', 'c'}),
+                ('dim_0', {'a', 'b', 'c'}, 'a'),
                 ('dim_1', {'d', 'e', 'f'}),
             ]
 
@@ -292,6 +324,8 @@ class TestDataSetFamily(ZiplineTestCase):
 
         assert_is_subclass(Child, Parent)
         assert_equal(Child.extra_dims, Parent.extra_dims)
+        assert_equal(Child.extra_dim_defaults, Parent.extra_dim_defaults)
+        assert_equal(Child.extra_dim_defaults, {'dim_0': 'a'})
 
         ChildSlice = Child.slice(dim_0='a', dim_1='d')
 
@@ -302,6 +336,17 @@ class TestDataSetFamily(ZiplineTestCase):
             ChildSlice.column_3,
         })
         assert_equal(ChildSlice.columns, expected_child_slice_columns)
+
+        # override extra_dims
+        class Child2(Parent):
+            extra_dims = [
+                ('dim_0', {'a', 'b', 'c'}),
+                ('dim_2', {'d', 'e', 'f'}),
+            ]
+        assert_equal(
+            Child2.extra_dims,
+            OrderedDict([('dim_0', frozenset({'a', 'b', 'c'})),
+                         ('dim_2', frozenset({'d', 'e', 'f'}))]))
 
     def test_column_access_without_slice(self):
         class Parent(DataSetFamily):

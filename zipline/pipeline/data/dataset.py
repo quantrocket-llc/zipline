@@ -749,11 +749,30 @@ class DataSetFamilyMeta(abc.ABCMeta):
         )
 
         if not is_abstract:
-            self.extra_dims = extra_dims = OrderedDict([
-                (k, frozenset(v))
-                for k, v in OrderedDict(self.extra_dims).items()
-            ])
-            if not extra_dims:
+            extra_dims = OrderedDict()
+            extra_dim_defaults = dict()
+
+            # convert extra_dims from a list or tuple to an OrderedDict; skip if
+            # it's already a dict, as a parent class might have already converted
+            # to a dict
+            if not isinstance(self.extra_dims, dict):
+                for extra_dim in self.extra_dims:
+                    name = extra_dim[0]
+                    possible_values = extra_dim[1]
+                    extra_dims[name] = frozenset(possible_values)
+                    if len(extra_dim) == 3:
+                        default = extra_dim[2]
+                        if default not in possible_values:
+                            raise ValueError(
+                                f"default value {default} for extra_dims {name} is invalid, "
+                                f"it should be one of the possible values: "
+                                f"{', '.join([str(v) for v in possible_values])}"
+                            )
+                        extra_dim_defaults[name] = default
+                self.extra_dims = extra_dims
+                self.extra_dim_defaults = extra_dim_defaults
+
+            if not self.extra_dims:
                 raise ValueError(
                     'DataSetFamily must be defined with non-empty'
                     ' extra_dims, or with `_abstract = True`',
@@ -851,6 +870,24 @@ class DataSetFamily(with_metaclass(DataSetFamilyMeta)):
 
     This sliced dataset represents the rows from the higher dimensional dataset
     where ``(dimension_0 == 'a') & (dimension_1 == 'e')``.
+
+    Optionally, default values for extra_dims can be supplied by defining three-tuples
+    instead of two-tuples, where the third item of the tuple is the default value (which
+    must also be present in the second item of the tuple):
+
+    .. code-block:: python
+
+       class SomeDataSet(DataSetFamily):
+           extra_dims = [
+               ('dimension_0', {'a', 'b', 'c'}),
+               ('dimension_1', {'d', 'e', 'f'}, 'e'),
+           ]
+
+           column_0 = Column(float)
+           column_1 = Column(bool)
+
+    Here, the dimension_1 default is 'e', while dimension_0 has no default (and thus must
+    be supplied when slicing the DataSetFamily to create a DataSet).
     """
     _abstract = True  # Removed by metaclass
 
@@ -865,6 +902,15 @@ class DataSetFamily(with_metaclass(DataSetFamilyMeta)):
 
         May be defined on subclasses as an iterable of pairs: the
         metaclass converts this attribute to an OrderedDict.
+        """
+        __isabstractmethod__ = True
+
+        def __get__(self, instance, owner):
+            return []
+
+    @type.__call__
+    class extra_dim_defaults(object):
+        """dict of dimension name -> default value
         """
         __isabstractmethod__ = True
 
@@ -914,6 +960,11 @@ class DataSetFamily(with_metaclass(DataSetFamilyMeta)):
                 )
             coords[key] = value
             added.add(key)
+
+        # try to fill with defaults, if defined
+        for key, value in coords.items():
+            if value is missing and key in cls.extra_dim_defaults:
+                coords[key] = cls.extra_dim_defaults[key]
 
         missing = {k for k, v in coords.items() if v is missing}
         if missing:
