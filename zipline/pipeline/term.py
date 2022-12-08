@@ -3,7 +3,7 @@ Base class for Filters, Factors and Classifiers
 """
 from abc import ABCMeta, abstractproperty, abstractmethod
 from bisect import insort
-from collections.abc import Mapping
+from collections.abc import Mapping, Container
 from weakref import WeakValueDictionary
 
 from numpy import (
@@ -498,6 +498,9 @@ class ComputableTerm(Term):
         # Having inputs = NotSpecified is an error, but we handle it later
         # in self._validate rather than here.
         if inputs is not NotSpecified:
+            # Allow users to pass a single input without putting it in a list
+            if not isinstance(inputs, Container):
+                inputs = (inputs,)
             # Allow users to specify lists as class-level defaults, but
             # normalize to a tuple so that inputs is hashable.
             inputs = tuple(inputs)

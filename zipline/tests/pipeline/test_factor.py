@@ -639,6 +639,26 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
         with self.assertRaises(ValueError):
             PercentChange(inputs=[EquityPricing.close], window_length=1)
 
+    def test_scalar_inputs(self):
+        """
+        Tests the inputs can be an iterable or a scalar.
+        """
+
+        pct_change = PercentChange(
+            inputs=[EquityPricing.close],
+            window_length=2,
+        )
+        self.assertEqual(
+            pct_change.inputs, (EquityPricing.close,))
+
+        pct_change = PercentChange(
+            inputs=EquityPricing.open,
+            window_length=2,
+        )
+
+        self.assertEqual(
+            pct_change.inputs, (EquityPricing.open,))
+
     def gen_ranking_cases():
         seeds = range(int(1e4), int(1e5), int(1e4))
         methods = ('ordinal', 'average')
