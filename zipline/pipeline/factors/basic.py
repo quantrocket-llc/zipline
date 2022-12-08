@@ -40,9 +40,30 @@ class Returns(CustomFactor):
     Calculates the percent change in close price over the given window_length.
 
     **Default Inputs**: [EquityPricing.close]
+
+    Parameters
+    ----------
+    inputs : length-1 list or tuple of BoundColumn
+        The expression for which to compute returns.
+
+    window_length : int > 0
+        Length of the lookback window over which to compute returns.
+
+    exclude_window_length : int >= 0, optional
+        Optional number of most recent observations to exclude from the
+        returns calculation. Default is 0, meaning don't exclude any
+        observations.
+
+    Examples
+    --------
+    Calculate returns over the past year, excluding the most recent month:
+
+        >>> returns = Returns(window_length=252, exclude_window_length=21)
     """
     inputs = [EquityPricing.close]
     window_safe = True
+
+    params = {'exclude_window_length': 0}
 
     def _validate(self):
         super(Returns, self)._validate()
@@ -52,9 +73,17 @@ class Returns(CustomFactor):
                 "given {window_length}. For daily returns, use a window "
                 "length of 2.".format(window_length=self.window_length)
             )
+        if self.params["exclude_window_length"] >= self.window_length:
+            raise ValueError(
+                "window_length must be greater than exclude_window_length (got "
+                "window_length={window_length}, exclude_window_length="
+                "{exclude_window_length})".format(
+                    window_length=self.window_length,
+                    exclude_window_length=self.params["exclude_window_length"])
+            )
 
-    def compute(self, today, assets, out, close):
-        out[:] = (close[-1] - close[0]) / close[0]
+    def compute(self, today, assets, out, close, exclude_window_length):
+        out[:] = (close[-1 - exclude_window_length] - close[0]) / close[0]
 
 
 class PercentChange(SingleInputMixin, CustomFactor):

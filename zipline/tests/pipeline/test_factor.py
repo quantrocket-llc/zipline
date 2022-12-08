@@ -568,14 +568,27 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
         check({'ordinal': f.rank(groupby=c, ascending=False)})
         check({'ordinal': f.rank(groupby=str_c, ascending=False)})
 
-    @parameterized.expand([
-        (100, 15),
-        (101, 4),
-        (102, 100),
-        ])
-    def test_returns(self, seed_value, window_length):
+    def test_returns_when_exclude_window_length_too_long(self):
 
-        returns = Returns(window_length=window_length)
+        with self.assertRaises(ValueError) as cm:
+            returns = Returns(window_length=10, exclude_window_length=10)
+
+        self.assertIn(
+            'window_length must be greater than exclude_window_length',
+            str(cm.exception))
+
+    @parameterized.expand([
+        (100, 15, None),
+        (101, 4, 0),
+        (102, 100, None),
+        (102, 100, 20),
+        ])
+    def test_returns(self, seed_value, window_length, exclude_window_length):
+
+        kwargs = {"window_length": window_length}
+        if exclude_window_length is not None:
+            kwargs["exclude_window_length"] = exclude_window_length
+        returns = Returns(**kwargs)
 
         today = datetime64(1, 'ns')
         assets = arange(3)
@@ -584,10 +597,10 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
         test_data = abs(randn(window_length, 3))
 
         # Calculate the expected returns
-        expected = (test_data[-1] - test_data[0]) / test_data[0]
+        expected = (test_data[-1 - (exclude_window_length or 0)] - test_data[0]) / test_data[0]
 
         out = empty((3,), dtype=float)
-        returns.compute(today, assets, out, test_data)
+        returns.compute(today, assets, out, test_data, returns.params["exclude_window_length"])
 
         check_allclose(expected, out)
 
