@@ -380,8 +380,12 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
     def test_grouped_rank_ascending(self, name, factor_dtype=float64_dtype):
 
         f = F(dtype=factor_dtype)
+        class StrC(C):
+            dtype = categorical_dtype
+            missing_value = None
+
         c = C()
-        str_c = C(dtype=categorical_dtype, missing_value=None)
+        str_c = StrC()
 
         # Generated with:
         # data = arange(25).reshape(5, 5).transpose() % 4
@@ -481,8 +485,12 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
     def test_grouped_rank_descending(self, name, factor_dtype):
 
         f = F(dtype=factor_dtype)
+        class StrC(C):
+            dtype = categorical_dtype
+            missing_value = None
+
         c = C()
-        str_c = C(dtype=categorical_dtype, missing_value=None)
+        str_c = StrC()
 
         # Generated with:
         # data = arange(25).reshape(5, 5).transpose() % 4
@@ -715,8 +723,13 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
         """
         f = self.f
         m = Mask()
+
+        class StrC(C):
+            dtype = categorical_dtype
+            missing_value = None
+
         c = C()
-        str_c = C(dtype=categorical_dtype, missing_value=None)
+        str_c = StrC()
 
         factor_data = array(
             [[1.0, 2.0, 3.0, 4.0],
@@ -804,8 +817,11 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
         """
         f = self.f
         m = Mask()
+        class StrC(C):
+            dtype = categorical_dtype
+            missing_value = None
         c = C()
-        str_c = C(dtype=categorical_dtype, missing_value=None)
+        str_c = StrC()
 
         factor_data = array([
             [1.,     2.,  3.,  4.,   5.,   6.,  7.,  8.,  9.],

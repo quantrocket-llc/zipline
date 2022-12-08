@@ -739,7 +739,7 @@ class MaximumFilter(Filter, StandardOutputs):
     window_length = 0
 
     def __new__(cls, factor, groupby, mask):
-        if groupby is NotSpecified:
+        if groupby is None:
             from zipline.pipeline.classifiers import Everything
             groupby = Everything()
 

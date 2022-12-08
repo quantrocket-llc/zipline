@@ -39,7 +39,6 @@ from zipline.pipeline.factors.statistical import (
     vectorized_pearson_r,
 )
 from zipline.pipeline.loaders.frame import DataFrameLoader
-from zipline.pipeline.sentinels import NotSpecified
 from zipline.testing import (
     AssetID,
     AssetIDPlusDay,
@@ -143,7 +142,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
         run_pipeline = self.run_pipeline
 
         returns = Returns(window_length=returns_length)
-        masks = (self.cascading_mask, self.alternating_mask, NotSpecified)
+        masks = (self.cascading_mask, self.alternating_mask, None)
         expected_mask_results = (
             self.expected_cascading_mask_result,
             self.expected_alternating_mask_result,
@@ -169,13 +168,13 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
                 'spearman_factor': spearman_factor,
             }
             pipeline = Pipeline(columns=columns)
-            if mask is not NotSpecified:
+            if mask is not None:
                 pipeline.add(mask, 'mask')
 
             results = run_pipeline(pipeline, start_date, end_date)
             pearson_results = results['pearson_factor'].unstack()
             spearman_results = results['spearman_factor'].unstack()
-            if mask is not NotSpecified:
+            if mask is not None:
                 mask_results = results['mask'].unstack()
                 check_arrays(mask_results.values, expected_mask)
 
@@ -249,7 +248,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
         outputs = ['beta', 'alpha', 'r_value', 'p_value', 'stderr']
 
         returns = Returns(window_length=returns_length)
-        masks = self.cascading_mask, self.alternating_mask, NotSpecified
+        masks = self.cascading_mask, self.alternating_mask, None
         expected_mask_results = (
             self.expected_cascading_mask_result,
             self.expected_alternating_mask_result,
@@ -269,11 +268,11 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
                 for output in outputs
             }
             pipeline = Pipeline(columns=columns)
-            if mask is not NotSpecified:
+            if mask is not None:
                 pipeline.add(mask, 'mask')
 
             results = run_pipeline(pipeline, start_date, end_date)
-            if mask is not NotSpecified:
+            if mask is not None:
                 mask_results = results['mask'].unstack()
                 check_arrays(mask_results.values, expected_mask)
 
@@ -374,7 +373,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
         # factor both with and without a specified mask.
         my_asset_filter = AssetID().eq(1)
 
-        for mask in (NotSpecified, my_asset_filter):
+        for mask in (None, my_asset_filter):
             pearson_factor = RollingPearsonOfReturns(
                 target=my_asset,
                 returns_length=3,

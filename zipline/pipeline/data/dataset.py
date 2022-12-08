@@ -16,7 +16,7 @@ from zipline.pipeline.classifiers import Classifier, Latest as LatestClassifier
 from zipline.pipeline.domain import Domain, GENERIC
 from zipline.pipeline.factors.factor import Factor, Latest as LatestFactor
 from zipline.pipeline.filters import Filter, Latest as LatestFilter
-from zipline.pipeline.sentinels import NotSpecified, sentinel
+from zipline.utils.sentinel import sentinel
 from zipline.pipeline.term import (
     AssetExists,
     LoadableTerm,
@@ -43,7 +43,7 @@ class Column(object):
     @preprocess(dtype=ensure_dtype)
     def __init__(self,
                  dtype,
-                 missing_value=NotSpecified,
+                 missing_value=None,
                  doc=None,
                  metadata=None,
                  currency_aware=False):

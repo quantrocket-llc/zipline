@@ -5,7 +5,6 @@ from zipline.pipeline.dtypes import (
     FACTOR_DTYPES,
     FILTER_DTYPES,
 )
-from zipline.pipeline.sentinels import NotSpecified
 from zipline.testing import parameter_space
 from zipline.testing.fixtures import ZiplineTestCase
 from zipline.utils.numpy_utils import int64_dtype, bool_dtype
@@ -22,7 +21,7 @@ class DtypeTestCase(ZiplineTestCase):
         @parameter_space(dtype_=dtypes)
         def test(self, dtype_):
             class Correct(cls):
-                missing_value = missing_values.get(dtype_, NotSpecified)
+                missing_value = missing_values.get(dtype_, None)
                 inputs = []
                 window_length = 1
                 dtype = dtype_
@@ -37,7 +36,7 @@ class DtypeTestCase(ZiplineTestCase):
         def test(self, dtype_):
             with self.assertRaises(UnsupportedDataType) as e:
                 class Incorrect(cls):
-                    missing_value = missing_values.get(dtype_, NotSpecified)
+                    missing_value = missing_values.get(dtype_, None)
                     inputs = []
                     window_length = 1
                     dtype = dtype_

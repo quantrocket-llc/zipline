@@ -72,7 +72,6 @@ from zipline.pipeline.loaders.synthetic import (
     make_bar_data,
     expected_bar_values_2d,
 )
-from zipline.pipeline.sentinels import NotSpecified
 from zipline.pipeline.term import InputDates
 from zipline.testing import (
     AssetID,
@@ -626,7 +625,7 @@ class ConstantInputTestCase(WithConstantInputs,
             shape=(num_dates, num_assets), fill_value=True, dtype=bool_dtype,
         )
 
-        masks = cascading_mask, alternating_mask, NotSpecified
+        masks = cascading_mask, alternating_mask, None
         expected_mask_results = (
             expected_cascading_mask_result,
             expected_alternating_mask_result,
@@ -637,13 +636,13 @@ class ConstantInputTestCase(WithConstantInputs,
             pipeline = Pipeline(
                 columns={'open_price': open_price, 'close_price': close_price},
             )
-            if mask is not NotSpecified:
+            if mask is not None:
                 pipeline.add(mask, 'mask')
 
             results = self.engine.run_pipeline(pipeline, dates[0], dates[-1])
             for colname, case_column in (('open_price', open),
                                          ('close_price', close)):
-                if mask is not NotSpecified:
+                if mask is not None:
                     mask_results = results['mask'].unstack()
                     check_arrays(mask_results.values, expected_mask)
                 output_results = results[colname].unstack()

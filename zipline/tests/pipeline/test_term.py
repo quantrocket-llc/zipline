@@ -33,7 +33,6 @@ from zipline.pipeline.data.testing import TestingDataSet
 from zipline.pipeline.domain import US_EQUITIES
 from zipline.pipeline.expression import NUMEXPR_MATH_FUNCS
 from zipline.pipeline.factors import RecarrayField
-from zipline.pipeline.sentinels import NotSpecified
 from zipline.pipeline.term import AssetExists, LoadableTerm
 from zipline.testing import parameter_space
 from zipline.testing.fixtures import WithTradingSessions, ZiplineTestCase
@@ -128,15 +127,15 @@ def gen_equivalent_factors():
     object.
     """
     yield SomeFactor()
-    yield SomeFactor(inputs=NotSpecified)
+    yield SomeFactor(inputs=None)
     yield SomeFactor(SomeFactor.inputs)
     yield SomeFactor(inputs=SomeFactor.inputs)
     yield SomeFactor([SomeDataSet.foo, SomeDataSet.bar])
     yield SomeFactor(window_length=SomeFactor.window_length)
-    yield SomeFactor(window_length=NotSpecified)
+    yield SomeFactor(window_length=None)
     yield SomeFactor(
         [SomeDataSet.foo, SomeDataSet.bar],
-        window_length=NotSpecified,
+        window_length=None,
     )
     yield SomeFactor(
         [SomeDataSet.foo, SomeDataSet.bar],
@@ -534,7 +533,7 @@ class ObjectIdentityTestCase(TestCase):
         )
 
     def test_parameterized_term_default_value_with_not_specified(self):
-        defaults = {'a': 'default for a', 'b': NotSpecified}
+        defaults = {'a': 'default for a', 'b': None}
 
         class F(Factor):
             params = defaults
@@ -569,7 +568,7 @@ class ObjectIdentityTestCase(TestCase):
         class SomeFactorNoDType(SomeFactor):
             window_length = 10
             inputs = (SomeDataSet.foo,)
-            dtype = NotSpecified
+            dtype = None
 
         with self.assertRaises(TermInputsNotSpecified):
             SomeFactor(window_length=1)

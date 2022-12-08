@@ -11,7 +11,6 @@ from zipline.errors import IncompatibleTerms
 from zipline.pipeline.factors.factor import CustomFactor
 from zipline.pipeline.filters import SingleAsset
 from zipline.pipeline.mixins import StandardOutputs
-from zipline.pipeline.sentinels import NotSpecified
 from zipline.pipeline.term import AssetExists
 from zipline.utils.input_validation import (
     expect_bounded,
@@ -39,7 +38,7 @@ class _RollingCorrelation(CustomFactor):
                 base_factor,
                 target,
                 correlation_length,
-                mask=NotSpecified):
+                mask=None):
         if target.ndim == 2 and base_factor.mask is not target.mask:
             raise IncompatibleTerms(term_1=base_factor, term_2=target)
 
@@ -182,7 +181,7 @@ class RollingLinearRegression(CustomFactor):
                 dependent,
                 independent,
                 regression_length,
-                mask=NotSpecified):
+                mask=None):
         if independent.ndim == 2 and dependent.mask is not independent.mask:
             raise IncompatibleTerms(term_1=dependent, term_2=independent)
 
@@ -296,7 +295,7 @@ class RollingPearsonOfReturns(RollingPearson):
                 target,
                 returns_length,
                 correlation_length,
-                mask=NotSpecified):
+                mask=None):
         # Use the `SingleAsset` filter here because it protects against
         # inputting a non-existent target asset.
         returns = Returns(
@@ -346,7 +345,7 @@ class RollingSpearmanOfReturns(RollingSpearman):
                 target,
                 returns_length,
                 correlation_length,
-                mask=NotSpecified):
+                mask=None):
         # Use the `SingleAsset` filter here because it protects against
         # inputting a non-existent target asset.
         returns = Returns(
@@ -465,7 +464,7 @@ class RollingLinearRegressionOfReturns(RollingLinearRegression):
                 target,
                 returns_length,
                 regression_length,
-                mask=NotSpecified):
+                mask=None):
         # Use the `SingleAsset` filter here because it protects against
         # inputting a non-existent target asset.
         returns = Returns(

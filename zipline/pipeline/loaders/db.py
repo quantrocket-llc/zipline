@@ -18,7 +18,6 @@ from collections import defaultdict
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
-from zipline.pipeline.sentinels import NotSpecified
 from zipline.utils.numpy_utils import (
     bool_dtype,
     float64_dtype,
@@ -71,7 +70,7 @@ class DatabasePipelineLoader(implements(PipelineLoader)):
 
             for column in columns:
 
-                if column.missing_value is NotSpecified or column.missing_value is None:
+                if column.missing_value is None:
                     # Look up missing value by dtype kind
                     # https://numpy.org/doc/stable/reference/generated/numpy.dtype.kind.html
 

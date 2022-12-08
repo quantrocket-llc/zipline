@@ -33,7 +33,6 @@ from .downsample_helpers import (
     select_sampling_indices,
     expect_downsample_frequency,
 )
-from .sentinels import NotSpecified
 from .term import Term
 
 
@@ -70,7 +69,7 @@ class StandardOutputs(Term):
     """
     def _validate(self):
         super(StandardOutputs, self)._validate()
-        if self.outputs is not NotSpecified:
+        if self.outputs is not None:
             raise ValueError(
                 "{typename} does not support custom outputs,"
                 " but received custom outputs={outputs}.".format(
@@ -84,11 +83,11 @@ class RestrictedDTypeMixin(Term):
     """
     Validation mixin enforcing that a term has a specific dtype.
     """
-    ALLOWED_DTYPES = NotSpecified
+    ALLOWED_DTYPES = None
 
     def _validate(self):
         super(RestrictedDTypeMixin, self)._validate()
-        assert self.ALLOWED_DTYPES is not NotSpecified, (
+        assert self.ALLOWED_DTYPES is not None, (
             "ALLOWED_DTYPES not supplied on subclass "
             "of RestrictedDTypeMixin: %s." % type(self).__name__
         )
@@ -112,13 +111,13 @@ class CustomTermMixin(Term):
     ctx = nop_context
 
     def __new__(cls,
-                inputs=NotSpecified,
-                outputs=NotSpecified,
-                window_length=NotSpecified,
-                mask=NotSpecified,
-                dtype=NotSpecified,
-                missing_value=NotSpecified,
-                ndim=NotSpecified,
+                inputs=None,
+                outputs=None,
+                window_length=None,
+                mask=None,
+                dtype=None,
+                missing_value=None,
+                ndim=None,
                 **kwargs):
 
         unexpected_keys = set(kwargs) - set(cls.params)
@@ -159,7 +158,7 @@ class CustomTermMixin(Term):
 
         The resulting array must have a shape of ``shape``.
 
-        If we have standard outputs (i.e. self.outputs is NotSpecified), the
+        If we have standard outputs (i.e. self.outputs is None), the
         default is an empty ndarray whose dtype is ``self.dtype``.
 
         If we have an outputs tuple, the default is an empty recarray with
@@ -171,7 +170,7 @@ class CustomTermMixin(Term):
         """
         missing_value = self.missing_value
         outputs = self.outputs
-        if outputs is not NotSpecified:
+        if outputs is not None:
             out = recarray(
                 shape,
                 formats=[self.dtype.str] * len(outputs),

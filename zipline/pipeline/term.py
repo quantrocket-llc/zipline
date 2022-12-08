@@ -39,7 +39,6 @@ from zipline.utils.numpy_utils import (
 )
 from .domain import Domain, GENERIC, infer_domain
 from .downsample_helpers import expect_downsample_frequency
-from .sentinels import NotSpecified
 
 
 class Term(with_metaclass(ABCMeta, object)):
@@ -74,9 +73,9 @@ class Term(with_metaclass(ABCMeta, object)):
        Memoization of terms means that it's generally unsafe to modify
        attributes of a term after construction.
     """
-    # These are NotSpecified because a subclass is required to provide them.
-    dtype = NotSpecified
-    missing_value = NotSpecified
+    # These are None because a subclass is required to provide them.
+    dtype = None
+    missing_value = None
 
     # Subclasses aren't required to provide `params`.  The default behavior is
     # no params.
@@ -94,11 +93,11 @@ class Term(with_metaclass(ABCMeta, object)):
     _term_cache = WeakValueDictionary()
 
     def __new__(cls,
-                domain=NotSpecified,
-                dtype=NotSpecified,
-                missing_value=NotSpecified,
-                window_safe=NotSpecified,
-                ndim=NotSpecified,
+                domain=None,
+                dtype=None,
+                missing_value=None,
+                window_safe=None,
+                ndim=None,
                 # params is explicitly not allowed to be passed to an instance.
                 *args,
                 **kwargs):
@@ -114,15 +113,15 @@ class Term(with_metaclass(ABCMeta, object)):
         """
         # Subclasses can override these class-level attributes to provide
         # different default values for instances.
-        if domain is NotSpecified:
+        if domain is None:
             domain = cls.domain
-        if dtype is NotSpecified:
+        if dtype is None:
             dtype = cls.dtype
-        if missing_value is NotSpecified:
+        if missing_value is None:
             missing_value = cls.missing_value
-        if ndim is NotSpecified:
+        if ndim is None:
             ndim = cls.ndim
-        if window_safe is NotSpecified:
+        if window_safe is None:
             window_safe = cls.window_safe
 
         dtype, missing_value = validate_dtype(
@@ -180,12 +179,12 @@ class Term(with_metaclass(ABCMeta, object)):
         """
         params = cls.params
         if not isinstance(params, Mapping):
-            params = {k: NotSpecified for k in params}
+            params = {k: None for k in params}
         param_values = []
         for key, default_value in params.items():
             try:
                 value = kwargs.pop(key, default_value)
-                if value is NotSpecified:
+                if value is None:
                     raise KeyError(key)
 
                 # Check here that the value is hashable so that we fail here
@@ -478,11 +477,11 @@ class ComputableTerm(Term):
     This is the base class for :class:`zipline.pipeline.Factor`,
     :class:`zipline.pipeline.Filter`, and :class:`zipline.pipeline.Classifier`.
     """
-    inputs = NotSpecified
-    outputs = NotSpecified
-    window_length = NotSpecified
-    mask = NotSpecified
-    domain = NotSpecified
+    inputs = None
+    outputs = None
+    window_length = None
+    mask = None
+    domain = None
 
     def __new__(cls,
                 inputs=inputs,
@@ -492,12 +491,12 @@ class ComputableTerm(Term):
                 domain=domain,
                 *args, **kwargs):
 
-        if inputs is NotSpecified:
+        if inputs is None:
             inputs = cls.inputs
 
-        # Having inputs = NotSpecified is an error, but we handle it later
+        # Having inputs = None is an error, but we handle it later
         # in self._validate rather than here.
-        if inputs is not NotSpecified:
+        if inputs is not None:
             # Allow users to pass a single input without putting it in a list
             if not isinstance(inputs, Container):
                 inputs = (inputs,)
@@ -511,20 +510,20 @@ class ComputableTerm(Term):
             if non_terms:
                 raise NonPipelineInputs(cls.__name__, non_terms)
 
-            if domain is NotSpecified:
+            if domain is None:
                 domain = infer_domain(inputs)
 
-        if outputs is NotSpecified:
+        if outputs is None:
             outputs = cls.outputs
-        if outputs is not NotSpecified:
+        if outputs is not None:
             outputs = tuple(outputs)
 
-        if mask is NotSpecified:
+        if mask is None:
             mask = cls.mask
-        if mask is NotSpecified:
+        if mask is None:
             mask = AssetExists()
 
-        if window_length is NotSpecified:
+        if window_length is None:
             window_length = cls.window_length
 
         return super(ComputableTerm, cls).__new__(
@@ -564,7 +563,7 @@ class ComputableTerm(Term):
         super(ComputableTerm, self)._validate()
 
         # Check inputs.
-        if self.inputs is NotSpecified:
+        if self.inputs is None:
             raise TermInputsNotSpecified(termname=type(self).__name__)
 
         if not isinstance(self.domain, Domain):
@@ -574,7 +573,7 @@ class ComputableTerm(Term):
             )
 
         # Check outputs.
-        if self.outputs is NotSpecified:
+        if self.outputs is None:
             pass
         elif not self.outputs:
             raise TermOutputsEmpty(termname=type(self).__name__)
@@ -598,10 +597,10 @@ class ComputableTerm(Term):
                         disallowed_names=disallowed_names,
                     )
 
-        if self.window_length is NotSpecified:
+        if self.window_length is None:
             raise WindowLengthNotSpecified(termname=type(self).__name__)
 
-        if self.mask is NotSpecified:
+        if self.mask is None:
             # This isn't user error, this is a bug in our code.
             raise AssertionError("{term} has no mask".format(term=self))
 
@@ -654,7 +653,7 @@ class ComputableTerm(Term):
         with instances of np.ndarray as inputs.
         """
         return (
-            self.window_length is not NotSpecified
+            self.window_length is not None
             and self.window_length > 0
         )
 
@@ -931,9 +930,9 @@ def validate_dtype(termname, dtype, missing_value):
         coercible to a numpy dtype.
     NoDefaultMissingValue
         When dtype requires an explicit missing_value, but
-        ``missing_value`` is NotSpecified.
+        ``missing_value`` is None.
     """
-    if dtype is NotSpecified:
+    if dtype is None:
         raise DTypeNotSpecified(termname=termname)
 
     try:
@@ -944,7 +943,7 @@ def validate_dtype(termname, dtype, missing_value):
     if not can_represent_dtype(dtype):
         raise UnsupportedDType(dtype=dtype, termname=termname)
 
-    if missing_value is NotSpecified:
+    if missing_value is None:
         missing_value = default_missing_value_for_dtype(dtype)
 
     try:
@@ -974,8 +973,7 @@ def _assert_valid_categorical_missing_value(value):
     label_types = LabelArray.SUPPORTED_SCALAR_TYPES
     if not isinstance(value, label_types):
         raise TypeError(
-            "String-dtype classifiers can only produce strings or None."
-            .format(types=' or '.join([t.__name__ for t in label_types]))
+            f"String-dtype classifiers can only produce strings or None but got {value}"
         )
 
 
