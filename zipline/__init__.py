@@ -23,7 +23,6 @@ from . import data
 from . import finance
 from . import gens
 from . import utils
-from .utils.run_algo import run_algorithm
 from ._version import get_versions
 
 # These need to happen after the other imports.
@@ -81,7 +80,6 @@ __all__ = [
     'finance',
     'get_calendar',
     'gens',
-    'run_algorithm',
     'utils',
     'extension_args'
 ]
