@@ -412,38 +412,6 @@ class summary_funcs(object):
     names = {k for k in locals() if not k.startswith('_')}
 
 
-def summary_method(name):
-    func = getattr(summary_funcs, name)
-
-    @expect_types(mask=(Filter, NotSpecifiedType))
-    @float64_only
-    def f(self, mask=NotSpecified):
-        """Create a 1-dimensional factor computing the {} of self, each day.
-
-        Parameters
-        ----------
-        mask : zipline.pipeline.Filter, optional
-           A Filter representing assets to consider when computing results.
-           If supplied, we ignore asset/date pairs where ``mask`` produces
-           ``False``.
-
-        Returns
-        -------
-        result : zipline.pipeline.Factor
-        """
-        return DailySummary(
-            func,
-            self,
-            mask=mask,
-            dtype=self.dtype,
-        )
-
-    f.__name__ = func.__name__
-    f.__doc__ = f.__doc__.format(f.__name__)
-
-    return f
-
-
 class Factor(RestrictedDTypeMixin, ComputableTerm):
     """
     Pipeline API expression producing a numerical or date-valued output.
@@ -509,14 +477,265 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     __truediv__ = clsdict['__div__']
     __rtruediv__ = clsdict['__rdiv__']
 
-    # Add summary functions.
-    clsdict.update(
-        {name: summary_method(name) for name in summary_funcs.names},
-    )
+    clsdict["_abs"] = clsdict["abs"]
+    def abs(self):
+        """
+        Create a Factor that computes the absolute value of each output.
 
+        Returns
+        -------
+        factor : zipline.pipeline.Factor
+        """
+        # added for sphinx, immediately overridden below
+        pass
+    clsdict["_abs"].__doc__ = abs.__doc__
+    clsdict["abs"] = clsdict["_abs"]
+    del clsdict["_abs"]
+
+    def eq(self, other):
+        """
+        Create a `zipline.pipeline.Filter` computing
+        ``self == other``.
+
+        Parameters
+        ----------
+        other : zipline.pipeline.Factor, float
+            Right-hand side of the expression.
+
+        Returns
+        -------
+        filter : zipline.pipeline.Filter
+            Filter computing ``self == other`` with the outputs of ``self``
+            and ``other``.
+        """
+        # added for sphinx, immediately overridden by factory function below
+        pass
+
+    _eq = binary_operator('==')
+    _eq.__doc__ = eq.__doc__
+    clsdict['eq'] = _eq
+    del _eq
     del clsdict  # don't pollute the class namespace with this.
 
-    eq = binary_operator('==')
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def mean(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the daily mean across assets.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            summary_funcs.mean,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def stddev(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the daily standard deviation
+        across assets.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            summary_funcs.stddev,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def max(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the daily max across assets.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            summary_funcs.max,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def min(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the daily min across assets.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            summary_funcs.min,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def median(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the daily median across assets.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            summary_funcs.median,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def sum(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the daily sum across assets.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            summary_funcs.sum,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    @expect_types(mask=(Filter, NotSpecifiedType))
+    @float64_only
+    def notnull_count(self, mask=NotSpecified):
+        """Create a 1-dimensional factor computing the daily count of not-null
+        values across assets.
+
+        Parameters
+        ----------
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        result : zipline.pipeline.Factor
+        """
+        return DailySummary(
+            summary_funcs.notnull_count,
+            self,
+            mask=mask,
+            dtype=self.dtype,
+        )
+
+    def fillna(self, fill_value):
+        """
+        Create a new term that fills missing values of this term's output with
+        ``fill_value``.
+
+        Parameters
+        ----------
+        fill_value : zipline.pipeline.ComputableTerm, or object.
+            Object to use as replacement for missing values.
+
+            If a ComputableTerm (e.g. a Factor) is passed, that term's results
+            will be used as fill values.
+
+            If a scalar (e.g. a number) is passed, the scalar will be used as a
+            fill value.
+
+        Examples
+        --------
+
+        **Filling with a Scalar:**
+
+        Let ``f`` be a Factor which would produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0    NaN    3.0    4.0
+            2017-03-14    1.5    2.5    NaN    NaN
+
+        Then ``f.fillna(0)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0    0.0    3.0    4.0
+            2017-03-14    1.5    2.5    0.0    0.0
+
+        **Filling with a Term:**
+
+        Let ``f`` be as above, and let ``g`` be another Factor which would
+        produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13   10.0   20.0   30.0   40.0
+            2017-03-14   15.0   25.0   35.0   45.0
+
+        Then, ``f.fillna(g)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0   20.0    3.0    4.0
+            2017-03-14    1.5    2.5   35.0   45.0
+
+        Returns
+        -------
+        filled : zipline.pipeline.ComputableTerm
+            A term computing the same results as ``self``, but with missing
+            values filled in using values from ``fill_value``.
+        """
+        # redefined here to get docstring on Factor
+        return super().fillna(fill_value=fill_value)
 
     @expect_types(
         mask=(Filter, NotSpecifiedType),
