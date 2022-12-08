@@ -1585,6 +1585,30 @@ class NumExprFactor(NumericalExpression, Factor):
     """
     pass
 
+class BooleanFactor(SingleInputMixin, Factor):
+    """
+    Factor that casts a Filter of booleans to 1s and 0s. This factor can be
+    created via Filter.as_factor().
+
+    Parameters
+    ----------
+    filter : zipline.pipeline.Filter
+        Filter producing the boolean array which will be converted to 1s and 0s.
+    """
+    window_length = 0
+    dtype = float64_dtype
+
+    @expect_types(filter=Filter)
+    def __new__(cls, filter):
+        return super(BooleanFactor, cls).__new__(
+            cls,
+            inputs=(filter,),
+            mask=filter.mask,
+        )
+
+    def _compute(self, arrays, dates, assets, mask):
+        data = arrays[0]
+        return (data & mask).astype(float)
 
 class GroupedRowTransform(Factor):
     """

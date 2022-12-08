@@ -319,6 +319,38 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
             if_false=if_false,
         )
 
+    def as_factor(self):
+        """
+        Create a Factor that returns 1s for True and 0s for False.
+
+        Returns
+        -------
+        factor : Factor
+            Factor returning 1s for True and 0s for False.
+
+        Examples
+        --------
+        A common use for `as_factor` is to combine multiple boolean conditions
+        into scores. First, create two Filters that compute whether price and
+        volume are above certain levels:
+
+        >>> from zipline.pipeline.data import EquityPricing
+        >>> price = EquityPricing.close.latest
+        >>> volume = EquityPricing.volume.latest
+        >>> price_is_high = price > 100
+        >>> volume_is_high = volume > 1e6
+
+        Next, convert the boolean Filters to 1s and 0s and combine them into
+        a score with a possible range of 0 to 2:
+
+        >>> score = price_is_high.as_factor() + volume_is_high.as_factor()
+        """
+        # avoid circular import
+        from zipline.pipeline.factors.factor import BooleanFactor
+        return BooleanFactor(
+            filter=self
+        )
+
 
 class NumExprFilter(NumericalExpression, Filter):
     """

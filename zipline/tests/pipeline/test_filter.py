@@ -398,6 +398,22 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
             mask=self.build_mask(self.ones_mask()),
         )
 
+    def test_as_factor(self):
+        data = self.randn_data(seed=10)
+        diag = eye(*data.shape, dtype=bool)
+        data[diag] = nan
+
+        self.check_terms(
+            terms={
+                'notnan': self.f.notnan().as_factor(),
+            },
+            expected={
+                'notnan': (~diag).astype(float),
+            },
+            initial_workspace={self.f: data},
+            mask=self.build_mask(self.ones_mask()),
+        )
+
     def test_all_present_float_factor_input(self):
         """Test float factor input to `AllPresent`
         """
