@@ -12,43 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
-import pandas as pd
-import numpy as np
-from zipline.pipeline.filters import CustomFilter, Filter
-from quantrocket.master import download_master_file
-from zipline.pipeline.data.master import SecuritiesMaster
 
-class Universe(CustomFilter):
-    """
-    A filter limiting to assets that are members of a universe.
+from zipline.pipeline.filters import StaticUniverse
 
-    Parameters
-    ----------
-    code : str, required
-        the universe code
-
-    Examples
-    --------
-    Limit to a universe of energy stocks:
-
-    >>> from zipline.pipeline.filters.master import Universe
-    >>> pipe = Pipeline(screen=Universe("energy-stk"))              # doctest: +SKIP
-    """
-    inputs = [SecuritiesMaster.Sid]
-    window_length = 1
-    params = ("code",)
-
-    def __new__(cls, code):
-        return super(Universe, cls).__new__(cls, code=code)
-
-    def _init(self, *args, **kwargs):
-        # not sure why I have to use this awkward convention to get the param
-        code = kwargs["params"][0][1]
-        f = io.StringIO()
-        download_master_file(f, universes=code, fields="Sid")
-        self._real_sids = pd.read_csv(f).Sid.tolist()
-        return super(Universe, self)._init(*args, **kwargs)
-
-    def compute(self, today, assets, out, real_sids, **params):
-        out[:] = np.array([item in self._real_sids for item in real_sids[-1]])
+# backwards-compat
+Universe = StaticUniverse

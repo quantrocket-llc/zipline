@@ -15,6 +15,7 @@
 
 from interface import implements
 import pandas as pd
+import numpy as np
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
@@ -30,6 +31,19 @@ class SecuritiesMasterPipelineLoader(implements(PipelineLoader)):
 
         fields = [c.name for c in columns]
         real_sids = [self.zipline_sids_to_real_sids[zipline_sid] for zipline_sid in sids]
+
+        # Special case: if all we need is Sid (e.g. when using StaticSids or StaticAssets),
+        # don't query the master, just broadcast the column names
+        if fields == ["Sid"]:
+            out = {
+                columns[0]: AdjustedArray(
+                    np.array([real_sids] * len(dates)),
+                    adjustments={},
+                    missing_value=""
+                    )
+                }
+            return out
+
         reindex_like = pd.DataFrame(None, index=dates, columns=real_sids)
         reindex_like.index.name = "Date"
 

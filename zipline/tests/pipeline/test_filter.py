@@ -40,6 +40,7 @@ from zipline.pipeline.filters import (
     AtLeastN,
     StaticAssets,
     StaticSids,
+    StaticUniverse
 )
 from zipline.testing import parameter_space, permute_rows, ZiplineTestCase
 from zipline.testing.fixtures import WithSeededRandomPipelineEngine
@@ -50,6 +51,7 @@ from zipline.utils.numpy_utils import (
     int64_dtype,
     object_dtype,
 )
+from unittest.mock import patch
 from .base import BaseUSEquityPipelineTestCase
 
 
@@ -1075,14 +1077,40 @@ class SpecificAssetsTestCase(WithSeededRandomPipelineEngine,
         )
 
     def test_specific_sids(self):
-        sids = self.ASSET_FINDER_EQUITY_SIDS
+
+        real_sids = [str(i) for i in self.ASSET_FINDER_EQUITY_SIDS]
 
         self._check_filters(
-            evens=StaticSids(sids[::2]),
-            odds=StaticSids(sids[1::2]),
-            first_five=StaticSids(sids[:5]),
-            last_three=StaticSids(sids[-3:]),
+            evens=StaticSids(real_sids[::2]),
+            odds=StaticSids(real_sids[1::2]),
+            first_five=StaticSids(real_sids[:5]),
+            last_three=StaticSids(real_sids[-3:]),
         )
+
+    def test_specific_universe(self):
+
+        real_sids = [str(i) for i in self.ASSET_FINDER_EQUITY_SIDS]
+
+        def mock_get_securities(universes, fields):
+            if universes == "evens":
+                return pd.DataFrame(index=real_sids[::2])
+            elif universes == "odds":
+                return pd.DataFrame(index=real_sids[1::2])
+            elif universes == "first_five":
+                return pd.DataFrame(index=real_sids[:5])
+            elif universes == "last_three":
+                return pd.DataFrame(index=real_sids[-3:])
+
+        with patch(
+            "zipline.pipeline.filters.filter.get_securities",
+            new=mock_get_securities):
+
+            self._check_filters(
+                evens=StaticUniverse("evens"),
+                odds=StaticUniverse("odds"),
+                first_five=StaticUniverse("first_five"),
+                last_three=StaticUniverse("last_three"),
+            )
 
 
 class TestPostProcessAndToWorkSpaceValue(ZiplineTestCase):

@@ -1630,6 +1630,7 @@ class WithSeededRandomPipelineEngine(WithTradingSessions, WithAssetFinder):
             cls.SEEDED_RANDOM_PIPELINE_SEED,
             cls.trading_days,
             cls._sids,
+            real_sids=[str(sid) for sid in cls._sids],
             columns=cls.make_seeded_random_loader_columns(),
         )
         cls.seeded_random_engine = SimplePipelineEngine(

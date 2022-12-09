@@ -12,6 +12,7 @@ from .filter import (
     SingleAsset,
     StaticAssets,
     StaticSids,
+    StaticUniverse
 )
 from .smoothing import All, Any, AtLeastN
 
@@ -32,4 +33,5 @@ __all__ = [
     'SingleAsset',
     'StaticAssets',
     'StaticSids',
+    "StaticUniverse",
 ]

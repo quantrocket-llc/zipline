@@ -3,7 +3,6 @@ filter.py
 """
 from itertools import chain
 from operator import attrgetter
-
 from numpy import (
     any as np_any,
     float64,
@@ -48,9 +47,7 @@ from zipline.utils.numpy_utils import (
     int64_dtype,
     repeat_first_axis,
 )
-
-from ..sentinels import NotSpecified
-
+from quantrocket.master import get_securities
 
 def concat_tuples(*tuples):
     """
@@ -666,50 +663,81 @@ class SingleAsset(Filter):
         # Graphviz interprets `\l` as "divide label into lines, left-justified"
         return "SingleAsset:\\l  asset: {!r}\\l".format(self._asset)
 
-
-class StaticSids(Filter):
-    """
-    A Filter that computes True for a specific set of predetermined sids.
-
-    ``StaticSids`` is mostly useful for debugging or for interactively
-    computing pipeline terms for a fixed set of sids that are known ahead of
-    time.
-
-    Parameters
-    ----------
-    sids : iterable[int]
-        An iterable of sids for which to filter.
-    """
-    inputs = ()
-    window_length = 0
-    params = ('sids',)
-
-    def __new__(cls, sids):
-        sids = frozenset(sids)
-        return super(StaticSids, cls).__new__(cls, sids=sids)
-
-    def _compute(self, arrays, dates, sids, mask):
-        my_columns = sids.isin(self.params['sids'])
-        return repeat_first_axis(my_columns, len(mask)) & mask
-
-
-class StaticAssets(StaticSids):
+class StaticAssets(Filter):
     """
     A Filter that computes True for a specific set of predetermined assets.
-
-    ``StaticAssets`` is mostly useful for debugging or for interactively
-    computing pipeline terms for a fixed set of assets that are known ahead of
-    time.
 
     Parameters
     ----------
     assets : iterable[Asset]
         An iterable of assets for which to filter.
     """
+    inputs = ()
+    window_length = 0
+    params = ('sids',)
+
     def __new__(cls, assets):
         sids = frozenset(asset.sid for asset in assets)
-        return super(StaticAssets, cls).__new__(cls, sids)
+        return super(StaticAssets, cls).__new__(cls, sids=sids)
 
+    def _compute(self, arrays, dates, sids, mask):
+        my_columns = sids.isin(self.params['sids'])
+        return repeat_first_axis(my_columns, len(mask)) & mask
+
+class StaticSids(Filter):
+    """
+    A filter limiting to specific sids.
+
+    Parameters
+    ----------
+    sids : iterable[str]
+        an iterable of sids for which to filter.
+
+    Examples
+    --------
+    Limit to AAPL and AMZN:
+
+    >>> from zipline.pipeline.filters import StaticSids
+    >>> pipe = Pipeline(screen=StaticSids(["FIBBG000B9XRY4", "FIBBG000BVPV84"]))              # doctest: +SKIP
+    """
+    inputs = None
+    window_length = 1
+    params = ("sids",)
+
+    def __new__(cls, sids):
+        # avoid circular import
+        from zipline.pipeline.data.master import SecuritiesMaster
+        inputs = [SecuritiesMaster.Sid]
+        sids = frozenset(sids)
+        return super(StaticSids, cls).__new__(cls, inputs=inputs, sids=sids)
+
+    def _compute(self, arrays, dates, sids, mask):
+        real_sids = next(arrays[0])[-1]
+        my_columns = real_sids.isin(self.params['sids'])
+        return repeat_first_axis(my_columns, len(mask)) & mask
+
+class StaticUniverse(StaticSids):
+    """
+    A filter limiting to assets that are members of a universe defined
+    in the securities master database.
+
+    Parameters
+    ----------
+    code : str, required
+        the universe code
+
+    Examples
+    --------
+    Limit to a universe of energy stocks:
+
+    >>> from zipline.pipeline.filters import StaticUniverse
+    >>> pipe = Pipeline(screen=StaticUniverse("energy-stk"))              # doctest: +SKIP
+    """
+
+    def __new__(cls, code):
+        securities = get_securities(universes=code, fields="Sid")
+        sids = securities.index.tolist()
+        return super(StaticUniverse, cls).__new__(cls, sids)
 
 class AllPresent(CustomFilter, SingleInputMixin, StandardOutputs):
     """Pipeline filter indicating input term has data for a given window.

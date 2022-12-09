@@ -24,7 +24,8 @@ from zipline.data.adjustments import (
     SQLiteAdjustmentWriter,
 )
 from zipline.data.bcolz_daily_bars import US_EQUITY_PRICING_BCOLZ_COLUMNS
-
+from zipline.pipeline.data.master import SecuritiesMaster
+from zipline.pipeline.loaders.master import SecuritiesMasterPipelineLoader
 from zipline.utils.numpy_utils import (
     bool_dtype,
     datetime64ns_dtype,
@@ -57,13 +58,20 @@ class PrecomputedLoader(implements(PipelineLoader)):
     sids : iterable[int-like]
         Column labels for input data.  Can be anything that pd.DataFrame will
         coerce to an Int64Index.
+    real_sids : iterable[str], optional
+        real sids corresponding to sids. If provided, these will be passed to
+        SecuritiesMasterPipelineLoader, to allow use of StaticSids
 
     Notes
     -----
     Adjustments are unsupported by this loader.
     """
-    def __init__(self, constants, dates, sids):
+    def __init__(self, constants, dates, sids, real_sids=None):
         loaders = {}
+        if real_sids:
+            loaders[SecuritiesMaster.Sid] = SecuritiesMasterPipelineLoader(
+                zipline_sids_to_real_sids=dict(zip(sids,real_sids)))
+
         for column, const in iteritems(constants):
             frame = DataFrame(
                 const,
@@ -110,13 +118,16 @@ class EyeLoader(PrecomputedLoader):
         Same as PrecomputedLoader.
     sids : iterable[int-like]
         Same as PrecomputedLoader
+    real_sids : iterable[str], optional
+        Same as PrecomputedLoader
     """
-    def __init__(self, columns, dates, sids):
+    def __init__(self, columns, dates, sids, real_sids=None):
         shape = (len(dates), len(sids))
         super(EyeLoader, self).__init__(
             {column: eye(shape, dtype=column.dtype) for column in columns},
             dates,
             sids,
+            real_sids
         )
 
 
@@ -134,14 +145,17 @@ class SeededRandomLoader(PrecomputedLoader):
         Same as PrecomputedLoader.
     sids : iterable[int-like]
         Same as PrecomputedLoader
+    real_sids : iterable[str], optional
+        Same as PrecomputedLoader
     """
 
-    def __init__(self, seed, columns, dates, sids):
+    def __init__(self, seed, columns, dates, sids, real_sids=None):
         self._seed = seed
         super(SeededRandomLoader, self).__init__(
             {c: self.values(c.dtype, dates, sids) for c in columns},
             dates,
             sids,
+            real_sids
         )
 
     def values(self, dtype, dates, sids):

@@ -16,9 +16,10 @@ def make_eye_loader(dates, sids):
 def make_seeded_random_loader(seed,
                               dates,
                               sids,
+                              real_sids=None,
                               columns=TestingDataSet.columns):
     """
     Make a PipelineLoader that emits random arrays seeded with `seed` for the
     columns in ``TestingDataSet``.
     """
-    return SeededRandomLoader(seed, columns, dates, sids)
+    return SeededRandomLoader(seed, columns, dates, sids, real_sids)
