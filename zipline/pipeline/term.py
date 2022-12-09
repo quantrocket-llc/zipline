@@ -212,19 +212,18 @@ class Term(with_metaclass(ABCMeta, object)):
         return tuple(param_values)
 
     def __init__(self, *args, **kwargs):
-        """
-        Noop constructor to play nicely with our caching __new__.  Subclasses
-        should implement _init instead of this method.
+        # Noop constructor to play nicely with our caching __new__.  Subclasses
+        # should implement _init instead of this method.
 
-        When a class' __new__ returns an instance of that class, Python will
-        automatically call __init__ on the object, even if a new object wasn't
-        actually constructed.  Because we memoize instances, we often return an
-        object that was already initialized from __new__, in which case we
-        don't want to call __init__ again.
+        # When a class' __new__ returns an instance of that class, Python will
+        # automatically call __init__ on the object, even if a new object wasn't
+        # actually constructed.  Because we memoize instances, we often return an
+        # object that was already initialized from __new__, in which case we
+        # don't want to call __init__ again.
 
-        Subclasses that need to initialize new instances should override _init,
-        which is guaranteed to be called only once.
-        """
+        # Subclasses that need to initialize new instances should override _init,
+        # which is guaranteed to be called only once.
+
         pass
 
     @expect_types(key=Asset)
