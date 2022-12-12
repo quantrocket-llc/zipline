@@ -293,3 +293,168 @@ class FillNATestCase(BaseUSEquityPipelineTestCase):
 
     def make_labelarray(self, strs):
         return LabelArray(strs, missing_value=None)
+
+class WhereTestCase(BaseUSEquityPipelineTestCase):
+
+
+    def test_where_with_no_fill_value(self):
+        shape = (4, 4)
+        num_cells = shape[0] * shape[1]
+
+        floats = np.arange(num_cells, dtype=float).reshape(shape)
+        float_expected = np.where(floats < 5, floats, np.nan)
+
+        strs = np.arange(num_cells).astype(str).astype(object).reshape(shape)
+        str_expected = np.where(strs != "5", strs, None)
+
+        ints = np.arange(num_cells, dtype='i8').reshape(shape)
+        int_expected = np.where(np.isin(ints, [5, 7]), -1, ints)
+
+        terms = {
+            'floats': Floats().where(Floats() < 5),
+            'strs': Strs().where(Strs() != "5"),
+            'ints': Ints().where(~Ints().isin([5,7])),
+        }
+
+        expected = {
+            'floats': float_expected,
+            'strs': self.make_labelarray(str_expected),
+            'ints': int_expected,
+        }
+
+        self.check_terms(
+            terms,
+            expected,
+            initial_workspace={
+                Floats(): floats,
+                Strs(): self.make_labelarray(strs),
+                Ints(): ints,
+            },
+            mask=self.build_mask(self.ones_mask(shape=(4, 4))),
+        )
+
+    def test_where_fill_with_scalar(self):
+        shape = (4, 4)
+        num_cells = shape[0] * shape[1]
+
+        floats = np.arange(num_cells, dtype=float).reshape(shape)
+        float_fillval = 999.0
+        float_expected = np.where(floats < 5, floats, float_fillval)
+        float_expected_zero = np.where(floats < 5, floats, 0.0)
+
+        strs = np.arange(num_cells).astype(str).astype(object).reshape(shape)
+        str_fillval = "filled"
+        str_expected = np.where(strs != "5", strs, str_fillval)
+
+        ints = np.arange(num_cells, dtype='i8').reshape(shape)
+        int_fillval = 777
+        int_expected = np.where(np.isin(ints, [5, 7]), int_fillval, ints)
+
+        terms = {
+            'floats': Floats().where(Floats() < 5, float_fillval),
+            # Make sure we accept integer as a fill value on float-dtype
+            # factors.
+            'floats_fill_zero': Floats().where(Floats() < 5, 0),
+            'strs': Strs().where(Strs() != "5", str_fillval),
+            'ints': Ints().where(~Ints().isin([5,7]), int_fillval),
+        }
+
+        expected = {
+            'floats': float_expected,
+            'floats_fill_zero': float_expected_zero,
+            'strs': self.make_labelarray(str_expected),
+            'ints': int_expected,
+        }
+
+        self.check_terms(
+            terms,
+            expected,
+            initial_workspace={
+                Floats(): floats,
+                Strs(): self.make_labelarray(strs),
+                Ints(): ints,
+            },
+            mask=self.build_mask(self.ones_mask(shape=(4, 4))),
+        )
+
+    def test_where_fill_with_expression(self):
+        shape = (4, 4)
+        mask = self.build_mask(self.ones_mask(shape=(4, 4)))
+        state = np.random.RandomState(4)
+        assets = self.asset_finder.retrieve_all(mask.columns)
+
+        def rand_vals(dtype):
+            return state.randint(1, 100, shape).astype(dtype)
+
+        floats = np.arange(16, dtype=float).reshape(shape)
+        float_fillval = rand_vals(float)
+        float_expected = np.where(floats < 5, floats, float_fillval)
+        float_expected_1d = np.where(floats < 5, floats, float_fillval[:, [0]])
+
+        strs = np.arange(16).astype(str).astype(object).reshape(shape)
+        str_fillval = rand_vals(str)
+        str_expected = np.where(strs != "5", strs, str_fillval)
+        str_expected_1d = np.where(strs != "5", strs, str_fillval[:, [2]])
+
+        ints = np.arange(16).reshape(shape)
+        int_fillval = rand_vals(int64_dtype)
+        int_expected = np.where(np.isin(ints, [5,7]), int_fillval, ints)
+        int_expected_1d = np.where(np.isin(ints, [5,7]), int_fillval[:, [3]], ints)
+
+        terms = {
+            'floats': Floats().where(Floats() < 5, AltFloats()),
+            'floats_1d': Floats().where(Floats() < 5, AltFloats()[assets[0]]),
+
+            'strs': Strs().where(Strs() != "5", AltStrs()),
+            'strs_1d': Strs().where(Strs() != "5", AltStrs()[assets[2]]),
+
+            'ints': Ints().where(~Ints().isin([5,7]), AltInts()),
+            'ints_1d': Ints().where(~Ints().isin([5,7]), AltInts()[assets[3]]),
+        }
+
+        expected = {
+            'floats': float_expected,
+            'floats_1d': float_expected_1d,
+            'strs': self.make_labelarray(str_expected),
+            'strs_1d': self.make_labelarray(str_expected_1d),
+            'ints': int_expected,
+            'ints_1d': int_expected_1d,
+        }
+
+        self.check_terms(
+            terms,
+            expected,
+            initial_workspace={
+                Floats(): floats,
+                Strs(): self.make_labelarray(strs),
+                Ints(): ints,
+
+                AltFloats(): float_fillval,
+                AltStrs(): self.make_labelarray(str_fillval),
+                AltInts(): int_fillval,
+            },
+            mask=mask,
+        )
+
+    def test_bad_inputs(self):
+
+        with self.assertRaises(TypeError) as cm:
+            Floats().where(1)
+
+        message = str(cm.exception)
+        self.assertEqual(message, "condition argument must be a Filter")
+
+        with self.assertRaises(TypeError) as cm:
+            Floats().where(Floats())
+
+        message = str(cm.exception)
+        self.assertEqual(message, "condition argument must be a Filter")
+
+        with self.assertRaises(TypeError) as cm:
+            Bools().where(Bools())
+
+        message = str(cm.exception)
+        self.assertEqual(message, "where() is not supported for Filters")
+
+    def make_labelarray(self, strs):
+        return LabelArray(strs, missing_value=None)

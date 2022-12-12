@@ -542,12 +542,6 @@ class ObjectIdentityTestCase(TestCase):
             dtype = 'f8'
             window_length = 5
 
-        pattern = r"F expected a keyword parameter 'b'\."
-        with assert_raises_regex(TypeError, pattern):
-            F()
-        with assert_raises_regex(TypeError, pattern):
-            F(a='new a')
-
         assert_equal(F(b='new b').params, assoc(defaults, 'b', 'new b'))
         assert_equal(
             F(a='new a', b='new b').params,

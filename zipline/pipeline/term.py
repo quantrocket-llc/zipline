@@ -184,7 +184,7 @@ class Term(with_metaclass(ABCMeta, object)):
         for key, default_value in params.items():
             try:
                 value = kwargs.pop(key, default_value)
-                if value is None:
+                if value is None and default_value is not None:
                     raise KeyError(key)
 
                 # Check here that the value is hashable so that we fail here
@@ -843,8 +843,79 @@ class ComputableTerm(Term):
             A term computing the same results as ``self``, but with missing
             values filled in using values from ``fill_value``.
         """
+        return self.where(self.notnull(), fill_value=fill_value)
+
+    def where(self, condition, fill_value=None):
+        """
+        Create a new term that preserves original values where `condition` is
+        True and replaced values with `fill_value` (or NaN if `fill_value` is
+        omitted) where `condition` is False.
+
+        Parameters
+        ----------
+        condition : zipline.pipeline.Filter
+            a Filter indicating which values to keep
+
+        fill_value : zipline.pipeline.ComputableTerm, or object, optional
+            Object to use as replacement for values not fulfilling condition.
+
+            If a ComputableTerm (e.g. a Factor) is passed, that term's results
+            will be used as fill values.
+
+            If a scalar (e.g. a number) is passed, the scalar will be used as a
+            fill value.
+
+        Examples
+        --------
+
+        Let ``f`` be a Factor which would produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0    0.0    3.0    4.0
+            2017-03-14    1.5    2.5    0.0    0.0
+
+        Then ``f.where(f > 0)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0    NaN    3.0    4.0
+            2017-03-14    1.5    2.5    NaN    NaN
+
+        **Filling with a Scalar:**
+
+        Let ``f`` be as above. Then ``f.where(f > 0, -1)`` produces the
+        following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0   -1.0    3.0    4.0
+            2017-03-14    1.5    2.5   -1.0   -1.0
+
+        **Filling with a Term:**
+
+        Let ``f`` be as above, and let ``g`` be another Factor which would
+        produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13   10.0   20.0   30.0   40.0
+            2017-03-14   15.0   25.0   35.0   45.0
+
+        Then, ``f.where(f > 0, g)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0   20.0    3.0    4.0
+            2017-03-14    1.5    2.5   35.0   45.0
+
+        Returns
+        -------
+        filled : zipline.pipeline.ComputableTerm
+            A term computing the same results as ``self`` where ``condition`` is
+            True, and ``fill_value`` (or NaN if ``fill value`` is omitted) where
+            ``condition`` is False.
+        """
         if self.dtype == bool_dtype:
-            raise TypeError("fillna() is not supported for Filters")
+            raise TypeError("where() is not supported for Filters")
+
+        if not isinstance(condition, ComputableTerm) or condition.dtype != bool_dtype:
+            raise TypeError("condition argument must be a Filter")
 
         if isinstance(fill_value, LoadableTerm):
             raise TypeError(
@@ -854,21 +925,24 @@ class ComputableTerm(Term):
         elif isinstance(fill_value, ComputableTerm):
             if_false = fill_value
         else:
-            # Assume we got a scalar value. Make sure it's compatible with our
-            # dtype.
-            try:
-                fill_value = _coerce_to_dtype(fill_value, self.dtype)
-            except TypeError as e:
-                raise TypeError(
-                    "Fill value {value!r} is not a valid choice "
-                    "for term {termname} with dtype {dtype}.\n\n"
-                    "Coercion attempt failed with: {error}".format(
-                        termname=type(self).__name__,
-                        value=fill_value,
-                        dtype=self.dtype,
-                        error=e,
+            if fill_value is not None:
+                # Assume we got a scalar value. Make sure it's compatible with our
+                # dtype.
+                try:
+                    fill_value = _coerce_to_dtype(fill_value, self.dtype)
+                except TypeError as e:
+                    raise TypeError(
+                        "Fill value {value!r} is not a valid choice "
+                        "for term {termname} with dtype {dtype}.\n\n"
+                        "Coercion attempt failed with: {error}".format(
+                            termname=type(self).__name__,
+                            value=fill_value,
+                            dtype=self.dtype,
+                            error=e,
+                        )
                     )
-                )
+            else:
+                fill_value = self.missing_value
 
             if_false = self._constant_type(
                 const=fill_value,
@@ -876,7 +950,7 @@ class ComputableTerm(Term):
                 missing_value=self.missing_value,
             )
 
-        return self.notnull().if_else(if_true=self, if_false=if_false)
+        return condition.if_else(if_true=self, if_false=if_false)
 
     @classlazyval
     def _constant_type(cls):
