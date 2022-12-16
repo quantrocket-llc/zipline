@@ -24,7 +24,7 @@ from zipline.pipeline.data import EquityPricing
 from zipline.pipeline.factors import Returns
 from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
-from zipline.research.exceptions import ValidationError
+from zipline.research.exceptions import ValidationError, RequestedEndDateAfterBundleEndDate
 from zipline.research._asset import asset_finder_cache
 from quantrocket.zipline import get_default_bundle
 from trading_calendars import get_calendar
@@ -73,6 +73,24 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
             })
     >>> factor = run_pipeline(pipeline, '2018-01-01', '2019-02-01', bundle="usstock-1min")    # doctest: +SKIP
     """
+    return _run_pipeline(
+        pipeline,
+        start_date=start_date,
+        end_date=end_date,
+        bundle=bundle)
+
+def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
+    """
+    Internal function for run_pipeline that adds a mask parameter used by
+    get_forward_returns. See run_pipeline.
+
+    Parameters
+    ----------
+    mask : DataFrame, optional
+        boolean DataFrame of dates (index) and assets (columns), indicating which date
+        and asset combinations to compute values for. Values will only be computed for
+        dates and assets containing True values.
+    """
 
     if not bundle:
         bundle = get_default_bundle()
@@ -98,6 +116,7 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
     else:
         start_date = start_date.tz_localize("UTC")
 
+    requested_end_date = end_date
     if end_date:
         end_date = pd.Timestamp(end_date)
     else:
@@ -133,6 +152,26 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
         end_date < start_date):
         raise ValidationError("end_date cannot be earlier than start_date")
 
+    # Check if data is available through the requested end date (this prevents
+    # confusing errors that can occur when a user runs a pipeline through a certain
+    # end date but hasn't updated their bundle to that end date)
+    lifetimes = bundle_data.asset_finder.lifetimes(
+        trading_calendar.sessions_in_range(
+            bundles.bundles[bundle].start_session,
+            pd.Timestamp.today(tz="UTC")),
+        include_start_date=True,
+        country_codes=[trading_calendar.country_code]).any(axis=1)
+    max_end_date = lifetimes[lifetimes].index[-1]
+    if max_end_date < end_date:
+        if requested_end_date:
+            raise RequestedEndDateAfterBundleEndDate(
+                f"end_date ({pd.Timestamp(requested_end_date).date()}) must be no "
+                f"later than {max_end_date.date()} because {bundle} bundle contains "
+                "no data after that date.")
+        else:
+            # if the user didn't specify an end date, just silently use the max end date
+            end_date = max_end_date
+
     default_pipeline_loader = EquityPricingLoader.without_fx(
         bundle_data.equity_daily_bar_reader,
         bundle_data.adjustment_reader,
@@ -149,10 +188,31 @@ def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
 
     calendar_domain = domain.get_domain_from_calendar(trading_calendar)
 
+    kwargs = {}
+
+    if mask is not None:
+        mask.columns = [asset.sid for asset in mask.columns]
+
+        def populate_initial_workspace(
+            initial_workspace,
+            root_mask_term,
+            execution_plan,
+            dates,
+            assets):
+
+            mask_values = mask.reindex(index=dates, columns=assets).fillna(
+                False).values
+
+            initial_workspace[root_mask_term] = mask_values
+            return initial_workspace
+
+        kwargs["populate_initial_workspace"] = populate_initial_workspace
+
     engine = SimplePipelineEngine(
         pipeline_loader,
         asset_finder,
-        calendar_domain)
+        calendar_domain,
+        **kwargs)
 
     return engine.run_pipeline(pipeline, start_date, end_date)
 
@@ -168,8 +228,8 @@ def get_forward_returns(factor, periods=None, bundle=None):
         MultiIndex of (date, asset), as returned by ``run_pipeline``.
 
     periods : int or list of int
-        The periods over which to calculate the forward returns.
-        Example: [1, 5, 10]. Defaults to [1].
+        The period(s) over which to calculate the forward returns.
+        Example: [1, 5, 21]. Defaults to [1].
 
     bundle : str, optional
         the bundle code. If omitted, the default bundle will be used (and must be set).
@@ -194,6 +254,10 @@ def get_forward_returns(factor, periods=None, bundle=None):
             raise ValidationError("you must specify a bundle or set a default bundle")
         bundle = bundle["default_bundle"]
 
+    if factor.empty:
+        raise ValidationError(
+            "cannot compute forward returns because the factor you provided is empty")
+
     if not periods:
         periods = [1]
 
@@ -205,15 +269,44 @@ def get_forward_returns(factor, periods=None, bundle=None):
         columns[f"{window_length}D"] = Returns(window_length=window_length+1)
 
     pipeline = Pipeline(columns=columns)
-    returns_data = run_pipeline(
-        pipeline,
-        factor.index.get_level_values(0).min(),
-        factor.index.get_level_values(0).max(),
-        bundle=bundle)
+
+    start_date = factor.index.get_level_values("date").min()
+    orig_end_date = factor.index.get_level_values("date").max()
+
+    # For end_date, request enough cushion to calculate forward returns
+    index_cushion = pd.date_range(
+        start=factor.index.levels[0].max(),
+        periods=max(periods) + 5,
+        freq=factor.index.levels[0].freq)
+
+    end_date = index_cushion.max()
+
+    mask = factor.iloc[:, 0].unstack()
+    mask = pd.DataFrame(
+        True,
+        index=mask.index.union(index_cushion),
+        columns=mask.columns)
+
+    try:
+        returns_data = _run_pipeline(
+            pipeline,
+            start_date,
+            end_date,
+            bundle=bundle,
+            mask=mask)
+    except RequestedEndDateAfterBundleEndDate as e:
+        # Improve the error message, since the error may have been caused
+        # by having to extend the index to compute forward returns
+        raise RequestedEndDateAfterBundleEndDate(
+            str(e) + (
+                f" The end_date {end_date.date()} resulted from extending "
+                f"the requested pipeline end date of {orig_end_date.date()} to compute "
+                f"{max(periods)}D forward returns. You may need to end the pipeline "
+                f"earlier or shorten the forward returns computation."))
 
     for window_length in periods:
         colname = f"{window_length}D"
-        returns_data[colname] = returns_data[colname].unstack().shift(-window_length).stack()
+        returns_data[colname] = returns_data[colname].unstack().shift(-window_length).stack(dropna=False)
 
     returns_data = returns_data.reindex(index=factor.index)
     returns_data.index.set_names(["date", "asset"], inplace=True)
