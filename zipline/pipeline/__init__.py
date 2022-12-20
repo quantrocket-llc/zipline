@@ -4,6 +4,7 @@ from .classifiers import Classifier, CustomClassifier
 from .domain import Domain
 from .factors import Factor, CustomFactor
 from .filters import Filter, CustomFilter
+from .constant import Constant
 from .term import Term, LoadableTerm, ComputableTerm
 from .graph import ExecutionPlan, TermGraph
 # NOTE: this needs to come after the import of `graph`, or else we get circular
@@ -13,6 +14,7 @@ from .pipeline import Pipeline
 
 __all__ = (
     'Classifier',
+    'Constant',
     'CustomFactor',
     'CustomFilter',
     'CustomClassifier',

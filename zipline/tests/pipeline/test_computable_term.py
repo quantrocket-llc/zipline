@@ -3,7 +3,7 @@
 import numpy as np
 
 from zipline.lib.labelarray import LabelArray
-from zipline.pipeline import Classifier, Factor, Filter
+from zipline.pipeline import Classifier, Factor, Filter, Constant
 from zipline.testing import parameter_space
 from zipline.utils.numpy_utils import (
     categorical_dtype,
@@ -455,6 +455,56 @@ class WhereTestCase(BaseUSEquityPipelineTestCase):
 
         message = str(cm.exception)
         self.assertEqual(message, "where() is not supported for Filters")
+
+    def make_labelarray(self, strs):
+        return LabelArray(strs, missing_value=None)
+
+class ConstantTestCase(BaseUSEquityPipelineTestCase):
+
+    def test_constants(self):
+        shape = (4, 4)
+        mask = self.build_mask(self.ones_mask(shape=(4, 4)))
+        state = np.random.RandomState(4)
+        assets = self.asset_finder.retrieve_all(mask.columns)
+
+        def rand_vals(dtype):
+            return state.randint(1, 100, shape).astype(dtype)
+
+        floats = np.arange(16, dtype=float).reshape(shape)
+        float_expected = np.where(floats < 5, 1.0, 2.0)
+
+        strs = np.arange(16).astype(str).astype(object).reshape(shape)
+        str_expected = np.where(strs != "5", 'dog', 'cat')
+
+        constant_float_expected = np.array([1.0]*16, dtype=float).reshape(shape)
+        constant_str_expected = np.array(['fish']*16, dtype=object).reshape(shape)
+        constant_bool_expected = np.array([0.0]*16, dtype=float).reshape(shape)
+
+        terms = {
+            'floats': Constant(1).where(Floats() < 5, Constant(2.0)),
+            'strs': Constant('dog').where(Strs() != "5", Constant('cat')),
+            'constant_floats': Constant(1),
+            'constant_strs': Constant('fish'),
+            'constant_bool': Constant(False),
+        }
+
+        expected = {
+            'floats': float_expected,
+            'strs': self.make_labelarray(str_expected),
+            'constant_floats': constant_float_expected,
+            'constant_strs':  self.make_labelarray(constant_str_expected),
+            'constant_bool': constant_bool_expected
+        }
+
+        self.check_terms(
+            terms,
+            expected,
+            initial_workspace={
+                Floats(): floats,
+                Strs(): self.make_labelarray(strs),
+            },
+            mask=mask,
+        )
 
     def make_labelarray(self, strs):
         return LabelArray(strs, missing_value=None)

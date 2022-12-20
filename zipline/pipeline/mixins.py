@@ -707,3 +707,6 @@ class ConstantMixin(StandardOutputs, UniversalMixin):
     @staticmethod
     def _universal_mixin_specialization_name(principal_type):
         return 'Constant' + principal_type.__name__
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.params['const']})"

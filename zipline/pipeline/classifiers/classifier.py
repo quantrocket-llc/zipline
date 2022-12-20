@@ -474,7 +474,7 @@ class Relabel(SingleInputMixin, Classifier):
     Parameters
     ----------
     arg : zipline.pipeline.Classifier
-        Term produceing the input to be relabeled.
+        Term producing the input to be relabeled.
     relabel_func : function(LabelArray) -> LabelArray
         Function to apply to the result of `term`.
     """
