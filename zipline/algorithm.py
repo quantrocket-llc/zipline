@@ -588,9 +588,6 @@ class TradingAlgorithm(object):
             )
             benchmark_returns = None
         else:
-            if self.benchmark_returns is None:
-                raise ValueError("Must specify either benchmark_sid "
-                                 "or benchmark_returns.")
             benchmark_asset = None
             benchmark_returns = self.benchmark_returns
         return BenchmarkSource(

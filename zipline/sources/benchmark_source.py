@@ -46,10 +46,14 @@ class BenchmarkSource(object):
                  sessions,
                  data_portal
               )
-        elif benchmark_returns is not None:
-            self._daily_returns = daily_series = benchmark_returns.reindex(
-                sessions,
-            ).fillna(0)
+        else:
+            if benchmark_returns is not None:
+                self._daily_returns = daily_series = benchmark_returns.reindex(
+                    sessions,
+                ).fillna(0)
+            else:
+                self._daily_returns = daily_series = pd.Series(
+                    0.0, index=sessions, dtype="float64")
 
             if self.emission_rate == "minute":
                 # we need to take the env's benchmark returns, which are daily,
@@ -67,9 +71,6 @@ class BenchmarkSource(object):
                 self._precalculated_series = minute_series
             else:
                 self._precalculated_series = daily_series
-        else:
-            raise Exception("Must provide either benchmark_asset or "
-                            "benchmark_returns.")
 
     def get_value(self, dt):
         """Look up the returns for a given dt.
