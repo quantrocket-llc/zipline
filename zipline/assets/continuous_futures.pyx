@@ -108,6 +108,12 @@ cdef class ContinuousFuture:
     def exchange_full(self):
         return self.exchange_info.name
 
+    @property
+    def auto_close_date(self):
+        # individual contracts have an auto_close_date but a continuous
+        # future does not
+        return None
+
     def __int__(self):
         return self.sid
 
@@ -229,10 +235,7 @@ cdef class ContinuousFuture:
         if ref_start > session_label.value:
             return False
 
-        if not self.auto_close_date:
-            return True
-
-        return session_label.value <= self.auto_close_date.value
+        return True
 
     def is_exchange_open(self, dt_minute):
         """
