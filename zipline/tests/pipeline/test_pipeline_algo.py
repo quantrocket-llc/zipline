@@ -34,6 +34,7 @@ from zipline.api import (
     attach_pipeline,
     pipeline_output,
     get_datetime,
+    sid
 )
 from zipline.errors import (
     AttachPipelineAfterInitialize,
@@ -45,7 +46,7 @@ from zipline.finance.trading import SimulationParameters
 from zipline.lib.adjustment import MULTIPLY
 from zipline.pipeline import Pipeline, CustomFactor
 from zipline.pipeline.factors import VWAP
-from zipline.pipeline.data import USEquityPricing
+from zipline.pipeline.data import EquityPricing
 from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.pipeline.loaders.equity_pricing_loader import (
     USEquityPricingLoader,
@@ -103,6 +104,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
                 'symbol': 'A',
                 'start_date': cls.dates[10],
                 'end_date': cls.dates[13],
+                'auto_close_date': cls.dates[13],
                 'exchange': 'NYSE',
                 'real_sid': '1',
                 'currency': 'USD'
@@ -112,6 +114,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
                 'symbol': 'B',
                 'start_date': cls.dates[11],
                 'end_date': cls.dates[14],
+                'auto_close_date': cls.dates[15],
                 'exchange': 'NYSE',
                 'real_sid': '2',
                 'currency': 'USD'
@@ -206,25 +209,29 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
             self.split_ratio
 
         self.pipeline_close_loader = DataFrameLoader(
-            column=USEquityPricing.close,
+            column=EquityPricing.close,
             baseline=self.closes,
             adjustments=self.adjustments,
         )
 
         self.pipeline_volume_loader = DataFrameLoader(
-            column=USEquityPricing.volume,
+            column=EquityPricing.volume,
             baseline=self.volumes,
             adjustments=self.adjustments,
         )
 
-    def expected_close(self, date, asset):
+    def expected_close(self, date, asset, data_frequency='daily'):
+        if data_frequency == 'daily':
+            date += self.trading_day
         if date < self.split_date:
             lookup = self.closes
         else:
             lookup = self.adj_closes
         return lookup.loc[date, int(asset)]
 
-    def expected_volume(self, date, asset):
+    def expected_volume(self, date, asset, data_frequency='daily'):
+        if data_frequency == 'daily':
+            date += self.trading_day
         if date < self.split_date:
             lookup = self.volumes
         else:
@@ -232,7 +239,11 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
         return lookup.loc[date, int(asset)]
 
     def exists(self, date, asset):
-        return asset.start_date <= date <= asset.end_date
+        if asset.start_date > date:
+            return False
+        if asset.auto_close_date and asset.auto_close_date < date:
+            return False
+        return True
 
     def test_attach_pipeline_after_initialize(self):
         """
@@ -318,10 +329,11 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
                            ('year', 252),
                            ('all_but_one_day', 'all_but_one_day'),
                            ('custom_iter', 'custom_iter')])
-    def test_assets_appear_on_correct_days(self, test_name, chunks):
+    def test_assets_appear_on_correct_days_daily_mode(self, test_name, chunks):
         """
         Assert that assets appear at correct times during a backtest, with
-        correctly-adjusted close price values.
+        correctly-adjusted close price values. In a daily backtest, today's
+        data shows up in today's pipeline output.
         """
 
         if chunks == 'all_but_one_day':
@@ -343,16 +355,18 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
 
         def initialize(context):
             p = attach_pipeline(Pipeline(), 'test', chunks=chunks)
-            p.add(USEquityPricing.close.latest, 'close')
+            p.add(EquityPricing.close.latest, 'close')
 
         def handle_data(context, data):
             results = pipeline_output('test')
             date = get_datetime().normalize()
             for asset in self.assets:
-                # Assets should appear iff they exist today and yesterday.
+                # Assets should appear iff they exist today and
+                # tomorrow (tomorrow because Pipeline returns tomorrow's
+                # output (containing today's data) in daily mode).
                 exists_today = self.exists(date, asset)
-                existed_yesterday = self.exists(date - self.trading_day, asset)
-                if exists_today and existed_yesterday:
+                exists_tomorrow = self.exists(date + self.trading_day, asset)
+                if exists_today and exists_tomorrow:
                     latest = results.loc[asset, 'close']
                     self.assertEqual(latest, self.expected_close(date, asset))
                 else:
@@ -364,6 +378,69 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
             initialize=initialize,
             handle_data=handle_data,
             before_trading_start=before_trading_start,
+        )
+        # Run for a week in the middle of our data.
+        algo.run()
+
+    @parameterized.expand([('default', None),
+                           ('day', 1),
+                           ('week', 5),
+                           ('year', 252),
+                           ('all_but_one_day', 'all_but_one_day'),
+                           ('custom_iter', 'custom_iter')])
+    def test_assets_appear_on_correct_days_minute_mode(self, test_name, chunks):
+        """
+        Assert that assets appear at correct times during a minute backtest, with
+        correctly-adjusted close price values. In a minute backtest, today's
+        data shows up in tomorrow's pipeline output.
+        """
+
+        if chunks == 'all_but_one_day':
+            chunks = (
+                self.dates.get_loc(self.last_asset_end) -
+                self.dates.get_loc(self.first_asset_start)
+            ) - 1
+        elif chunks == 'custom_iter':
+            chunks = []
+            st = np.random.RandomState(12345)
+            remaining = (
+                self.dates.get_loc(self.last_asset_end) -
+                self.dates.get_loc(self.first_asset_start)
+            )
+            while remaining > 0:
+                chunk = st.randint(3)
+                chunks.append(chunk)
+                remaining -= chunk
+
+        def initialize(context):
+            p = attach_pipeline(Pipeline(), 'test', chunks=chunks)
+            p.add(EquityPricing.close.latest, 'close')
+
+        def before_trading_start(context, data):
+            results = pipeline_output('test')
+            date = get_datetime().normalize()
+            for asset in self.assets:
+                # Assets should appear iff they exist today and
+                # yesterday
+                exists_today = self.exists(date, asset)
+                existed_yesterday = self.exists(date - self.trading_day, asset)
+                if exists_today and existed_yesterday:
+                    latest = results.loc[asset, 'close']
+                    self.assertEqual(latest, self.expected_close(date, asset, data_frequency='minute'))
+                else:
+                    self.assertNotIn(asset, results.index)
+
+        sim_params = SimulationParameters(
+            start_session=self.default_sim_params.start_session,
+            end_session=self.default_sim_params.end_session,
+            trading_calendar=self.trading_calendar,
+            emission_rate='daily',
+            data_frequency='minute',
+        )
+        algo = self.make_algo(
+            initialize=initialize,
+            before_trading_start=before_trading_start,
+            sim_params=sim_params
         )
 
         # Run for a week in the middle of our data.
@@ -378,8 +455,8 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
             pipeline_close = attach_pipeline(Pipeline(), 'test_close')
             pipeline_volume = attach_pipeline(Pipeline(), 'test_volume')
 
-            pipeline_close.add(USEquityPricing.close.latest, 'close')
-            pipeline_volume.add(USEquityPricing.volume.latest, 'volume')
+            pipeline_close.add(EquityPricing.close.latest, 'close')
+            pipeline_volume.add(EquityPricing.volume.latest, 'volume')
 
         def handle_data(context, data):
             closes = pipeline_output('test_close')
@@ -388,8 +465,8 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
             for asset in self.assets:
                 # Assets should appear iff they exist today and yesterday.
                 exists_today = self.exists(date, asset)
-                existed_yesterday = self.exists(date - self.trading_day, asset)
-                if exists_today and existed_yesterday:
+                exists_tomorrow = self.exists(date + self.trading_day, asset)
+                if exists_today and exists_tomorrow:
                     self.assertEqual(
                         closes.loc[asset, 'close'],
                         self.expected_close(date, asset)
@@ -403,14 +480,15 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
                     self.assertNotIn(asset, volumes.index)
 
         column_to_loader = {
-            USEquityPricing.close: self.pipeline_close_loader,
-            USEquityPricing.volume: self.pipeline_volume_loader,
+            EquityPricing.close: self.pipeline_close_loader,
+            EquityPricing.volume: self.pipeline_volume_loader,
         }
 
         algo = self.make_algo(
             initialize=initialize,
             handle_data=handle_data,
-            get_pipeline_loader=lambda column: column_to_loader[column],
+            get_pipeline_loader=lambda column: column_to_loader[
+                column.unspecialize()],
         )
 
         algo.run()
@@ -447,7 +525,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
     ASSET_FINDER_EQUITY_SIDS = AAPL, MSFT, BRK_A
     ASSET_FINDER_EQUITY_SYMBOLS = 'AAPL', 'MSFT', 'BRK_A'
     START_DATE = Timestamp('2014', tz='UTC')
-    END_DATE = Timestamp('2015', tz='UTC')
+    END_DATE = Timestamp('2014-08-29', tz='UTC')
 
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
     DATA_PORTAL_USE_MINUTE_DATA = False
@@ -627,7 +705,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
                 context.vwaps.append(factor)
                 pipeline.add(factor, name=name)
 
-            filter_ = (USEquityPricing.close.latest > 300)
+            filter_ = (EquityPricing.close.latest > 300)
             pipeline.add(filter_, 'filter')
             if set_screen:
                 pipeline.set_screen(filter_)
@@ -636,9 +714,10 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
 
         def handle_data(context, data):
             today = normalize_date(get_datetime())
+            tomorrow = self.trading_calendar.next_session_label(today)
             results = pipeline_output('test')
             expect_over_300 = {
-                AAPL: today < self.AAPL_split_date,
+                AAPL: tomorrow < self.AAPL_split_date,
                 MSFT: False,
                 BRK_A: True,
             }
@@ -652,7 +731,8 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
                 self.assertEqual(asset_results['filter'], should_pass_filter)
                 for length in vwaps:
                     computed = results.loc[asset, vwap_key(length)]
-                    expected = vwaps[length][asset].loc[today.tz_localize(None)]
+                    # in daily mode, we receive tomorrow's pipeline output (containing today's data)
+                    expected = vwaps[length][asset].loc[tomorrow.tz_localize(None)]
                     # Only having two places of precision here is a bit
                     # unfortunate.
                     assert_almost_equal(computed, expected, decimal=2)
@@ -710,43 +790,36 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
 
         self.assertTrue(count[0] > 0)
 
-    def test_pipeline_beyond_daily_bars(self):
+    def test_pipeline_last_available_date(self):
         """
-        Ensure that we can run an algo with pipeline beyond the max date
-        of the daily bars.
+        Tests that we can get the last available bar data in pipeline, and
+        that it matches the output of BarData.
         """
-
-        # For ensuring we call before_trading_start.
+        latest_dt = self.pipeline_loader.raw_price_reader.last_available_dt
         count = [0]
 
-        current_day = self.trading_calendar.next_session_label(
-            self.pipeline_loader.raw_price_reader.last_available_dt,
-        )
-
         def initialize(context):
-            pipeline = attach_pipeline(Pipeline(), 'test')
-
-            vwap = VWAP(window_length=10)
-            pipeline.add(vwap, 'vwap')
-
-            # Nothing should have prices less than 0.
-            pipeline.set_screen(vwap < 0)
+            pipeline = attach_pipeline(Pipeline(
+                columns={
+                    "close": EquityPricing.close.latest
+                }
+            ), 'test')
 
         def handle_data(context, data):
-            pass
-
-        def before_trading_start(context, data):
-            context.results = pipeline_output('test')
-            self.assertTrue(context.results.empty)
+            asset = sid(self.AAPL)
+            pipeline_results = pipeline_output('test')
+            aapl_pipeline_close = pipeline_results.loc[asset].close
+            aapl_bardata_close = data.current(asset, 'close')
+            self.assertEqual(aapl_pipeline_close, aapl_bardata_close)
+            self.assertEqual(aapl_pipeline_close, 102.5)
             count[0] += 1
 
         self.run_algorithm(
             initialize=initialize,
             handle_data=handle_data,
-            before_trading_start=before_trading_start,
             sim_params=SimulationParameters(
-                start_session=self.dates[0],
-                end_session=current_day,
+                start_session=latest_dt,
+                end_session=latest_dt,
                 data_frequency='daily',
                 emission_rate='daily',
                 trading_calendar=self.trading_calendar,

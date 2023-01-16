@@ -202,13 +202,17 @@ class VolumeRollFinder(RollFinder):
         # of using 'dt' is because we need to get each contract's volume on the
         # previous day, so we need to make sure that each contract exists on
         # 'prev' in order to call 'get_value' below.
-        if dt > min(front_contract.auto_close_date, front_contract.end_date):
+        if dt > front_contract.auto_close_date:
             return back
         elif front_contract.start_date > prev:
             return back
-        elif dt > min(back_contract.auto_close_date, back_contract.end_date):
+        elif dt > back_contract.auto_close_date:
             return front
         elif back_contract.start_date > prev:
+            return front
+        elif dt > front_contract.end_date and dt <= back_contract.end_date:
+            return back
+        elif dt > back_contract.end_date and dt <= front_contract.end_date:
             return front
 
         front_vol = get_value(front, prev, 'volume')

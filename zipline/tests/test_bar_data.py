@@ -113,12 +113,20 @@ class TestMinuteBarData(WithCreateBarData,
         '2016-01-07',
         tz='UTC',
     )
+    AUTO_CLOSE_DATE = pd.Timestamp('2016-01-11', tz='UTC')
 
     ASSET_FINDER_EQUITY_SIDS = 1, 2, 3, 4, 5
 
     SPLIT_ASSET_SID = 3
     ILLIQUID_SPLIT_ASSET_SID = 4
     HILARIOUSLY_ILLIQUID_ASSET_SID = 5
+
+    @classmethod
+    def make_equity_info(cls):
+        frame = super().make_equity_info()
+        frame['auto_close_date'] = frame['end_date']
+        frame.loc[2, 'auto_close_date'] = cls.AUTO_CLOSE_DATE
+        return frame
 
     @classmethod
     def make_equity_minute_bar_data(cls):
@@ -402,17 +410,18 @@ class TestMinuteBarData(WithCreateBarData,
             self.equity_minute_bar_days[-1]
         )[-1]
 
-        # this entire day is after both assets have stopped trading
+        # this entire day is after both assets have stopped trading,
+        # but asset2 doesn't auto_close until the next day
         for idx, minute in enumerate(minutes):
             bar_data = self.create_bardata(
                 lambda: minute,
             )
 
             self.assertFalse(bar_data.can_trade(self.ASSET1))
-            self.assertFalse(bar_data.can_trade(self.ASSET2))
+            self.assertTrue(bar_data.can_trade(self.ASSET2))
 
             self.assertFalse(bar_data.is_stale(self.ASSET1))
-            self.assertFalse(bar_data.is_stale(self.ASSET2))
+            self.assertTrue(bar_data.is_stale(self.ASSET2))
 
             self.check_internal_consistency(bar_data)
 
@@ -420,12 +429,20 @@ class TestMinuteBarData(WithCreateBarData,
                 for asset in self.ASSETS:
                     asset_value = bar_data.current(asset, field)
 
-                    if field in OHLCP:
+                    if field in OHLC:
                         self.assertTrue(np.isnan(asset_value))
                     elif field == "volume":
                         self.assertEqual(0, asset_value)
                     elif field == "last_traded":
                         self.assertEqual(last_trading_minute, asset_value)
+
+                if field == 'price':
+                    self.assertEqual(
+                        bar_data.current(self.ASSET2, field),
+                        1170.0
+                    )
+                    self.assertTrue(np.isnan(
+                        bar_data.current(self.ASSET1, field)))
 
     def test_get_value_is_unadjusted(self):
         # verify there is a split for SPLIT_ASSET
@@ -870,6 +887,8 @@ class TestDailyBarData(WithCreateBarData,
         '2016-01-11',
         tz='UTC',
     )
+    AUTO_CLOSE_DATE = pd.Timestamp('2016-01-11', tz='UTC')
+
     CREATE_BARDATA_DATA_FREQUENCY = 'daily'
 
     ASSET_FINDER_EQUITY_SIDS = set(range(1, 9))
@@ -885,6 +904,8 @@ class TestDailyBarData(WithCreateBarData,
     def make_equity_info(cls):
         frame = super(TestDailyBarData, cls).make_equity_info()
         frame.loc[[1, 2], 'end_date'] = pd.Timestamp('2016-01-08', tz='UTC')
+        frame['auto_close_date'] = pd.NaT
+        frame.loc[[1, 2], 'auto_close_date'] = cls.AUTO_CLOSE_DATE
         return frame
 
     @classmethod
@@ -960,7 +981,7 @@ class TestDailyBarData(WithCreateBarData,
         return MockDailyBarReader(
             dates=cls.trading_calendar.sessions_in_range(
                 cls.START_DATE,
-                cls.END_DATE,
+                cls.AUTO_CLOSE_DATE + cls.trading_calendar.day,
             ),
         )
 
@@ -1111,39 +1132,42 @@ class TestDailyBarData(WithCreateBarData,
 
     def test_last_active_day(self):
         bar_data = self.create_bardata(
+            simulation_dt_func=lambda: pd.Timestamp("2016-01-08", tz="UTC")
+        )
+        self.check_internal_consistency(bar_data)
+
+        for asset in self.ASSETS:
+            self.assertTrue(bar_data.can_trade(asset))
+            self.assertFalse(bar_data.is_stale(asset))
+
+            self.assertFalse(np.isnan(bar_data.current(asset, "open")))
+            self.assertFalse(np.isnan(bar_data.current(asset, "high")))
+            self.assertFalse(np.isnan(bar_data.current(asset, "low")))
+            self.assertFalse(np.isnan(bar_data.current(asset, "close")))
+            self.assertGreater(bar_data.current(asset, "volume"), 0)
+            self.assertEqual(bar_data.current(asset, "close"), bar_data.current(asset, 'price'))
+
+    def test_after_assets_end_date_but_before_auto_close_date(self):
+        bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.get_last_minute_of_session(
                 self.equity_daily_bar_days[-1]
             ),
         )
         self.check_internal_consistency(bar_data)
-
         for asset in self.ASSETS:
-            if asset in (1, 2):
-                self.assertFalse(bar_data.can_trade(asset))
-            else:
-                self.assertTrue(bar_data.can_trade(asset))
-            self.assertFalse(bar_data.is_stale(asset))
+            self.assertTrue(bar_data.can_trade(asset))
+            self.assertTrue(bar_data.is_stale(asset))
 
-            if asset in (1, 2):
-                assert_almost_equal(nan, bar_data.current(asset, "open"))
-                assert_almost_equal(nan, bar_data.current(asset, "high"))
-                assert_almost_equal(nan, bar_data.current(asset, "low"))
-                assert_almost_equal(nan, bar_data.current(asset, "close"))
-                assert_almost_equal(0, bar_data.current(asset, "volume"))
-                assert_almost_equal(nan, bar_data.current(asset, "price"))
-            else:
-                self.assertEqual(6, bar_data.current(asset, "open"))
-                self.assertEqual(7, bar_data.current(asset, "high"))
-                self.assertEqual(4, bar_data.current(asset, "low"))
-                self.assertEqual(5, bar_data.current(asset, "close"))
-                self.assertEqual(500, bar_data.current(asset, "volume"))
-                self.assertEqual(5, bar_data.current(asset, "price"))
+            assert_almost_equal(nan, bar_data.current(asset, "open"))
+            assert_almost_equal(nan, bar_data.current(asset, "high"))
+            assert_almost_equal(nan, bar_data.current(asset, "low"))
+            assert_almost_equal(nan, bar_data.current(asset, "close"))
+            assert_almost_equal(0, bar_data.current(asset, "volume"))
+            assert_almost_equal(5, bar_data.current(asset, "price"))
 
     def test_after_assets_dead(self):
-        session = self.END_DATE
-
         bar_data = self.create_bardata(
-            simulation_dt_func=lambda: session,
+            simulation_dt_func=lambda: pd.Timestamp('2016-01-12', tz='UTC'),
         )
         self.check_internal_consistency(bar_data)
 

@@ -278,8 +278,8 @@ class AssetFinder(object):
         that can be parsed by SQLAlchemy as a URI.
     future_chain_predicates : dict
         A dict mapping future root symbol to a predicate function which accepts
-    a contract as a parameter and returns whether or not the contract should be
-    included in the chain.
+        a contract as a parameter and returns whether or not the contract should be
+        included in the chain.
 
     See Also
     --------
@@ -314,6 +314,9 @@ class AssetFinder(object):
 
         # Populated on first call to `lifetimes`.
         self._asset_lifetimes = {}
+
+        # Stores the max end_date of the bundle
+        self._bundle_end_date = None
 
     @lazyval
     def exchange_info(self):
@@ -828,9 +831,36 @@ class AssetFinder(object):
     )
     futures_sids = property(
         _make_sids('futures_contracts'),
-        doc='All of the sids for futures consracts in the asset finder.',
+        doc='All of the sids for futures contracts in the asset finder.',
     )
     del _make_sids
+
+    def get_bundle_end_date(self):
+        """
+        Returns the max end_date of the bundle, which can be considered the date
+        through which the bundle has been updated.
+        """
+        if not self._bundle_end_date:
+            max_date = self.engine.execute(
+                """
+                SELECT
+                    MAX(end_date)
+                FROM (
+                    SELECT
+                        end_date
+                    FROM
+                        equities
+                    UNION
+                    SELECT
+                        end_date
+                    FROM
+                        futures_contracts
+                )
+                """
+                ).scalar()
+            self._bundle_end_date = pd.Timestamp(max_date, tz="UTC")
+
+        return self._bundle_end_date
 
     def _compute_asset_lifetimes(self, country_codes):
         """
@@ -843,7 +873,7 @@ class AssetFinder(object):
             equities_query = sa.select((
                 equities_cols.sid,
                 equities_cols.start_date,
-                equities_cols.end_date,
+                equities_cols.auto_close_date,
             )).where(
                 (self.exchanges.c.exchange == equities_cols.exchange) &
                 (self.exchanges.c.country_code.in_(country_codes))
@@ -851,7 +881,7 @@ class AssetFinder(object):
             futures_query = sa.select((
                 futures_cols.sid,
                 futures_cols.start_date,
-                futures_cols.end_date,
+                futures_cols.auto_close_date,
             )).where(
                 (self.exchanges.c.exchange == futures_cols.exchange) &
                 (self.exchanges.c.country_code.in_(country_codes))
@@ -864,7 +894,7 @@ class AssetFinder(object):
         start = np.array(starts, dtype='f8')
         end = np.array(ends, dtype='f8')
         start[np.isnan(start)] = 0  # convert missing starts to 0
-        end[np.isnan(end)] = np.iinfo(int).max  # convert missing end to INTMAX
+        end[end==np.datetime64('NaT').view('i8')] = np.iinfo(int).max  # convert missing end to INTMAX
         return Lifetimes(sid, start.astype('i8'), end.astype('i8'))
 
     def lifetimes(self, dates, include_start_date, country_codes):
@@ -971,51 +1001,3 @@ class PricingDataAssociable(with_metaclass(ABCMeta)):
 PricingDataAssociable.register(Asset)
 PricingDataAssociable.register(Future)
 PricingDataAssociable.register(ContinuousFuture)
-
-
-def was_active(reference_date_value, asset):
-    """
-    Whether or not `asset` was active at the time corresponding to
-    `reference_date_value`.
-
-    Parameters
-    ----------
-    reference_date_value : int
-        Date, represented as nanoseconds since EPOCH, for which we want to know
-        if `asset` was alive.  This is generally the result of accessing the
-        `value` attribute of a pandas Timestamp.
-    asset : Asset
-        The asset object to check.
-
-    Returns
-    -------
-    was_active : bool
-        Whether or not the `asset` existed at the specified time.
-    """
-    return (
-        asset.start_date.value
-        <= reference_date_value
-        <= asset.end_date.value
-    )
-
-
-def only_active_assets(reference_date_value, assets):
-    """
-    Filter an iterable of Asset objects down to just assets that were alive at
-    the time corresponding to `reference_date_value`.
-
-    Parameters
-    ----------
-    reference_date_value : int
-        Date, represented as nanoseconds since EPOCH, for which we want to know
-        if `asset` was alive.  This is generally the result of accessing the
-        `value` attribute of a pandas Timestamp.
-    assets : iterable[Asset]
-        The assets to filter.
-
-    Returns
-    -------
-    active_assets : list
-        List of the active assets from `assets` on the requested date.
-    """
-    return [a for a in assets if was_active(reference_date_value, a)]

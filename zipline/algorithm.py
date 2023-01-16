@@ -1146,10 +1146,10 @@ class TradingAlgorithm(object):
                 msg="Cannot order {0}, as it started trading on"
                     " {1}.".format(asset.symbol, asset.start_date)
             )
-        elif normalized_date > asset.end_date:
+        elif asset.auto_close_date and normalized_date > asset.auto_close_date:
             raise CannotOrderDelistedAsset(
                 msg="Cannot order {0}, as it stopped trading on"
-                    " {1}.".format(asset.symbol, asset.end_date)
+                    " {1}.".format(asset.symbol, asset.auto_close_date)
             )
         else:
             last_price = \
@@ -1174,28 +1174,25 @@ class TradingAlgorithm(object):
 
         return value / (last_price * value_multiplier)
 
-    def _can_order_asset(self, asset):
+    def _complain_if_delisted(self, asset):
         if not isinstance(asset, Asset):
             raise UnsupportedOrderParameters(
                 msg="Passing non-Asset argument to 'order()' is not supported."
                     " Use 'sid()' or 'symbol()' methods to look up an Asset."
             )
 
-        if asset.auto_close_date:
-            day = normalize_date(self.get_datetime())
+        normalized_date = normalize_date(self.get_datetime())
 
-            if day > min(asset.end_date, asset.auto_close_date):
-                # If we are after the asset's end date or auto close date, warn
-                # the user that they can't place an order for this asset, and
-                # return None.
-                warnings.warn("Cannot place order for {0}, as it has de-listed. "
-                               "Any existing positions for this asset will be "
-                               "liquidated on "
-                               "{1}.".format(asset.symbol, asset.auto_close_date))
-
-                return False
-
-        return True
+        if normalized_date < asset.start_date:
+            raise CannotOrderDelistedAsset(
+                msg="Cannot order {0}, as it started trading on"
+                    " {1}.".format(asset.symbol, asset.start_date)
+            )
+        elif asset.auto_close_date and normalized_date > asset.auto_close_date:
+            raise CannotOrderDelistedAsset(
+                msg="Cannot order {0}, as it stopped trading on"
+                    " {1}.".format(asset.symbol, asset.auto_close_date)
+            )
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
@@ -1250,8 +1247,7 @@ class TradingAlgorithm(object):
         :func:`zipline.api.order_target_value`
         :func:`zipline.api.order_target_percent`
         """
-        if not self._can_order_asset(asset):
-            return None
+        self._complain_if_delisted(asset)
 
         amount, style = self._calculate_order(asset, amount,
                                               limit_price, stop_price, style)
@@ -1396,8 +1392,7 @@ class TradingAlgorithm(object):
         :func:`zipline.api.order_target_value`
         :func:`zipline.api.order_target_percent`
         """
-        if not self._can_order_asset(asset):
-            return None
+        self._complain_if_delisted(asset)
 
         amount = self._calculate_order_value_amount(asset, value)
         return self.order(asset, amount,
@@ -1658,8 +1653,7 @@ class TradingAlgorithm(object):
         :func:`zipline.api.order_target_value`
         :func:`zipline.api.order_target_percent`
         """
-        if not self._can_order_asset(asset):
-            return None
+        self._complain_if_delisted(asset)
 
         amount = self._calculate_order_percent_amount(asset, percent)
         return self.order(asset, amount,
@@ -1733,8 +1727,7 @@ class TradingAlgorithm(object):
         :func:`zipline.api.order_target_value`
         :func:`zipline.api.order_target_percent`
         """
-        if not self._can_order_asset(asset):
-            return None
+        self._complain_if_delisted(asset)
 
         amount = self._calculate_order_target_amount(asset, target)
         return self.order(asset, amount,
@@ -1812,8 +1805,7 @@ class TradingAlgorithm(object):
         :func:`zipline.api.order_target`
         :func:`zipline.api.order_target_percent`
         """
-        if not self._can_order_asset(asset):
-            return None
+        self._complain_if_delisted(asset)
 
         target_amount = self._calculate_order_value_amount(asset, target)
         amount = self._calculate_order_target_amount(asset, target_amount)
@@ -1881,8 +1873,7 @@ class TradingAlgorithm(object):
         :func:`zipline.api.order_target`
         :func:`zipline.api.order_target_value`
         """
-        if not self._can_order_asset(asset):
-            return None
+        self._complain_if_delisted(asset)
 
         amount = self._calculate_order_target_percent_amount(asset, target)
         return self.order(asset, amount,
@@ -2243,6 +2234,20 @@ class TradingAlgorithm(object):
         today = self.get_datetime().tz_convert(
             self.trading_calendar.tz).normalize().tz_localize(
                 None).tz_localize("UTC")
+
+        # In daily mode, we want the pipeline output that is timestamped to the *next*
+        # session, not the current session. Explanation: In daily mode, the day's OHLC
+        # bar is fed to the algorithm AFTER the close (timestamped 16:00 for US equities).
+        # Any orders placed will be filled at tomorrow's close. In contrast, Pipeline is
+        # designed to be fed to the algorithm BEFORE the open (in before_trading_start);
+        # Pipeline data is lagged so that today's data shows up in tomorrow's pipeline.
+        # This means that, to align bar data and pipeline data, we need to load *tomorrow's*
+        # pipeline data with today's bar data. Otherwise, pipeline data will be lagged by
+        # two days instead of one, because today's pipeline output contains yesterday's values,
+        # and orders placed based on those values won't be executed until tomorrow's close.
+        if self.sim_params.data_frequency == "daily":
+            today = self.trading_calendar.next_session_label(today)
+
         try:
             data = self._pipeline_cache.get(name, today)
         except KeyError:
@@ -2286,8 +2291,12 @@ class TradingAlgorithm(object):
         start_date_loc = sessions.get_loc(start_session)
 
         # ...continuing until either the day before the simulation end, or
-        # until chunksize days of data have been loaded.
-        sim_end_session = self.sim_params.end_session
+        # until chunksize days of data have been loaded. Note that we take
+        # the max of sim_params.end_session and start_session because
+        # start_session could be after the end_session in daily mode, since
+        # we need to load tomorrow's pipeline data. See comment in
+        # _pipeline_output for more explanation.
+        sim_end_session = max(start_session, self.sim_params.end_session)
 
         end_loc = min(
             start_date_loc + chunksize,

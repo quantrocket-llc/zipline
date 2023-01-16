@@ -18,7 +18,6 @@ import numpy as np
 from numpy import float64, int64, nan
 import pandas as pd
 from pandas import isnull
-from six import iteritems
 from six.moves import reduce
 
 from zipline.assets import (
@@ -50,17 +49,8 @@ from zipline.data.history_loader import (
     DailyHistoryLoader,
     MinuteHistoryLoader,
 )
-from zipline.data.bar_reader import NoDataOnDate
-from zipline.utils.math_utils import (
-    nansum,
-    nanmean,
-    nanstd
-)
-from zipline.utils.memoize import remember_last, weak_lru_cache
-from zipline.utils.pandas_utils import (
-    normalize_date,
-    timedelta_to_integral_minutes,
-)
+from zipline.data.bar_reader import NoDataOnDate, NoDataAfterDate
+from zipline.utils.memoize import remember_last
 from zipline.errors import HistoryWindowStartsBeforeData
 
 BASE_FIELDS = frozenset([
@@ -333,15 +323,17 @@ class DataPortal(object):
             raise KeyError("Invalid column: " + str(field))
 
         if dt < asset.start_date or \
-                (data_frequency == "daily" and
-                    session_label > asset.end_date) or \
-                (data_frequency == "minute" and
-                 session_label > asset.end_date):
+                (session_label > asset.end_date):
             if field == "volume":
                 return 0
             elif field == "contract":
                 return None
-            elif field != "last_traded":
+            elif field == "price" and asset.auto_close_date and (
+                session_label > asset.auto_close_date):
+                # don't forward-fill price if it's past auto_close_date,
+                # otherwise forward-fill
+                return np.NaN
+            elif field not in ("last_traded", "price"):
                 return np.NaN
 
         if data_frequency == "daily":
@@ -649,6 +641,8 @@ class DataPortal(object):
                             )
                     else:
                         found_dt -= self.trading_calendar.day
+                except NoDataAfterDate:
+                    found_dt -= self.trading_calendar.day
                 except NoDataOnDate:
                     return np.nan
 
@@ -907,13 +901,13 @@ class DataPortal(object):
 
             # forward-filling will incorrectly produce values after the end of
             # an asset's lifetime, so write NaNs back over the asset's
-            # end_date.
+            # auto_close_date.
             normed_index = df.index.normalize()
             for asset in df.columns:
-                if history_end >= asset.end_date:
-                    # if the window extends past the asset's end date, set
-                    # all post-end-date values to NaN in that asset's series
-                    df.loc[normed_index > asset.end_date, asset] = nan
+                if asset.auto_close_date and history_end >= asset.auto_close_date:
+                    # if the window extends past the asset's auto_close_date, set
+                    # all post-auto_close_date values to NaN in that asset's series
+                    df.loc[normed_index > asset.auto_close_date, asset] = nan
         return df
 
     def _get_minute_window_data(self, assets, field, minutes_for_window):

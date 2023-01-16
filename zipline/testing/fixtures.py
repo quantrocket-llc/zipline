@@ -1153,7 +1153,7 @@ def _trading_days_for_minute_bars(calendar,
         )[0]
 
     if not first_session.tzinfo:
-        first_session = fist_session.tz_localize('utc')
+        first_session = first_session.tz_localize('utc')
     if not end_date.tzinfo:
         end_date = end_date.tz_localize('utc')
 

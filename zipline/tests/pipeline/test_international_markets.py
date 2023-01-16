@@ -208,6 +208,7 @@ class InternationalEquityTestCase(WithInternationalPricingPipelineEngine,
         )
         # make all real sids unique
         out["real_sid"] = out.index.astype(str)
+        out['auto_close_date'] = out['end_date']
         assert_equal(out.end_date.max(), cls.END_DATE)
         return out
 
@@ -215,8 +216,12 @@ class InternationalEquityTestCase(WithInternationalPricingPipelineEngine,
     def make_exchanges_info(cls, equities, futures, root_symbols):
         return cls.EXCHANGE_INFO
 
-    @parameter_space(domain=[CA_EQUITIES, US_EQUITIES, GB_EQUITIES])
-    def test_generic_pipeline_with_explicit_domain(self, domain):
+    @parameterized.expand([
+        ('CA', CA_EQUITIES,),
+        ('US', US_EQUITIES,),
+        ('GB', GB_EQUITIES,)
+    ])
+    def test_generic_pipeline_with_explicit_domain(self, name, domain):
         calendar = domain.calendar
         pipe = Pipeline({
             'open': EquityPricing.open.latest,

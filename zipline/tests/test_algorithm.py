@@ -63,7 +63,6 @@ from zipline.finance.asset_restrictions import (
     StaticRestrictions,
     RESTRICTION_STATES,
 )
-from zipline.finance.controls import AssetDateBounds
 from zipline.testing import (
     FakeDataPortal,
     create_daily_df_for_asset,
@@ -1365,6 +1364,8 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
             cls.END_DATE,
         )
         data.loc[3, 'symbol'] = 'TEST'
+        data['auto_close_date'] = pd.NaT
+        data.loc[0, 'auto_close_date'] = data.loc[0].end_date
         return data
 
     @classmethod
@@ -1693,24 +1694,11 @@ def handle_data(context, data):
             trading_calendar=self.trading_calendar,
         )
 
-        # order method shouldn't blow up
-        self.run_algorithm(
-            script="""
-from zipline.api import order, sid
-
-def initialize(context):
-    pass
-
-def handle_data(context, data):
-    order(sid(0), 10)
-        """,
-        )
-
-        # order_value and order_percent should blow up
-        for order_str in ["order_value", "order_percent"]:
+        # order, order_value and order_percent should blow up
+        for order_str in ["order", "order_value", "order_percent"]:
             test_algo = self.make_algo(
                 script="""
-from zipline.api import order_percent, order_value, sid
+from zipline.api import order, order_percent, order_value, sid
 
 def initialize(context):
     pass
@@ -3038,6 +3026,7 @@ class TestAssetDateBounds(zf.WithMakeAlgo, zf.ZiplineTestCase):
             'currency': 'USD',
              'start_date': T('1990'),
              'end_date': T('1991'),
+             'auto_close_date': T('1991'),
              'exchange': 'TEST'},
             {'sid': 2,
              'symbol': 'NEW',
@@ -3054,29 +3043,6 @@ class TestAssetDateBounds(zf.WithMakeAlgo, zf.ZiplineTestCase):
              'end_date': cls.END_DATE,
              'exchange': 'TEST'},
         ])
-
-    def test_asset_date_bounds(self):
-        def initialize(algo):
-            algo.ran = False
-            algo.register_trading_control(AssetDateBounds(on_error='fail'))
-
-        def handle_data(algo, data):
-            # This should work because sid 3 is valid during the algo lifetime.
-            algo.order(algo.sid(3), 1)
-
-            # Sid already expired.
-            with self.assertRaises(TradingControlViolation):
-                algo.order(algo.sid(1), 1)
-
-            # Sid doesn't exist yet.
-            with self.assertRaises(TradingControlViolation):
-                algo.order(algo.sid(2), 1)
-
-            algo.ran = True
-
-        algo = self.make_algo(initialize=initialize, handle_data=handle_data)
-        algo.run()
-        self.assertTrue(algo.ran)
 
 
 class TestAccountControls(zf.WithMakeAlgo,
@@ -4253,10 +4219,11 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
         self.data_portal = FakeDataPortal(self.asset_finder)
 
     @parameterized.expand([
-        ('auto_close_after_end_date', 1),
-        ('auto_close_before_end_date', 2),
+        ('auto_close_after_end_date', 1, pd.Timestamp("2016-01-07", tz='UTC'), False),
+        ('auto_close_after_end_date', 1, pd.Timestamp("2016-01-12", tz='UTC'), True),
+        ('auto_close_before_end_date', 2, pd.Timestamp("2016-01-07", tz='UTC'), True),
     ])
-    def test_order_in_quiet_period(self, name, sid):
+    def test_order_in_quiet_period(self, name, sid, end_date, should_raise):
         asset = self.asset_finder.retrieve_asset(sid)
 
         algo_code = dedent("""
@@ -4287,24 +4254,16 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
             script=algo_code,
             sim_params=SimulationParameters(
                 start_session=pd.Timestamp("2016-01-06", tz='UTC'),
-                end_session=pd.Timestamp("2016-01-07", tz='UTC'),
+                end_session=end_date,
                 trading_calendar=self.trading_calendar,
                 data_frequency="minute"
             )
         )
-        with warnings.catch_warnings(record=True) as captured_warnings:
+        if should_raise:
+            with self.assertRaises(CannotOrderDelistedAsset):
+                algo.run()
+        else:
             algo.run()
-
-        captured_warnings = [str(w.message) for w in captured_warnings]
-
-        for msg in captured_warnings:
-            expected_message = (
-                'Cannot place order for ASSET{sid}, as it has de-listed. '
-                'Any existing positions for this asset will be liquidated '
-                'on {date}.'.format(sid=sid, date=asset.auto_close_date)
-            )
-            self.assertEqual(expected_message, msg)
-
 
 class AlgoInputValidationTestCase(zf.WithMakeAlgo,
                                   zf.ZiplineTestCase):

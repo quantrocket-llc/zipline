@@ -443,15 +443,36 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
         return ctable(rootdir=maybe_table_rootdir, mode='r')
 
     @lazyval
+    def calendar(self):
+        return get_calendar(self._table.attrs['calendar_name'])
+
+    @lazyval
     def sessions(self):
-        cal = get_calendar(self._table.attrs['calendar_name'])
+        """
+        Returns sessions bounded by the start date and end date of the bundle data
+        """
+
         start_session_ns = self._table.attrs['start_session_ns']
         start_session = Timestamp(start_session_ns, tz='UTC')
 
         end_session_ns = self._table.attrs['end_session_ns']
         end_session = Timestamp(end_session_ns, tz='UTC')
 
-        sessions = cal.sessions_in_range(start_session, end_session)
+        sessions = self.calendar.sessions_in_range(start_session, end_session)
+
+        return sessions
+
+    @lazyval
+    def sessions_unbounded(self):
+        """
+        Returns sessions from the start date of the bundle data to the end date of the
+        calendar (which is later than the bundle end date).
+        """
+
+        start_session_ns = self._table.attrs['start_session_ns']
+        start_session = Timestamp(start_session_ns, tz='UTC')
+
+        sessions = self.calendar.sessions_in_range(start_session, self.calendar.last_session)
 
         return sessions
 
@@ -605,17 +626,19 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
             except NoDataBeforeDate:
                 return NaT
             except NoDataAfterDate:
-                prev_day_ix = self.sessions.get_loc(search_day) - 1
+                # use sessions_unbounded because day might be after the bundle
+                # end_date
+                prev_day_ix = self.sessions_unbounded.get_loc(search_day) - 1
                 if prev_day_ix > -1:
-                    search_day = self.sessions[prev_day_ix]
+                    search_day = self.sessions_unbounded[prev_day_ix]
                 continue
             except NoDataOnDate:
                 return NaT
             if volumes[ix] != 0:
                 return search_day
-            prev_day_ix = self.sessions.get_loc(search_day) - 1
+            prev_day_ix = self.sessions_unbounded.get_loc(search_day) - 1
             if prev_day_ix > -1:
-                search_day = self.sessions[prev_day_ix]
+                search_day = self.sessions_unbounded[prev_day_ix]
             else:
                 return NaT
 
@@ -636,7 +659,7 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
             or after the date range of the equity.
         """
         try:
-            day_loc = self.sessions.get_loc(day)
+            day_loc = self.sessions_unbounded.get_loc(day)
         except Exception:
             raise NoDataOnDate("day={0} is outside of calendar={1}".format(
                 day, self.sessions))

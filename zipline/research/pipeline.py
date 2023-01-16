@@ -155,19 +155,16 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     # Check if data is available through the requested end date (this prevents
     # confusing errors that can occur when a user runs a pipeline through a certain
     # end date but hasn't updated their bundle to that end date)
-    lifetimes = bundle_data.asset_finder.lifetimes(
-        trading_calendar.sessions_in_range(
-            bundles.bundles[bundle].start_session,
-            pd.Timestamp.today(tz="UTC")),
-        include_start_date=True,
-        country_codes=[trading_calendar.country_code]).any(axis=1)
-    max_end_date = lifetimes[lifetimes].index[-1]
+    bundle_end_date = bundle_data.asset_finder.get_bundle_end_date()
+    max_end_date = trading_calendar.next_session_label(bundle_end_date)
     if max_end_date < end_date:
         if requested_end_date:
             raise RequestedEndDateAfterBundleEndDate(
                 f"end_date ({pd.Timestamp(requested_end_date).date()}) must be no "
                 f"later than {max_end_date.date()} because {bundle} bundle contains "
-                "no data after that date.")
+                f"no data after {bundle_end_date.date()} (Because pipeline data is "
+                f"lagged, {bundle_end_date.date()} data will appear in the pipeline "
+                f"output for {max_end_date.date()}.)")
         else:
             # if the user didn't specify an end date, just silently use the max end date
             end_date = max_end_date

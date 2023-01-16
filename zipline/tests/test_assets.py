@@ -375,6 +375,10 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         # make every symbol unique
         equities['symbol'] = list(string.ascii_uppercase[:len(equities)])
         equities['real_sid'] = equities['symbol']
+        # Give some an auto_close_date equal to end_date
+        equities.loc[[0,4,8,12], 'auto_close_date'] = equities.loc[[0,4,8,12]].end_date
+        # Give others an auto_close_date equal to max end_date
+        equities.loc[[2,6,10,14], 'auto_close_date'] = equities.end_date.max()
 
         # shuffle up the sids so they are not contiguous per exchange
         sids = np.arange(len(equities))
@@ -401,7 +405,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
 
         all_dates = pd.date_range(
             start=first_start,
-            end=equities.end_date.max(),
+            end=equities.auto_close_date.max(),
             freq=trading_day,
         )
 
@@ -418,13 +422,13 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
             )
 
             for i, date in enumerate(dates):
-                it = equities.iloc[:4][['start_date', 'end_date']].itertuples(
+                it = equities.iloc[:4][['start_date', 'end_date', 'auto_close_date']].itertuples(
                     index=False,
                 )
-                for j, (start, end) in enumerate(it):
+                for j, (start, end, auto_close_date) in enumerate(it):
                     # This way of doing the checks is redundant, but very
                     # clear.
-                    if start <= date <= end:
+                    if start <= date  and (pd.isnull(auto_close_date) or date <= auto_close_date):
                         expected_with_start_raw[i, j] = True
                         if start < date:
                             expected_no_start_raw[i, j] = True
@@ -471,6 +475,37 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 assert_equal(result.columns, expected_sids)
                 result = result[permuted_sids]
                 assert_equal(result, expected_no_start)
+
+    def test_bundle_end_date_equities(self):
+        equities = make_simple_equity_info(
+            [0, 1, 2],
+            pd.Timestamp('2014-01-01'),
+            pd.Timestamp('2014-01-02'),
+        )
+        equities.loc[1, 'end_date'] = pd.Timestamp('2014-01-05')
+        self.write_assets(equities=equities)
+        self.assertEqual(
+            self.asset_finder.get_bundle_end_date(),
+            pd.Timestamp('2014-01-05', tz='UTC')
+        )
+
+    def test_bundle_end_date_futures(self):
+        equities = make_simple_equity_info(
+            [0, 1, 2],
+            pd.Timestamp('2014-01-01'),
+            pd.Timestamp('2014-01-02'),
+        )
+        futures = make_commodity_future_info(
+            first_sid=6,
+            root_symbols=['CL'],
+            years=[2014],
+        )
+        futures['end_date'] = futures['expiration_date']
+        self.write_assets(equities=equities, futures=futures)
+        self.assertEqual(
+            self.asset_finder.get_bundle_end_date(),
+            pd.Timestamp(futures.end_date.max(), tz='UTC')
+        )
 
     def test_sids(self):
         # Ensure that the sids property of the AssetFinder is functioning

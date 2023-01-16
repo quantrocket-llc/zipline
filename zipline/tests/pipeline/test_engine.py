@@ -948,6 +948,7 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
             asset_lifetime=8,
             exchange='NYSE',
         )
+        ret['auto_close_date'] = ret['end_date']
         return ret
 
     @classmethod

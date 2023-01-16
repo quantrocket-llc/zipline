@@ -226,9 +226,13 @@ cdef class ContinuousFuture:
         cdef int64_t ref_end
 
         ref_start = self.start_date.value
-        ref_end = self.end_date.value
+        if ref_start > session_label.value:
+            return False
 
-        return ref_start <= session_label.value <= ref_end
+        if not self.auto_close_date:
+            return True
+
+        return session_label.value <= self.auto_close_date.value
 
     def is_exchange_open(self, dt_minute):
         """

@@ -52,6 +52,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
     MERGER_ASSET_SID = 6
     HALF_DAY_TEST_ASSET_SID = 7
     SHORT_ASSET_SID = 8
+    AUTO_CLOSE_AFTER_END_ASSET_SID = 9
     # asset1:
     # - 2014-03-01 (rounds up to TRADING_START_DT) to 2016-01-29.
     # - every minute/day.
@@ -104,6 +105,9 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
         cls.SHORT_ASSET = cls.asset_finder.retrieve_asset(
             cls.SHORT_ASSET_SID,
         )
+        cls.AUTO_CLOSE_AFTER_END_ASSET = cls.asset_finder.retrieve_asset(
+            cls.AUTO_CLOSE_AFTER_END_ASSET_SID,
+        )
 
     @classmethod
     def make_equity_info(cls):
@@ -115,6 +119,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 1: {
                     'start_date': pd.Timestamp('2014-01-03', tz='UTC'),
                     'end_date': cls.TRADING_END_DT,
+                    'auto_close_date': cls.TRADING_END_DT,
                     'real_sid': '1',
                     'currency': 'USD',
                     'symbol': 'ASSET1',
@@ -123,6 +128,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 2: {
                     'start_date': jan_5_2015,
                     'end_date': day_after_12312015,
+                    'auto_close_date': day_after_12312015,
                     'real_sid': '2',
                     'currency': 'USD',
                     'symbol': 'ASSET2',
@@ -131,6 +137,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 3: {
                     'start_date': jan_5_2015,
                     'end_date': day_after_12312015,
+                    'auto_close_date': day_after_12312015,
                     'real_sid': '3',
                     'currency': 'USD',
                     'symbol': 'ASSET3',
@@ -139,6 +146,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 cls.SPLIT_ASSET_SID: {
                     'start_date': jan_5_2015,
                     'end_date': day_after_12312015,
+                    'auto_close_date': day_after_12312015,
                     'real_sid': str(cls.SPLIT_ASSET_SID),
                     'currency': 'USD',
                     'symbol': 'SPLIT_ASSET',
@@ -147,6 +155,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 cls.DIVIDEND_ASSET_SID: {
                     'start_date': jan_5_2015,
                     'end_date': day_after_12312015,
+                    'auto_close_date': day_after_12312015,
                     'real_sid': str(cls.DIVIDEND_ASSET_SID),
                     'currency': 'USD',
                     'symbol': 'DIVIDEND_ASSET',
@@ -155,6 +164,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 cls.MERGER_ASSET_SID: {
                     'start_date': jan_5_2015,
                     'end_date': day_after_12312015,
+                    'auto_close_date': day_after_12312015,
                     'real_sid': str(cls.MERGER_ASSET_SID),
                     'currency': 'USD',
                     'symbol': 'MERGER_ASSET',
@@ -163,6 +173,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 cls.HALF_DAY_TEST_ASSET_SID: {
                     'start_date': pd.Timestamp('2014-07-02', tz='UTC'),
                     'end_date': day_after_12312015,
+                    'auto_close_date': day_after_12312015,
                     'real_sid': str(cls.HALF_DAY_TEST_ASSET_SID),
                     'currency': 'USD',
                     'symbol': 'HALF_DAY_TEST_ASSET',
@@ -171,9 +182,19 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                 cls.SHORT_ASSET_SID: {
                     'start_date': pd.Timestamp('2015-01-05', tz='UTC'),
                     'end_date': pd.Timestamp('2015-01-06', tz='UTC'),
+                    'auto_close_date': pd.Timestamp('2015-01-06', tz="UTC"),
                     'real_sid': str(cls.SHORT_ASSET_SID),
                     'currency': 'USD',
                     'symbol': 'SHORT_ASSET',
+                    'exchange': "TEST",
+                },
+                cls.AUTO_CLOSE_AFTER_END_ASSET_SID: {
+                    'start_date': pd.Timestamp('2015-01-05', tz='UTC'),
+                    'end_date': pd.Timestamp('2015-01-06', tz='UTC'),
+                    'auto_close_date': pd.Timestamp('2015-01-07', tz="UTC"),
+                    'real_sid': str(cls.AUTO_CLOSE_AFTER_END_ASSET_SID),
+                    'currency': 'USD',
+                    'symbol': 'AUTO_CLOSE_AFTER_END_ASSET',
                     'exchange': "TEST",
                 }
             },
@@ -556,7 +577,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
         equities_cal = cls.trading_calendars[Equity]
 
         data = {}
-        sids = {2, 5, cls.SHORT_ASSET_SID, cls.HALF_DAY_TEST_ASSET_SID}
+        sids = {2, 5, cls.SHORT_ASSET_SID, cls.AUTO_CLOSE_AFTER_END_ASSET_SID, cls.HALF_DAY_TEST_ASSET_SID}
         for sid in sids:
             asset = cls.asset_finder.retrieve_asset(sid)
             data[sid] = create_minute_df_for_asset(
@@ -861,8 +882,14 @@ class MinuteEquityHistoryTestCase(WithHistory,
                     last_minute_bar_data.history(self.ASSET2, field, 30, '1m')
                 )
 
-    def test_minute_after_asset_stopped(self):
-        # SHORT_ASSET's last day was 2015-01-06
+    @parameterized.expand([
+        ('SHORT_ASSET', False),
+        ('AUTO_CLOSE_AFTER_END_ASSET', True)
+    ])
+    def test_minute_after_asset_stopped(self, name, should_ffill_price):
+        asset = self.SHORT_ASSET if name == "SHORT_ASSET" else self.AUTO_CLOSE_AFTER_END_ASSET
+        # SHORT_ASSET's and AUTO_CLOSE_AFTER_END_ASSET's last day was 2015-01-06, but
+        # AUTO_CLOSE_AFTER_END_ASSET's auto_close_date isn't until 2015-01-07
         # get some history windows that straddle the end
         minutes = self.trading_calendars[Equity].minutes_for_session(
             pd.Timestamp('2015-01-07', tz='UTC')
@@ -873,12 +900,14 @@ class MinuteEquityHistoryTestCase(WithHistory,
                 lambda: minute
             )
             check_internal_consistency(
-                bar_data, self.SHORT_ASSET, ALL_FIELDS, 30, '1m'
+                bar_data, asset, ALL_FIELDS, 30, '1m'
             )
 
         # Reset data portal because it has advanced past next test date.
         data_portal = self.make_data_portal()
 
+        # Output for SHORT_ASSET (output for AUTO_CLOSE_AFTER_END_ASSET is the
+        # same but with price forward-filled):
         #                             close  high  low  open  price  volume
         # 2015-01-06 20:47:00+00:00    768   770  767   769    768   76800
         # 2015-01-06 20:48:00+00:00    769   771  768   770    769   76900
@@ -927,7 +956,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
             self.trading_calendar.minutes_in_range(window_start, window_end)
         )
         window = bar_data.history(
-            self.SHORT_ASSET,
+            asset,
             ALL_FIELDS,
             bar_count,
             '1m',
@@ -949,20 +978,28 @@ class MinuteEquityHistoryTestCase(WithHistory,
                     np.array(range(768, 782)) + MINUTE_FIELD_INFO[field],
                     window[field][0:14]
                 )
+                if should_ffill_price and field == 'price':
+                    value = 781
+                else:
+                    value = np.nan
                 np.testing.assert_array_equal(
-                    np.full(16, np.nan),
+                    np.full(16, value),
                     window[field][-16:]
                 )
 
         # now do a smaller window that is entirely contained after the asset
         # ends
-        window = bar_data.history(self.SHORT_ASSET, ALL_FIELDS, 5, '1m')
+        window = bar_data.history(asset, ALL_FIELDS, 5, '1m')
 
         for field in ALL_FIELDS:
             if field == 'volume':
                 np.testing.assert_array_equal(np.zeros(5), window['volume'])
             else:
-                np.testing.assert_array_equal(np.full(5, np.nan),
+                if should_ffill_price and field == 'price':
+                    value = 781
+                else:
+                    value = np.nan
+                np.testing.assert_array_equal(np.full(5, value),
                                               window[field])
 
     def test_minute_splits_and_mergers(self):
@@ -1691,6 +1728,11 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             pd.Timestamp('2015-01-06', tz='UTC'),
         )
 
+        yield cls.AUTO_CLOSE_AFTER_END_ASSET_SID, cls.create_df_for_asset(
+            pd.Timestamp('2015-01-05', tz='UTC'),
+            pd.Timestamp('2015-01-06', tz='UTC'),
+        )
+
         for sid in {2, 4, 5, 6}:
             asset = cls.asset_finder.retrieve_asset(sid)
             yield sid, cls.create_df_for_asset(
@@ -1815,7 +1857,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         self.assertNotEqual(0, volume_window[self.ASSET2][-3])
 
     def test_daily_after_asset_stopped(self):
-        # SHORT_ASSET trades on 1/5, 1/6, that's it.
+        # AUTO_CLOSE_AFTER_END_ASSET trades on 1/5, 1/6, auto closes on 1/7.
 
         days = self.trading_calendar.sessions_in_range(
             pd.Timestamp('2015-01-07', tz='UTC'),
@@ -1828,30 +1870,48 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
                 simulation_dt_func=lambda: day,
             )
             check_internal_consistency(
-                bar_data, self.SHORT_ASSET, ALL_FIELDS, 2, '1d'
+                bar_data, self.AUTO_CLOSE_AFTER_END_ASSET, ALL_FIELDS, 2, '1d'
             )
 
             for field in ALL_FIELDS:
                 asset_series = bar_data.history(
-                    self.SHORT_ASSET, field, 2, '1d'
+                    self.AUTO_CLOSE_AFTER_END_ASSET, field, 2, '1d'
                 )
 
                 if idx == 0:
                     # one value, then one NaN.  base value for 1/6 is 3.
-                    if field in OHLCP:
+                    if field in OHLC:
                         self.assertEqual(
                             3 + MINUTE_FIELD_INFO[field],
                             asset_series.iloc[0]
                         )
 
                         self.assertTrue(np.isnan(asset_series.iloc[1]))
+                    # price forward-fills, since the asset has not yet
+                    # auto-closed
+                    elif field == 'price':
+                        self.assertEqual(
+                            3 + MINUTE_FIELD_INFO[field],
+                            asset_series.iloc[0]
+                        )
+                        self.assertEqual(
+                            3 + MINUTE_FIELD_INFO[field],
+                            asset_series.iloc[1]
+                        )
                     elif field == 'volume':
                         self.assertEqual(300, asset_series.iloc[0])
                         self.assertEqual(0, asset_series.iloc[1])
                 else:
                     # both NaNs
-                    if field in OHLCP:
+                    if field in OHLC:
                         self.assertTrue(np.isnan(asset_series.iloc[0]))
+                        self.assertTrue(np.isnan(asset_series.iloc[1]))
+                    elif field == 'price':
+                        # one forward-filled value, then NaN
+                        self.assertEqual(
+                            3 + MINUTE_FIELD_INFO[field],
+                            asset_series.iloc[0]
+                        )
                         self.assertTrue(np.isnan(asset_series.iloc[1]))
                     elif field == 'volume':
                         self.assertEqual(0, asset_series.iloc[0])
