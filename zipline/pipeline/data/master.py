@@ -190,6 +190,8 @@ class SecuritiesMaster(DataSet):
 
     ibkr_Currency : str
 
+    ibkr_StockType : str
+
     ibkr_LocalSymbol : str
 
     ibkr_TradingClass : str
@@ -213,8 +215,6 @@ class SecuritiesMaster(DataSet):
     ibkr_MinTick : float
 
     ibkr_PriceMagnifier : float
-
-    ibkr_MdSizeMultiplier : float
 
     ibkr_LastTradeDate : datetime64D
 
@@ -243,6 +243,12 @@ class SecuritiesMaster(DataSet):
     ibkr_EvRule : str
 
     ibkr_EvMultiplier : float
+
+    ibkr_MinSize : float
+
+    ibkr_SizeIncrement : float
+
+    ibkr_SuggestedSizeIncrement : float
 
     ibkr_Delisted : bool
 
@@ -545,6 +551,7 @@ class SecuritiesMaster(DataSet):
     ibkr_Etf = Column(bool_dtype)
     ibkr_PrimaryExchange = Column(object_dtype)
     ibkr_Currency = Column(object_dtype)
+    ibkr_StockType = Column(object_dtype)
     ibkr_LocalSymbol = Column(object_dtype)
     ibkr_TradingClass = Column(object_dtype)
     ibkr_MarketName = Column(object_dtype)
@@ -557,7 +564,7 @@ class SecuritiesMaster(DataSet):
     ibkr_Category = Column(object_dtype)
     ibkr_MinTick = Column(float64_dtype)
     ibkr_PriceMagnifier = Column(float64_dtype)
-    ibkr_MdSizeMultiplier = Column(float64_dtype)
+    ibkr_MdSizeMultiplier = Column(float64_dtype) # deprecated
     ibkr_LastTradeDate = Column(datetime64ns_dtype, missing_value=NaTD)
     ibkr_ContractMonth = Column(float64_dtype)
     ibkr_RealExpirationDate = Column(datetime64ns_dtype, missing_value=NaTD)
@@ -572,6 +579,9 @@ class SecuritiesMaster(DataSet):
     ibkr_Cusip = Column(object_dtype)
     ibkr_EvRule = Column(object_dtype)
     ibkr_EvMultiplier = Column(float64_dtype)
+    ibkr_MinSize = Column(float64_dtype)
+    ibkr_SizeIncrement = Column(float64_dtype)
+    ibkr_SuggestedSizeIncrement = Column(float64_dtype)
     ibkr_Delisted = Column(bool_dtype)
     ibkr_DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
     sharadar_Permaticker = Column(float64_dtype)
