@@ -251,7 +251,7 @@ def get_forward_returns(factor, periods=None, bundle=None):
             raise ValidationError("you must specify a bundle or set a default bundle")
         bundle = bundle["default_bundle"]
 
-    if factor.empty:
+    if factor.index.empty:
         raise ValidationError(
             "cannot compute forward returns because the factor you provided is empty")
 
@@ -278,6 +278,12 @@ def get_forward_returns(factor, periods=None, bundle=None):
 
     end_date = index_cushion.max()
 
+    # a pipeline is allowed to have no columns, but we need a col
+    # to unstack
+    if factor.columns.empty:
+        factor = factor.copy()
+        factor["col"] = 1
+
     mask = factor.iloc[:, 0].unstack()
     mask = pd.DataFrame(
         True,
@@ -294,12 +300,12 @@ def get_forward_returns(factor, periods=None, bundle=None):
     except RequestedEndDateAfterBundleEndDate as e:
         # Improve the error message, since the error may have been caused
         # by having to extend the index to compute forward returns
-        raise RequestedEndDateAfterBundleEndDate(
-            str(e) + (
-                f" The end_date {end_date.date()} resulted from extending "
-                f"the requested pipeline end date of {orig_end_date.date()} to compute "
-                f"{max(periods)}D forward returns. You may need to end the pipeline "
-                f"earlier or shorten the forward returns computation."))
+        e.args = (e.args[0] + (
+            f" The end_date {end_date.date()} resulted from extending "
+            f"the requested pipeline end date of {orig_end_date.date()} to compute "
+            f"{max(periods)}D forward returns. You may need to end the pipeline "
+            f"earlier or shorten the forward returns computation."),)
+        raise e
 
     for window_length in periods:
         colname = f"{window_length}D"
