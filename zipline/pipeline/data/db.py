@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zipline.pipeline.data import Column, DataSet
+from typing import Sequence
+from zipline.pipeline.data import DataSet, Column as Column # re-export
 
 class Database(DataSet):
     """
@@ -111,11 +112,11 @@ class Database(DataSet):
     numeric. Doing so enables the use of `NaN` as a natural missing value,
     which has useful propagation semantics.
     """
-    CODE = None
-    SHIFT = 1
-    FFILL = True
-    LOOKBACK_WINDOW = 10
-    TIMES = None
-    AGG = "last"
-    CONT_FUT = None
-    DATA_FREQUENCY = None
+    CODE: str = None
+    SHIFT: int = 1
+    FFILL: bool = True
+    LOOKBACK_WINDOW: int = 10
+    TIMES: Sequence[str] = None
+    AGG: str = "last"
+    CONT_FUT: str = None
+    DATA_FREQUENCY: str = None

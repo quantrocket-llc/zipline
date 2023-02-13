@@ -1,6 +1,10 @@
 """
 filter.py
 """
+from typing import overload, TYPE_CHECKING
+if TYPE_CHECKING:
+    from zipline.pipeline.factors.factor import Factor, BooleanFactor
+    from zipline.pipeline.classifiers import Classifier
 from itertools import chain
 from operator import attrgetter
 from numpy import (
@@ -220,6 +224,24 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
     def _principal_computable_term_type(cls):
         return Filter
 
+    # as of 2023-02-09, pyright and pylance always assume that if_else
+    # returns a Factor, even when Classifiers are passed, despite the
+    # dual @overload decorators. As use of Factor is more common, this
+    # issue isn't important enough to spend time resolving at present.
+    @overload
+    def if_else(
+        self,
+        if_true: 'Factor',
+        if_false: 'Factor'
+        ) -> 'Factor':...
+
+    @overload
+    def if_else(
+        self,
+        if_true: 'Classifier',
+        if_false: 'Classifier'
+        ) -> 'Classifier':...
+
     @expect_types(if_true=ComputableTerm, if_false=ComputableTerm)
     def if_else(self, if_true, if_false):
         """
@@ -316,7 +338,7 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
             if_false=if_false,
         )
 
-    def as_factor(self):
+    def as_factor(self) -> 'BooleanFactor':
         """
         Create a Factor that returns 1s for True and 0s for False.
 

@@ -56,7 +56,7 @@ class EODCancel(CancelPolicy):
     warn_on_cancel : bool, optional
         Should a warning be raised if this causes an order to be cancelled?
     """
-    def __init__(self, warn_on_cancel=True):
+    def __init__(self, warn_on_cancel: bool = True):
         self.warn_on_cancel = warn_on_cancel
 
     def should_cancel(self, event):

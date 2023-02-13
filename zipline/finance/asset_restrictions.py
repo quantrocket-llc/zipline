@@ -1,4 +1,5 @@
 import abc
+from typing import Union
 from numpy import vectorize
 from functools import partial, reduce
 import operator
@@ -30,7 +31,11 @@ class Restrictions(with_metaclass(abc.ABCMeta)):
     """
 
     @abc.abstractmethod
-    def is_restricted(self, assets, dt):
+    def is_restricted(
+        self,
+        assets: Union[Asset, list[Asset]],
+        dt: pd.Timestamp
+        ) -> Union[bool, pd.Series]:
         """
         Is the asset restricted (RestrictionStates.FROZEN) on the given dt?
 
@@ -120,7 +125,11 @@ class NoRestrictions(Restrictions):
     """
     A no-op restrictions that contains no restrictions.
     """
-    def is_restricted(self, assets, dt):
+    def is_restricted(
+        self,
+        assets: Union[Asset, list[Asset]],
+        dt: pd.Timestamp
+        ) -> Union[bool, pd.Series]:
         if isinstance(assets, Asset):
             return False
         return pd.Series(index=pd.Index(assets), data=False)
@@ -140,7 +149,11 @@ class StaticRestrictions(Restrictions):
     def __init__(self, restricted_list):
         self._restricted_set = frozenset(restricted_list)
 
-    def is_restricted(self, assets, dt):
+    def is_restricted(
+        self,
+        assets: Union[Asset, list[Asset]],
+        dt: pd.Timestamp
+        ) -> Union[bool, pd.Series]:
         """
         An asset is restricted for all dts if it is in the static list.
         """
@@ -174,7 +187,11 @@ class HistoricalRestrictions(Restrictions):
             in iteritems(groupby(lambda x: x.asset, restrictions))
         }
 
-    def is_restricted(self, assets, dt):
+    def is_restricted(
+        self,
+        assets: Union[Asset, list[Asset]],
+        dt: pd.Timestamp
+        ) -> Union[bool, pd.Series]:
         """
         Returns whether or not an asset or iterable of assets is restricted
         on a dt.

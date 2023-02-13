@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import os
+from typing import Union
 import pandas as pd
 from zipline.data import bundles
 import zipline.pipeline.domain as domain
@@ -30,7 +31,12 @@ from quantrocket.zipline import get_default_bundle
 from trading_calendars import get_calendar
 
 
-def run_pipeline(pipeline, start_date, end_date=None, bundle=None):
+def run_pipeline(
+    pipeline: Pipeline,
+    start_date: str,
+    end_date: str = None,
+    bundle: str = None
+    ) -> pd.DataFrame:
     """
     Compute values for pipeline from start_date to end_date, using the specified
     bundle or the default bundle.
@@ -213,7 +219,11 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
 
     return engine.run_pipeline(pipeline, start_date, end_date)
 
-def get_forward_returns(factor, periods=None, bundle=None):
+def get_forward_returns(
+    factor: pd.Series,
+    periods: Union[int, list[int]] = None,
+    bundle: str = None
+    ) -> pd.DataFrame:
     """
     Get forward returns for the dates and assets in ``factor``, calculated
     over the given periods.

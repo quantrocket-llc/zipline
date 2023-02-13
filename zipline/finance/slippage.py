@@ -14,6 +14,7 @@
 # limitations under the License.
 from __future__ import division
 
+from typing import Union
 from abc import abstractmethod
 import math
 
@@ -312,8 +313,8 @@ class VolumeShareSlippage(SlippageModel):
         price impact. Default is 0.1.
     """
     def __init__(self,
-                 volume_limit=0.025,
-                 price_impact=0.1):
+                 volume_limit: float = 0.025,
+                 price_impact: float = 0.1):
 
         super(VolumeShareSlippage, self).__init__()
 
@@ -409,7 +410,7 @@ class FixedSlippage(SlippageModel):
     order's asset, even if the size of the order is greater than the historical
     volume.
     """
-    def __init__(self, spread=0.0):
+    def __init__(self, spread: float = 0.0):
         super(FixedSlippage, self).__init__()
         self.spread = spread
 
@@ -602,7 +603,10 @@ class VolatilityVolumeShare(MarketImpactBase):
     NO_DATA_VOLATILITY_SLIPPAGE_IMPACT = 7.5 / 10000
     allowed_asset_types = (Future,)
 
-    def __init__(self, volume_limit, eta=ROOT_SYMBOL_TO_ETA):
+    def __init__(
+        self,
+        volume_limit:
+        float, eta: Union[float, dict[str, float]] = ROOT_SYMBOL_TO_ETA):
         super(VolatilityVolumeShare, self).__init__()
         self.volume_limit = volume_limit
 
@@ -693,7 +697,7 @@ class FixedBasisPointsSlippage(SlippageModel):
         volume_limit=(0, None),
         __funcname='FixedBasisPointsSlippage',
     )
-    def __init__(self, basis_points=5.0, volume_limit=0.1):
+    def __init__(self, basis_points: float = 5.0, volume_limit: float = 0.1):
         super(FixedBasisPointsSlippage, self).__init__()
         self.basis_points = basis_points
         self.percentage = self.basis_points / 10000.0

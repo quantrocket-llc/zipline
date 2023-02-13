@@ -14,7 +14,8 @@
 
 from zipline.utils.numpy_utils import bool_dtype
 from zipline.pipeline.data import Column, DataSet
-from zipline.pipeline.domain import US_EQUITIES
+from zipline.pipeline.data.dataset import BoundBooleanColumn
+from zipline.pipeline.domain import Domain, US_EQUITIES
 
 class ETB(DataSet):
     """
@@ -31,5 +32,6 @@ class ETB(DataSet):
 
     >>> are_etb = alpaca.ETB.etb.latest    # doctest: +SKIP
     """
-    domain = US_EQUITIES
-    etb = Column(bool_dtype)
+    domain: Domain = US_EQUITIES
+    etb: BoundBooleanColumn = Column(bool_dtype)
+    """Whether the security is easy-to-borrow"""

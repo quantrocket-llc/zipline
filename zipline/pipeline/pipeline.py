@@ -1,5 +1,7 @@
 import six
 
+import pandas as pd
+
 from zipline.errors import UnsupportedPipelineOutput
 from zipline.utils.input_validation import (
     expect_element,
@@ -43,7 +45,12 @@ class Pipeline(object):
         screen=optional(Filter),
         domain=Domain
     )
-    def __init__(self, columns=None, screen=None, domain=GENERIC):
+    def __init__(
+        self,
+        columns: dict[str, Term] = None,
+        screen: Filter = None,
+        domain: Domain = GENERIC
+        ):
         if columns is None:
             columns = {}
 
@@ -63,7 +70,7 @@ class Pipeline(object):
         self._domain = domain
 
     @property
-    def columns(self):
+    def columns(self) -> dict[str, Term]:
         """The output columns of this pipeline.
 
         Returns
@@ -74,7 +81,7 @@ class Pipeline(object):
         return self._columns
 
     @property
-    def screen(self):
+    def screen(self) -> Filter:
         """
         The screen of this pipeline.
 
@@ -97,7 +104,12 @@ class Pipeline(object):
         return self._screen
 
     @expect_types(term=Term, name=str)
-    def add(self, term, name, overwrite=False):
+    def add(
+        self,
+        term: Term,
+        name: str,
+        overwrite: bool = False
+        ) -> None:
         """Add a column.
 
         The results of computing ``term`` will show up as a column in the
@@ -131,7 +143,7 @@ class Pipeline(object):
         self._columns[name] = term
 
     @expect_types(name=str)
-    def remove(self, name):
+    def remove(self, name: str) -> Term:
         """Remove a column.
 
         Parameters
@@ -152,7 +164,11 @@ class Pipeline(object):
         return self.columns.pop(name)
 
     @expect_types(screen=Filter, overwrite=(bool, int))
-    def set_screen(self, screen, overwrite=False):
+    def set_screen(
+        self,
+        screen: Filter,
+        overwrite: bool = False
+        ) -> None:
         """Set a screen on this Pipeline.
 
         Parameters
@@ -174,11 +190,13 @@ class Pipeline(object):
             )
         self._screen = screen
 
-    def to_execution_plan(self,
-                          domain,
-                          default_screen,
-                          start_date,
-                          end_date):
+    def to_execution_plan(
+        self,
+        domain: Domain,
+        default_screen: Filter,
+        start_date: pd.Timestamp,
+        end_date: pd.Timestamp
+        ) -> ExecutionPlan:
         """
         Compile into an ExecutionPlan.
 
@@ -215,7 +233,7 @@ class Pipeline(object):
             end_date=end_date,
         )
 
-    def to_simple_graph(self, default_screen):
+    def to_simple_graph(self, default_screen: Filter) -> TermGraph:
         """
         Compile into a simple TermGraph with no extra row metadata.
 
@@ -241,7 +259,7 @@ class Pipeline(object):
         return columns
 
     @expect_element(format=('svg', 'png', 'jpeg'))
-    def show_graph(self, format='svg'):
+    def show_graph(self, format: str = 'svg'):
         """
         Render this Pipeline as a DAG.
 
@@ -283,7 +301,7 @@ class Pipeline(object):
         return terms
 
     @expect_types(default=Domain)
-    def domain(self, default):
+    def domain(self, default: Domain) -> Domain:
         """
         Get the domain for this pipeline.
 

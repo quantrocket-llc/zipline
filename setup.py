@@ -113,6 +113,7 @@ def get_package_data():
         for root, dirnames, filenames in os.walk('zipline')
         if '__pycache__' not in root
     }
+    data['zipline'].append('py.typed')
     return data
 
 setup(

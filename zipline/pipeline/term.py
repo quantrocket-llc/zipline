@@ -1,6 +1,9 @@
 """
 Base class for Filters, Factors and Classifiers
 """
+from typing import Union, TYPE_CHECKING
+if TYPE_CHECKING:
+    from zipline.pipeline.filters import Filter
 from abc import ABCMeta, abstractproperty, abstractmethod
 from bisect import insort
 from collections.abc import Mapping, Container
@@ -726,7 +729,7 @@ class ComputableTerm(Term):
         downsampled_type = type(self)._with_mixin(DownsampledMixin)
         return downsampled_type(term=self, frequency=frequency)
 
-    def alias(self, name):
+    def alias(self, name: str) -> 'ComputableTerm':
         """
         Make a term from ``self`` that names the expression.
 
@@ -748,7 +751,7 @@ class ComputableTerm(Term):
         aliased_type = type(self)._with_mixin(AliasedMixin)
         return aliased_type(term=self, name=name)
 
-    def isnull(self):
+    def isnull(self) -> 'Filter':
         """
         A Filter producing True for values where this Factor has missing data.
 
@@ -771,7 +774,7 @@ class ComputableTerm(Term):
         else:
             return NullFilter(self)
 
-    def notnull(self):
+    def notnull(self) -> 'Filter':
         """
         A Filter producing True for values where this Factor has complete data.
 
@@ -789,127 +792,15 @@ class ComputableTerm(Term):
 
         return NotNullFilter(self)
 
-    def fillna(self, fill_value):
+    def _fillna(self, fill_value):
         """
-        Create a new term that fills missing values of this term's output with
-        ``fill_value``.
-
-        Parameters
-        ----------
-        fill_value : zipline.pipeline.ComputableTerm, or object.
-            Object to use as replacement for missing values.
-
-            If a ComputableTerm (e.g. a Factor) is passed, that term's results
-            will be used as fill values.
-
-            If a scalar (e.g. a number) is passed, the scalar will be used as a
-            fill value.
-
-        Examples
-        --------
-
-        **Filling with a Scalar:**
-
-        Let ``f`` be a Factor which would produce the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13    1.0    NaN    3.0    4.0
-            2017-03-14    1.5    2.5    NaN    NaN
-
-        Then ``f.fillna(0)`` produces the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13    1.0    0.0    3.0    4.0
-            2017-03-14    1.5    2.5    0.0    0.0
-
-        **Filling with a Term:**
-
-        Let ``f`` be as above, and let ``g`` be another Factor which would
-        produce the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13   10.0   20.0   30.0   40.0
-            2017-03-14   15.0   25.0   35.0   45.0
-
-        Then, ``f.fillna(g)`` produces the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13    1.0   20.0    3.0    4.0
-            2017-03-14    1.5    2.5   35.0   45.0
-
-        Returns
-        -------
-        filled : zipline.pipeline.ComputableTerm
-            A term computing the same results as ``self``, but with missing
-            values filled in using values from ``fill_value``.
+        Private method for Factor.fillna and Classifier.fillna.
         """
         return self.where(self.notnull(), fill_value=fill_value)
 
-    def where(self, condition, fill_value=None):
+    def _where(self, condition, fill_value=None):
         """
-        Create a new term that preserves original values where `condition` is
-        True and replaced values with `fill_value` (or NaN if `fill_value` is
-        omitted) where `condition` is False.
-
-        Parameters
-        ----------
-        condition : zipline.pipeline.Filter
-            a Filter indicating which values to keep
-
-        fill_value : zipline.pipeline.ComputableTerm, or object, optional
-            Object to use as replacement for values not fulfilling condition.
-
-            If a ComputableTerm (e.g. a Factor) is passed, that term's results
-            will be used as fill values.
-
-            If a scalar (e.g. a number) is passed, the scalar will be used as a
-            fill value.
-
-        Examples
-        --------
-
-        Let ``f`` be a Factor which would produce the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13    1.0    0.0    3.0    4.0
-            2017-03-14    1.5    2.5    0.0    0.0
-
-        Then ``f.where(f > 0)`` produces the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13    1.0    NaN    3.0    4.0
-            2017-03-14    1.5    2.5    NaN    NaN
-
-        **Filling with a Scalar:**
-
-        Let ``f`` be as above. Then ``f.where(f > 0, -1)`` produces the
-        following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13    1.0   -1.0    3.0    4.0
-            2017-03-14    1.5    2.5   -1.0   -1.0
-
-        **Filling with a Term:**
-
-        Let ``f`` be as above, and let ``g`` be another Factor which would
-        produce the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13   10.0   20.0   30.0   40.0
-            2017-03-14   15.0   25.0   35.0   45.0
-
-        Then, ``f.where(f > 0, g)`` produces the following output::
-
-                         AAPL   MSFT    MCD     BK
-            2017-03-13    1.0   20.0    3.0    4.0
-            2017-03-14    1.5    2.5   35.0   45.0
-
-        Returns
-        -------
-        filled : zipline.pipeline.ComputableTerm
-            A term computing the same results as ``self`` where ``condition`` is
-            True, and ``fill_value`` (or NaN if ``fill value`` is omitted) where
-            ``condition`` is False.
+        Private method for Factor.where and Classifier.where.
         """
         if self.dtype == bool_dtype:
             raise TypeError("where() is not supported for Filters")

@@ -19,6 +19,12 @@ from zipline.utils.numpy_utils import (
     datetime64ns_dtype,
     NaTD)
 from zipline.pipeline.data import Column, DataSet
+from zipline.pipeline.data.dataset import (
+    BoundBooleanColumn,
+    BoundFloatColumn,
+    BoundObjectColumn,
+    BoundDatetimeColumn
+)
 
 class SecuritiesMaster(DataSet):
     """
@@ -28,45 +34,61 @@ class SecuritiesMaster(DataSet):
     ----------
 
     Sid : str
+        the security identifier
 
     Symbol : str
+        the ticker symbol
 
     Exchange : str
+        primary exchange of the security
 
     Currency : str
+        currency in which the security is traded
 
     SecType : str
+        the security type
 
     Etf : bool
+        whether the security is an ETF
 
     Timezone : str
+        the timezone in which the security is traded
 
     Name : str
+        the name of the security
 
     PriceMagnifier : float
+        price divisor to use when prices are quoted in a different currency than the security's currency (for example GBP-denominated securities which trade in GBX will have a PriceMagnifier of 100)
 
     Multiplier : float
+        contract multiplier for options and futures
 
     Delisted : bool
+        whether the security is delisted
 
     DateDelisted : datetime64D
+        date the security was delisted
 
     LastTradeDate : datetime64D
+        last trade date for derivatives
 
     RolloverDate : datetime64D
+        rollover date for futures
 
     alpaca_AssetId : str
         Asset ID
 
     alpaca_AssetClass : str
-        "us_equity"
+        always "us_equity"
 
     alpaca_Exchange : str
         AMEX, ARCA, BATS, NYSE, NASDAQ or NYSEARCA
 
     alpaca_Symbol : str
+        ticker symbol
 
     alpaca_Name : str
+        the name of the security
 
     alpaca_Status : str
         active or inactive
@@ -90,6 +112,7 @@ class SecuritiesMaster(DataSet):
         listings together)
 
     edi_Currency : str
+        the currency in which the security is traded
 
     edi_PrimaryMic : str
         MIC code for the primary listing (empty if unknown)
@@ -101,6 +124,7 @@ class SecuritiesMaster(DataSet):
         ISO standard Market Identification Code
 
     edi_MicTimezone : str
+        the timezone in which the security is traded
 
     edi_IsPrimaryListing : float
         1 if PrimaryMic = Mic
@@ -113,32 +137,40 @@ class SecuritiesMaster(DataSet):
         company togther)
 
     edi_IssuerName : str
+        the name of the issuer
 
     edi_IsoCountryInc : str
         ISO Country of Incorporation of Issuer
 
     edi_CountryInc : str
+        country of incorporation of the issuer
 
     edi_IsoCountryListed : str
-        Country of Exchange where listed
+        country of Exchange where listed
 
     edi_CountryListed : str
+        country of Exchange where listed
 
     edi_SicCode : int
         Standard Industrial Classification Code
 
     edi_Sic : str
+        SIC name
 
     edi_SicIndustryGroup : str
+        SIC Industry Group
 
     edi_SicMajorGroup : str
+        SIC Major Group
 
     edi_SicDivision : str
+        SIC Division
 
     edi_Cik : str
         Central Index Key
 
     edi_Industry : str
+        Industry of the issuer
 
     edi_SecTypeCode : str
         Type of Equity Instrument
@@ -147,6 +179,7 @@ class SecuritiesMaster(DataSet):
         Type of Equity Instrument (lookup SECTYPE with SectyCD)
 
     edi_SecurityDesc : str
+        description of security
 
     edi_PreferredName : str
         for ETFs, the SecurityDesc, else the IssuerName
@@ -161,6 +194,7 @@ class SecuritiesMaster(DataSet):
         Indicates Exchange Listing Status (lookup LISTSTAT)
 
     edi_DateDelisted : datetime64D
+        date the security was delisted
 
     edi_StructureCode : str
 
@@ -179,64 +213,89 @@ class SecuritiesMaster(DataSet):
         latest date a price is available
 
     ibkr_ConId : float
+        IBKR Contract ID
 
     ibkr_Symbol : str
+        ticker symbol
 
     ibkr_SecType : str
+        security type
 
     ibkr_Etf : bool
+        whether the security is an ETF
 
     ibkr_PrimaryExchange : str
+        the primary exchange of the security
 
     ibkr_Currency : str
+        the currency in which the security is traded
 
     ibkr_StockType : str
+        the stock type, e.g. COMMON, PREFERRED, ADR, ETF, etc.
 
     ibkr_LocalSymbol : str
+        ticker symbol used on the exchange
 
     ibkr_TradingClass : str
 
     ibkr_MarketName : str
 
     ibkr_LongName : str
+        the name of the security
 
     ibkr_Timezone : str
+        the timezone in which the security is traded
 
     ibkr_ValidExchanges : str
+        comma-separated list of exchanges where the security is traded
 
     ibkr_AggGroup : float
 
     ibkr_Sector : str
+        the sector of the security
 
     ibkr_Industry : str
+        the industry of the security
 
     ibkr_Category : str
+        the category of the security
 
     ibkr_MinTick : float
 
     ibkr_PriceMagnifier : float
+        price divisor to use when prices are quoted in a different currency than the security's currency (for example GBP-denominated securities which trade in GBX will have an ibkr_PriceMagnifier of 100)
 
     ibkr_LastTradeDate : datetime64D
+        the last trade date for derivatives
 
     ibkr_ContractMonth : float
+        expiration year-month for derivatives
 
     ibkr_RealExpirationDate : datetime64D
+        expiration date for derivative contracts
 
     ibkr_Multiplier : float
+        contract multiplier for options and futures
 
     ibkr_UnderConId : float
+        Contract ID of the underlying security for derivatives
 
     ibkr_UnderSymbol : str
+        ticker symbol of the underlying security for derivatives
 
     ibkr_UnderSecType : str
+        security type of the underlying security for derivatives
 
     ibkr_MarketRuleIds : str
 
     ibkr_Strike : float
+        option strike price
 
     ibkr_Right : str
+        whether the option is a call or put
 
     ibkr_Isin : str
+        ISIN identifier for the security
 
     ibkr_Cusip : str
 
@@ -245,14 +304,19 @@ class SecuritiesMaster(DataSet):
     ibkr_EvMultiplier : float
 
     ibkr_MinSize : float
+        minimum order size, i.e. lot size
 
     ibkr_SizeIncrement : float
+        minimum order size increment that can be added to ibkr_MinSize
 
     ibkr_SuggestedSizeIncrement : float
+        suggested order size increment (i.e. suggested lot size)
 
     ibkr_Delisted : bool
+        whether the security is delisted
 
     ibkr_DateDelisted : datetime64D
+        date the security was delisted
 
     sharadar_Permaticker : float
         Permanent Ticker Symbol - The permaticker is a unique and unchanging
@@ -280,6 +344,7 @@ class SecuritiesMaster(DataSet):
         Is Delisted? - Is the security delisted?
 
     sharadar_DateDelisted : datetime64D
+        Date the security was delisted
 
     sharadar_Category : str
         Issuer Category - The category of the issuer: "Domestic"; "Canadian"
@@ -383,10 +448,13 @@ class SecuritiesMaster(DataSet):
         Company Website URL - The URL pointing to the company website.
 
     usstock_Mic : str
+        market identifier code for the security
 
     usstock_Symbol : str
+        ticker symbol
 
     usstock_Name : str
+        the name of the security
 
     usstock_Sector : str
         sector in which company operates. There are 11 possible sectors.
@@ -426,6 +494,7 @@ class SecuritiesMaster(DataSet):
         is null is a way to deduplicate companies with multiple share classes.
 
     usstock_DateDelisted : datetime64D
+        date the security was delisted
 
     usstock_FirstPriceDate : datetime64D
         date of first available price
@@ -487,159 +556,348 @@ class SecuritiesMaster(DataSet):
 
     >>> are_primary_shares = master.SecuritiesMaster.usstock_PrimaryShareSid.latest.isnull()    # doctest: +SKIP
     """
-    Sid = Column(object_dtype)
-    Symbol = Column(object_dtype)
-    Exchange = Column(object_dtype)
-    Currency = Column(object_dtype)
-    SecType = Column(object_dtype)
-    Etf = Column(bool_dtype)
-    Timezone = Column(object_dtype)
-    Name = Column(object_dtype)
-    PriceMagnifier = Column(float64_dtype)
-    Multiplier = Column(float64_dtype)
-    Delisted = Column(bool_dtype)
-    DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
-    LastTradeDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    RolloverDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    alpaca_AssetId = Column(object_dtype)
-    alpaca_AssetClass = Column(object_dtype)
-    alpaca_Exchange = Column(object_dtype)
-    alpaca_Symbol = Column(object_dtype)
-    alpaca_Name = Column(object_dtype)
-    alpaca_Status = Column(object_dtype)
-    alpaca_Tradable = Column(float64_dtype)
-    alpaca_Marginable = Column(float64_dtype)
-    alpaca_Shortable = Column(float64_dtype)
-    alpaca_EasyToBorrow = Column(float64_dtype)
-    edi_SecId = Column(float64_dtype)
-    edi_Currency = Column(object_dtype)
-    edi_PrimaryMic = Column(object_dtype)
-    edi_Mic = Column(object_dtype)
-    edi_MicSegment = Column(object_dtype)
-    edi_MicTimezone = Column(object_dtype)
-    edi_IsPrimaryListing = Column(float64_dtype)
-    edi_LocalSymbol = Column(object_dtype)
-    edi_IssuerId = Column(float64_dtype)
-    edi_IssuerName = Column(object_dtype)
-    edi_IsoCountryInc = Column(object_dtype)
-    edi_CountryInc = Column(object_dtype)
-    edi_IsoCountryListed = Column(object_dtype)
-    edi_CountryListed = Column(object_dtype)
-    edi_SicCode = Column(object_dtype)
-    edi_Sic = Column(object_dtype)
-    edi_SicIndustryGroup = Column(object_dtype)
-    edi_SicMajorGroup = Column(object_dtype)
-    edi_SicDivision = Column(object_dtype)
-    edi_Cik = Column(object_dtype)
-    edi_Industry = Column(object_dtype)
-    edi_SecTypeCode = Column(object_dtype)
-    edi_SecTypeDesc = Column(object_dtype)
-    edi_SecurityDesc = Column(object_dtype)
-    edi_PreferredName = Column(object_dtype)
-    edi_GlobalListingStatus = Column(object_dtype)
-    edi_ExchangeListingStatus = Column(object_dtype)
-    edi_DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
-    edi_StructureCode = Column(object_dtype)
-    edi_StructureDesc = Column(object_dtype)
-    edi_RecordModified = Column(object_dtype)
-    edi_RecordCreated = Column(object_dtype)
-    edi_FirstPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    edi_LastPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    ibkr_ConId = Column(float64_dtype)
-    ibkr_Symbol = Column(object_dtype)
-    ibkr_SecType = Column(object_dtype)
-    ibkr_Etf = Column(bool_dtype)
-    ibkr_PrimaryExchange = Column(object_dtype)
-    ibkr_Currency = Column(object_dtype)
-    ibkr_StockType = Column(object_dtype)
-    ibkr_LocalSymbol = Column(object_dtype)
-    ibkr_TradingClass = Column(object_dtype)
-    ibkr_MarketName = Column(object_dtype)
-    ibkr_LongName = Column(object_dtype)
-    ibkr_Timezone = Column(object_dtype)
-    ibkr_ValidExchanges = Column(object_dtype)
-    ibkr_AggGroup = Column(float64_dtype)
-    ibkr_Sector = Column(object_dtype)
-    ibkr_Industry = Column(object_dtype)
-    ibkr_Category = Column(object_dtype)
-    ibkr_MinTick = Column(float64_dtype)
-    ibkr_PriceMagnifier = Column(float64_dtype)
-    ibkr_MdSizeMultiplier = Column(float64_dtype) # deprecated
-    ibkr_LastTradeDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    ibkr_ContractMonth = Column(float64_dtype)
-    ibkr_RealExpirationDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    ibkr_Multiplier = Column(float64_dtype)
-    ibkr_UnderConId = Column(float64_dtype)
-    ibkr_UnderSymbol = Column(object_dtype)
-    ibkr_UnderSecType = Column(object_dtype)
-    ibkr_MarketRuleIds = Column(object_dtype)
-    ibkr_Strike = Column(float64_dtype)
-    ibkr_Right = Column(object_dtype)
-    ibkr_Isin = Column(object_dtype)
-    ibkr_Cusip = Column(object_dtype)
-    ibkr_EvRule = Column(object_dtype)
-    ibkr_EvMultiplier = Column(float64_dtype)
-    ibkr_MinSize = Column(float64_dtype)
-    ibkr_SizeIncrement = Column(float64_dtype)
-    ibkr_SuggestedSizeIncrement = Column(float64_dtype)
-    ibkr_Delisted = Column(bool_dtype)
-    ibkr_DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_Permaticker = Column(float64_dtype)
-    sharadar_Ticker = Column(object_dtype)
-    sharadar_Name = Column(object_dtype)
-    sharadar_Exchange = Column(object_dtype)
-    sharadar_Delisted = Column(bool_dtype)
-    sharadar_DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_Category = Column(object_dtype)
-    sharadar_Cusips = Column(object_dtype)
-    sharadar_SicCode = Column(object_dtype)
-    sharadar_SicSector = Column(object_dtype)
-    sharadar_SicIndustry = Column(object_dtype)
-    sharadar_FamaSector = Column(object_dtype)
-    sharadar_FamaIndustry = Column(object_dtype)
-    sharadar_Sector = Column(object_dtype)
-    sharadar_Industry = Column(object_dtype)
-    sharadar_ScaleMarketCap = Column(object_dtype)
-    sharadar_ScaleRevenue = Column(object_dtype)
-    sharadar_RelatedTickers = Column(object_dtype)
-    sharadar_Currency = Column(object_dtype)
-    sharadar_Location = Column(object_dtype)
-    sharadar_CountryListed = Column(object_dtype)
-    sharadar_LastUpdated = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_FirstAdded = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_FirstPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_LastPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_FirstQuarter = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_LastQuarter = Column(datetime64ns_dtype, missing_value=NaTD)
-    sharadar_SecFilings = Column(object_dtype)
-    sharadar_CompanySite = Column(object_dtype)
-    usstock_Mic = Column(object_dtype)
-    usstock_Symbol = Column(object_dtype)
-    usstock_Name = Column(object_dtype)
-    usstock_Sector = Column(object_dtype)
-    usstock_Industry = Column(object_dtype)
-    usstock_SicCode = Column(object_dtype)
-    usstock_Sic = Column(object_dtype)
-    usstock_SicIndustryGroup = Column(object_dtype)
-    usstock_SicMajorGroup = Column(object_dtype)
-    usstock_SicDivision = Column(object_dtype)
-    usstock_SecurityType = Column(object_dtype)
-    usstock_SecurityType2 = Column(object_dtype)
-    usstock_CIK = Column(object_dtype)
-    usstock_PrimaryShareSid = Column(object_dtype)
-    usstock_DateDelisted = Column(datetime64ns_dtype, missing_value=NaTD)
-    usstock_FirstPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    usstock_LastPriceDate = Column(datetime64ns_dtype, missing_value=NaTD)
-    figi_Figi = Column(object_dtype)
-    figi_Name = Column(object_dtype)
-    figi_Ticker = Column(object_dtype)
-    figi_CompositeFigi = Column(object_dtype)
-    figi_ExchCode = Column(object_dtype)
-    figi_UniqueId = Column(object_dtype)
-    figi_SecurityType = Column(object_dtype)
-    figi_MarketSector = Column(object_dtype)
-    figi_ShareClassFigi = Column(object_dtype)
-    figi_UniqueIdFutOpt = Column(object_dtype)
-    figi_SecurityType2 = Column(object_dtype)
-    figi_SecurityDescription = Column(object_dtype)
-    figi_IsComposite = Column(bool_dtype)
+    Sid: BoundObjectColumn = Column(object_dtype)
+    """security identifier"""
+    Symbol: BoundObjectColumn = Column(object_dtype)
+    """ticker symbol"""
+    Exchange: BoundObjectColumn = Column(object_dtype)
+    """primary exchange of the security"""
+    Currency: BoundObjectColumn = Column(object_dtype)
+    """currency in which the security is traded"""
+    SecType: BoundObjectColumn = Column(object_dtype)
+    """ the security type"""
+    Etf: BoundBooleanColumn = Column(bool_dtype)
+    """ whether the security is an ETF"""
+    Timezone: BoundObjectColumn = Column(object_dtype)
+    """the timezone in which the security is traded"""
+    Name: BoundObjectColumn = Column(object_dtype)
+    """the name of the security"""
+    PriceMagnifier: BoundFloatColumn = Column(float64_dtype)
+    """price divisor to use when prices are quoted in a different currency than the security's currency (for example GBP-denominated securities which trade in GBX will have a PriceMagnifier of 100)"""
+    Multiplier: BoundFloatColumn = Column(float64_dtype)
+    """contract multiplier for options and futures"""
+    Delisted: BoundBooleanColumn = Column(bool_dtype)
+    """whether the security is delisted"""
+    DateDelisted: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """date the security was delisted"""
+    LastTradeDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """last trade date for derivatives"""
+    RolloverDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """rollover date for futures"""
+    alpaca_AssetId: BoundObjectColumn = Column(object_dtype)
+    """Asset ID"""
+    alpaca_AssetClass: BoundObjectColumn = Column(object_dtype)
+    """always 'us_equity'"""
+    alpaca_Exchange: BoundObjectColumn = Column(object_dtype)
+    """AMEX, ARCA, BATS, NYSE, NASDAQ or NYSEARCA"""
+    alpaca_Symbol: BoundObjectColumn = Column(object_dtype)
+    """ticker symbol"""
+    alpaca_Name: BoundObjectColumn = Column(object_dtype)
+    """the name of the security"""
+    alpaca_Status: BoundObjectColumn = Column(object_dtype)
+    """active or inactive"""
+    alpaca_Tradable: BoundFloatColumn = Column(float64_dtype)
+    """Asset is tradable on Alpaca or not"""
+    alpaca_Marginable: BoundFloatColumn = Column(float64_dtype)
+    """Asset is marginable or not"""
+    alpaca_Shortable: BoundFloatColumn = Column(float64_dtype)
+    """Asset is shortable or not"""
+    alpaca_EasyToBorrow: BoundFloatColumn = Column(float64_dtype)
+    """Asset is easy-to-borrow or not (filtering for easy_to_borrow = True is the best way to check whether the name is currently available to short at Alpaca)."""
+    edi_SecId: BoundFloatColumn = Column(float64_dtype)
+    """Unique global level Security ID (can be used to link all multiple listings together)"""
+    edi_Currency: BoundObjectColumn = Column(object_dtype)
+    """the currency in which the security is traded"""
+    edi_PrimaryMic: BoundObjectColumn = Column(object_dtype)
+    """MIC code for the primary listing (empty if unknown)"""
+    edi_Mic: BoundObjectColumn = Column(object_dtype)
+    """ISO standard Market Identification Code"""
+    edi_MicSegment: BoundObjectColumn = Column(object_dtype)
+    """ISO standard Market Identification Code"""
+    edi_MicTimezone: BoundObjectColumn = Column(object_dtype)
+    """the timezone in which the security is traded"""
+    edi_IsPrimaryListing: BoundFloatColumn = Column(float64_dtype)
+    """1 if PrimaryMic = Mic"""
+    edi_LocalSymbol: BoundObjectColumn = Column(object_dtype)
+    """Local code unique at Market level - a ticker or number"""
+    edi_IssuerId: BoundFloatColumn = Column(float64_dtype)
+    """Unique global level Issuer ID (can be used to link all securities of a company togther)"""
+    edi_IssuerName: BoundObjectColumn = Column(object_dtype)
+    """the name of the issuer"""
+    edi_IsoCountryInc: BoundObjectColumn = Column(object_dtype)
+    """ISO Country of Incorporation of Issuer"""
+    edi_CountryInc: BoundObjectColumn = Column(object_dtype)
+    """country of incorporation of the issuer"""
+    edi_IsoCountryListed: BoundObjectColumn = Column(object_dtype)
+    """country of Exchange where listed"""
+    edi_CountryListed: BoundObjectColumn = Column(object_dtype)
+    """country of Exchange where listed"""
+    edi_SicCode: BoundObjectColumn = Column(object_dtype)
+    """Standard Industrial Classification Code"""
+    edi_Sic: BoundObjectColumn = Column(object_dtype)
+    """SIC name"""
+    edi_SicIndustryGroup: BoundObjectColumn = Column(object_dtype)
+    """SIC Industry Group"""
+    edi_SicMajorGroup: BoundObjectColumn = Column(object_dtype)
+    """SIC Major Group"""
+    edi_SicDivision: BoundObjectColumn = Column(object_dtype)
+    """SIC Division"""
+    edi_Cik: BoundObjectColumn = Column(object_dtype)
+    """Central Index Key"""
+    edi_Industry: BoundObjectColumn = Column(object_dtype)
+    """Industry of the issuer"""
+    edi_SecTypeCode: BoundObjectColumn = Column(object_dtype)
+    """Type of Equity Instrument"""
+    edi_SecTypeDesc: BoundObjectColumn = Column(object_dtype)
+    """Type of Equity Instrument (lookup SECTYPE with SectyCD)"""
+    edi_SecurityDesc: BoundObjectColumn = Column(object_dtype)
+    """description of security"""
+    edi_PreferredName: BoundObjectColumn = Column(object_dtype)
+    """for ETFs, the SecurityDesc, else the IssuerName"""
+    edi_GlobalListingStatus: BoundObjectColumn = Column(object_dtype)
+    """Inactive at the global level else security is active. Not to be confused with delisted which is inactive at the exchange level (lookup SECSTATUS)"""
+    edi_ExchangeListingStatus: BoundObjectColumn = Column(object_dtype)
+    """Indicates whether a security is Listed on an Exchange or Unlisted Indicates Exchange Listing Status (lookup LISTSTAT)"""
+    edi_DateDelisted: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """date the security was delisted"""
+    edi_StructureCode: BoundObjectColumn = Column(object_dtype)
+    edi_StructureDesc: BoundObjectColumn = Column(object_dtype)
+    edi_RecordModified: BoundObjectColumn = Column(object_dtype)
+    """Date event updated, format is yyyy/mm/dd hh:mm:ss"""
+    edi_RecordCreated: BoundObjectColumn = Column(object_dtype)
+    """Date event first entered"""
+    edi_FirstPriceDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """first date a price is available"""
+    edi_LastPriceDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """latest date a price is available"""
+    ibkr_ConId: BoundFloatColumn = Column(float64_dtype)
+    """IBKR Contract ID"""
+    ibkr_Symbol: BoundObjectColumn = Column(object_dtype)
+    """ticker symbol"""
+    ibkr_SecType: BoundObjectColumn = Column(object_dtype)
+    """security type"""
+    ibkr_Etf: BoundBooleanColumn = Column(bool_dtype)
+    """whether the security is an ETF"""
+    ibkr_PrimaryExchange: BoundObjectColumn = Column(object_dtype)
+    """the primary exchange of the security"""
+    ibkr_Currency: BoundObjectColumn = Column(object_dtype)
+    """the currency in which the security is traded"""
+    ibkr_StockType: BoundObjectColumn = Column(object_dtype)
+    """the stock type, e.g. COMMON, PREFERRED, ADR, ETF, etc."""
+    ibkr_LocalSymbol: BoundObjectColumn = Column(object_dtype)
+    """ticker symbol used on the exchange"""
+    ibkr_TradingClass: BoundObjectColumn = Column(object_dtype)
+    ibkr_MarketName: BoundObjectColumn = Column(object_dtype)
+    ibkr_LongName: BoundObjectColumn = Column(object_dtype)
+    """the name of the security"""
+    ibkr_Timezone: BoundObjectColumn = Column(object_dtype)
+    """the timezone in which the security is traded"""
+    ibkr_ValidExchanges: BoundObjectColumn = Column(object_dtype)
+    """comma-separated list of exchanges where the security is traded"""
+    ibkr_AggGroup: BoundFloatColumn = Column(float64_dtype)
+    ibkr_Sector: BoundObjectColumn = Column(object_dtype)
+    """the sector of the security"""
+    ibkr_Industry: BoundObjectColumn = Column(object_dtype)
+    """the industry of the security"""
+    ibkr_Category: BoundObjectColumn = Column(object_dtype)
+    """the category of the security"""
+    ibkr_MinTick: BoundFloatColumn = Column(float64_dtype)
+    ibkr_PriceMagnifier: BoundFloatColumn = Column(float64_dtype)
+    """price divisor to use when prices are quoted in a different currency than the security's currency (for example GBP-denominated securities which trade in GBX will have an ibkr_PriceMagnifier of 100)"""
+    ibkr_MdSizeMultiplier: BoundFloatColumn = Column(float64_dtype) # deprecated
+    ibkr_LastTradeDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """the last trade date for derivatives"""
+    ibkr_ContractMonth: BoundFloatColumn = Column(float64_dtype)
+    """expiration year-month for derivatives"""
+    ibkr_RealExpirationDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """expiration date for derivative contracts"""
+    ibkr_Multiplier: BoundFloatColumn = Column(float64_dtype)
+    """contract multiplier for options and futures"""
+    ibkr_UnderConId: BoundFloatColumn = Column(float64_dtype)
+    """Contract ID of the underlying security for derivatives"""
+    ibkr_UnderSymbol: BoundObjectColumn = Column(object_dtype)
+    """ticker symbol of the underlying security for derivatives"""
+    ibkr_UnderSecType: BoundObjectColumn = Column(object_dtype)
+    """security type of the underlying security for derivatives"""
+    ibkr_MarketRuleIds: BoundObjectColumn = Column(object_dtype)
+    ibkr_Strike: BoundFloatColumn = Column(float64_dtype)
+    """option strike price"""
+    ibkr_Right: BoundObjectColumn = Column(object_dtype)
+    """whether the option is a call or put"""
+    ibkr_Isin: BoundObjectColumn = Column(object_dtype)
+    """ISIN identifier for the security"""
+    ibkr_Cusip: BoundObjectColumn = Column(object_dtype)
+    ibkr_EvRule: BoundObjectColumn = Column(object_dtype)
+    ibkr_EvMultiplier: BoundFloatColumn = Column(float64_dtype)
+    ibkr_MinSize: BoundFloatColumn = Column(float64_dtype)
+    """minimum order size, i.e. lot size"""
+    ibkr_SizeIncrement: BoundFloatColumn = Column(float64_dtype)
+    """minimum order size increment that can be added to ibkr_MinSize"""
+    ibkr_SuggestedSizeIncrement: BoundFloatColumn = Column(float64_dtype)
+    """suggested order size increment (i.e. suggested lot size)"""
+    ibkr_Delisted: BoundBooleanColumn = Column(bool_dtype)
+    """whether the security is delisted"""
+    ibkr_DateDelisted: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """date the security was delisted"""
+    sharadar_Permaticker: BoundFloatColumn = Column(float64_dtype)
+    """Permanent Ticker Symbol - The permaticker is a unique and unchanging identifier for an issuer in the dataset which is issued by Sharadar."""
+    sharadar_Ticker: BoundObjectColumn = Column(object_dtype)
+    """Ticker Symbol - The ticker is a unique identifer for an issuer in the
+    database. Where a ticker contains a "." or a "-" this is removed from
+    the ticker. For example BRK.B is BRKB. We include the BRK.B ticker in
+    the Related Tickers field. Where a company is delisted and the ticker
+    is recycled; we use that ticker for the currently active company and
+    append a number to the ticker of the delisted company. eg GM is the
+    current actively traded entity; & GM1 is the entity that filed for
+    bankruptcy in 2009."""
+    sharadar_Name: BoundObjectColumn = Column(object_dtype)
+    """Issuer Name - The name of the security issuer."""
+    sharadar_Exchange: BoundObjectColumn = Column(object_dtype)
+    """Stock Exchange - The exchange on which the security trades. Examples
+    are: "NASDAQ";"NYSE";"NYSEARCA";"BATS";"OTC" and "NYSEMKT" (previously
+    the American Stock exchange)."""
+    sharadar_Delisted: BoundBooleanColumn = Column(bool_dtype)
+    """Is Delisted? - Is the security delisted?"""
+    sharadar_DateDelisted: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """Date the security was delisted"""
+    sharadar_Category: BoundObjectColumn = Column(object_dtype)
+    """Issuer Category - The category of the issuer: "Domestic"; "Canadian"
+    or "ADR"."""
+    sharadar_Cusips: BoundObjectColumn = Column(object_dtype)
+    """CUSIPs - A security identifier. Space delimited in the event of
+    multiple identifiers."""
+    sharadar_SicCode: BoundObjectColumn = Column(object_dtype)
+    """Standard Industrial Classification (SIC) Code - The Standard
+    Industrial Classification (SIC) is a system for classifying industries
+    by a four-digit code; as sourced from SEC filings. More on the SIC
+    system here:
+    https://en.wikipedia.org/wiki/Standard_Industrial_Classification"""
+    sharadar_SicSector: BoundObjectColumn = Column(object_dtype)
+    """SIC Sector - The SIC sector is based on the SIC code and the division
+    tabled here:
+    https://en.wikipedia.org/wiki/Standard_Industrial_Classification"""
+    sharadar_SicIndustry: BoundObjectColumn = Column(object_dtype)
+    """SIC Industry - The SIC industry is based on the SIC code and the
+    industry tabled here: https://www.sec.gov/info/edgar/siccodes.htm"""
+    sharadar_FamaSector: BoundObjectColumn = Column(object_dtype)
+    """Fama Sector - Not currently active - coming in a future update."""
+    sharadar_FamaIndustry: BoundObjectColumn = Column(object_dtype)
+    """Fama Industry - Industry classifications based on the SIC code and
+    classifications by Fama and French here: http://mba.tuck.dartmouth.edu
+    /pages/faculty/ken.french/Data_Library/det_48_ind_port.html"""
+    sharadar_Sector: BoundObjectColumn = Column(object_dtype)
+    """Sector - Sharadar's sector classification based on SIC codes in a
+    format which approximates to GICS."""
+    sharadar_Industry: BoundObjectColumn = Column(object_dtype)
+    """Industry - Sharadar's industry classification based on SIC codes in a
+    format which approximates to GICS."""
+    sharadar_ScaleMarketCap: BoundObjectColumn = Column(object_dtype)
+    """Company Scale - Market Cap - This field is experimental and subject to
+    change. It categorises the company according to it's maximum observed
+    market cap as follows: 1 - Nano <$50m; 2 - Micro < $300m; 3 - Small <
+    $2bn; 4 - Mid <$10bn; 5 - Large < $200bn; 6 - Mega >= $200bn"""
+    sharadar_ScaleRevenue: BoundObjectColumn = Column(object_dtype)
+    """Company Scale - Revenue - This field is experimental and subject to
+    change. It categorises the company according to it's maximum observed
+    annual revenue as follows: 1 - Nano <$50m; 2 - Micro < $300m; 3 -
+    Small < $2bn; 4 - Mid <$10bn; 5 - Large < $200bn; 6 - Mega >= $200bn"""
+    sharadar_RelatedTickers: BoundObjectColumn = Column(object_dtype)
+    """Related Tickers - Where related tickers have been identified this
+    field is populated. Related tickers can include the prior ticker
+    before a ticker change; and it tickers for alternative share classes."""
+    sharadar_Currency: BoundObjectColumn = Column(object_dtype)
+    """Currency - The company functional reporting currency for the SF1
+    Fundamentals table or the currency for EOD prices in SEP and SFP."""
+    sharadar_Location: BoundObjectColumn = Column(object_dtype)
+    """Location - The company location as registered with the Securities and
+    Exchange Commission."""
+    sharadar_CountryListed: BoundObjectColumn = Column(object_dtype)
+    """ISO country code where security is listed"""
+    sharadar_LastUpdated: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """Last Updated Date - Last Updated represents the last date that this
+    database entry was updated; which is useful to users when updating
+    their local records."""
+    sharadar_FirstAdded: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """First Added Date - The date that the ticker was first added to
+    coverage in the dataset."""
+    sharadar_FirstPriceDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """First Price Date - The date of the first price observation for a given
+    ticker. Can be used as a proxy for IPO date. Minimum value of
+    1986-01-01 for IPO's that occurred prior to this date. Note: this does
+    not necessarily represent the first price date available in our
+    datasets since our end of day price history currently starts in
+    December 1998."""
+    sharadar_LastPriceDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """Last Price Date - The most recent price observation available."""
+    sharadar_FirstQuarter: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """First Quarter - The first financial quarter available in the dataset."""
+    sharadar_LastQuarter: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """Last Quarter - The last financial quarter available in the dataset."""
+    sharadar_SecFilings: BoundObjectColumn = Column(object_dtype)
+    """SEC Filings URL - The URL pointing to the SEC filings which also
+    contains the Central Index Key (CIK)."""
+    sharadar_CompanySite: BoundObjectColumn = Column(object_dtype)
+    """Company Website URL - The URL pointing to the company website."""
+    usstock_Mic: BoundObjectColumn = Column(object_dtype)
+    """market identifier code for the security"""
+    usstock_Symbol: BoundObjectColumn = Column(object_dtype)
+    """ticker symbol"""
+    usstock_Name: BoundObjectColumn = Column(object_dtype)
+    """the name of the security"""
+    usstock_Sector: BoundObjectColumn = Column(object_dtype)
+    """sector in which company operates. There are 11 possible sectors."""
+    usstock_Industry: BoundObjectColumn = Column(object_dtype)
+    """industry in which company operates. There are 58 possible industries."""
+    usstock_SicCode: BoundObjectColumn = Column(object_dtype)
+    """Standard Industrial Classification Code, used in SEC filings"""
+    usstock_Sic: BoundObjectColumn = Column(object_dtype)
+    """SIC code description, bottom tier in SIC hierarchy, e.g.
+    "Electronic Computers"""
+    usstock_SicIndustryGroup: BoundObjectColumn = Column(object_dtype)
+    """3rd-level tier in SIC hierarchy, e.g. "Computer And Office Equipment"""
+    usstock_SicMajorGroup: BoundObjectColumn = Column(object_dtype)
+    """2nd-level tier in SIC hierarchy, e.g. "Industrial And Commercial
+    Machinery And Computer Equipment"""
+    usstock_SicDivision: BoundObjectColumn = Column(object_dtype)
+    """Top-level tier in SIC hierarchy"""
+    usstock_SecurityType: BoundObjectColumn = Column(object_dtype)
+    """security type (more detailed than usstock_SecurityType2)"""
+    usstock_SecurityType2: BoundObjectColumn = Column(object_dtype)
+    """security type (less detailed than usstock_SecurityType)"""
+    usstock_CIK: BoundObjectColumn = Column(object_dtype)
+    """the Central Index Key is the unique company identifier in SEC filings"""
+    usstock_PrimaryShareSid: BoundObjectColumn = Column(object_dtype)
+    """the sid of the primary share class, if not this security (for companies with
+    multiple share classes). Filtering to securities where usstock_PrimaryShareSid
+    is null is a way to deduplicate companies with multiple share classes."""
+    usstock_DateDelisted: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """date the security was delisted"""
+    usstock_FirstPriceDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """date of first available price"""
+    usstock_LastPriceDate: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    """date of last available price"""
+    figi_Figi: BoundObjectColumn = Column(object_dtype)
+    """e.g. BBG000BBBRC7"""
+    figi_Name: BoundObjectColumn = Column(object_dtype)
+    """e.g. AFLAC INC"""
+    figi_Ticker: BoundObjectColumn = Column(object_dtype)
+    """e.g. AFL"""
+    figi_CompositeFigi: BoundObjectColumn = Column(object_dtype)
+    """e.g. BBG000BBBNC6"""
+    figi_ExchCode: BoundObjectColumn = Column(object_dtype)
+    """e.g. UN"""
+    figi_UniqueId: BoundObjectColumn = Column(object_dtype)
+    """e.g. EQ0010001500001000"""
+    figi_SecurityType: BoundObjectColumn = Column(object_dtype)
+    """e.g. Common Stock"""
+    figi_MarketSector: BoundObjectColumn = Column(object_dtype)
+    """e.g. Equity"""
+    figi_ShareClassFigi: BoundObjectColumn = Column(object_dtype)
+    """ e.g. BBG001S5NGJ4"""
+    figi_UniqueIdFutOpt: BoundObjectColumn = Column(object_dtype)
+    figi_SecurityType2: BoundObjectColumn = Column(object_dtype)
+    """e.g. Common Stock"""
+    figi_SecurityDescription: BoundObjectColumn = Column(object_dtype)
+    """e.g. AFL"""
+    figi_IsComposite: BoundBooleanColumn = Column(bool_dtype)
+    """whether the Figi column contains a composite FIGI"""

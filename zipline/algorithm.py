@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Callable, Union
 from collections import namedtuple
 from collections.abc import Iterable
 from copy import copy
@@ -32,9 +33,12 @@ from six import (
     itervalues,
     string_types,
 )
-from trading_calendars import get_calendar
+from trading_calendars import get_calendar, TradingCalendar
 
-from zipline._protocol import handle_non_market_minutes
+from zipline._protocol import (
+    handle_non_market_minutes,
+    BarData
+)
 from zipline.errors import (
     AttachPipelineAfterInitialize,
     CannotOrderDelistedAsset,
@@ -70,6 +74,7 @@ from zipline.finance.controls import (
     RestrictedListOrder
 )
 from zipline.finance.execution import (
+    ExecutionStyle,
     LimitOrder,
     MarketOrder,
     StopLimitOrder,
@@ -78,6 +83,9 @@ from zipline.finance.execution import (
 from zipline.finance.asset_restrictions import Restrictions
 from zipline.finance.cancel_policy import NeverCancel, CancelPolicy
 from zipline.finance.asset_restrictions import NoRestrictions
+from zipline.finance.slippage import EquitySlippageModel, FutureSlippageModel
+from zipline.finance.commission import EquityCommissionModel, FutureCommissionModel
+from zipline.finance.order import Order
 from zipline.assets import Asset, Equity, Future, ContinuousFuture
 from zipline.gens.tradesimulation import AlgorithmSimulator
 from zipline.finance.metrics import MetricsTracker, load as load_metrics_set
@@ -108,6 +116,7 @@ from zipline.utils.cache import ExpiringCache
 import zipline.utils.events
 from zipline.utils.events import (
     EventManager,
+    EventRule,
     make_eventrule,
     date_rules,
     time_rules,
@@ -820,7 +829,7 @@ class TradingAlgorithm(object):
         }
 
     @api_method
-    def get_environment(self, field='platform'):
+    def get_environment(self, field: str = 'platform') -> Union[str, pd.Timestamp]:
         """Query the execution environment.
 
         Parameters
@@ -901,12 +910,14 @@ class TradingAlgorithm(object):
         )
 
     @api_method
-    def schedule_function(self,
-                          func,
-                          date_rule=None,
-                          time_rule=None,
-                          half_days=True,
-                          calendar=None):
+    def schedule_function(
+        self,
+        func: Callable[['TradingAlgorithm', BarData], None],
+        date_rule: EventRule = None,
+        time_rule: EventRule = None,
+        half_days: bool = True,
+        calendar: TradingCalendar = None
+        ) -> None:
         """
         Schedule a function to be called repeatedly in the future.
 
@@ -982,7 +993,7 @@ class TradingAlgorithm(object):
         )
 
     @api_method
-    def record(self, *args, **kwargs):
+    def record(self, *args, **kwargs) -> None:
         """Track and record values each day.
 
         Parameters
@@ -1006,7 +1017,7 @@ class TradingAlgorithm(object):
             self._recorded_vars[name] = value
 
     @api_method
-    def set_benchmark(self, benchmark):
+    def set_benchmark(self, benchmark: Asset) -> None:
         """Set the benchmark asset.
 
         Parameters
@@ -1034,11 +1045,13 @@ class TradingAlgorithm(object):
 
     @api_method
     @preprocess(root_symbol_str=ensure_upper_case)
-    def continuous_future(self,
-                          root_symbol_str,
-                          offset=0,
-                          roll='volume',
-                          adjustment='mul'):
+    def continuous_future(
+        self,
+        root_symbol_str: str,
+        offset: int = 0,
+        roll: str = 'volume',
+        adjustment: str = 'mul'
+        ) -> ContinuousFuture:
         """Create a specifier for a continuous contract.
 
         Parameters
@@ -1085,7 +1098,7 @@ class TradingAlgorithm(object):
         )
 
     @api_method
-    def sid(self, sid):
+    def sid(self, sid: Union[str, int]) -> Asset:
         """Lookup an Asset by its unique asset identifier.
 
         Parameters
@@ -1111,7 +1124,7 @@ class TradingAlgorithm(object):
 
     @api_method
     @preprocess(symbol=ensure_upper_case)
-    def future_symbol(self, symbol):
+    def future_symbol(self, symbol: str) -> Future:
         """Lookup a futures contract with a given symbol.
 
         Parameters
@@ -1196,12 +1209,14 @@ class TradingAlgorithm(object):
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
-    def order(self,
-              asset,
-              amount,
-              limit_price=None,
-              stop_price=None,
-              style=None):
+    def order(
+        self,
+        asset: Asset,
+        amount: int,
+        limit_price: float = None,
+        stop_price: float = None,
+        style: ExecutionStyle = None
+        ) -> Union[str, None]:
         """Place an order for a fixed number of shares.
 
         Parameters
@@ -1345,12 +1360,14 @@ class TradingAlgorithm(object):
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
-    def order_value(self,
-                    asset,
-                    value,
-                    limit_price=None,
-                    stop_price=None,
-                    style=None):
+    def order_value(
+        self,
+        asset: Asset,
+        value: float,
+        limit_price: float = None,
+        stop_price: float = None,
+        style: ExecutionStyle = None
+        ) -> Union[str, None]:
         """
         Place an order for a fixed amount of money.
 
@@ -1452,7 +1469,7 @@ class TradingAlgorithm(object):
     @api_method
     @preprocess(tz=coerce_string(pytz.timezone))
     @expect_types(tz=optional(tzinfo))
-    def get_datetime(self, tz=None):
+    def get_datetime(self, tz: str = None) -> pd.Timestamp:
         """
         Returns the current simulation datetime.
 
@@ -1473,7 +1490,11 @@ class TradingAlgorithm(object):
         return dt
 
     @api_method
-    def set_slippage(self, us_equities=None, us_futures=None):
+    def set_slippage(
+        self,
+        us_equities: EquitySlippageModel = None,
+        us_futures: FutureSlippageModel = None
+        ) -> None:
         """
         Set the slippage models for the simulation.
 
@@ -1523,7 +1544,11 @@ class TradingAlgorithm(object):
             self.blotter.slippage_models[Future] = us_futures
 
     @api_method
-    def set_commission(self, us_equities=None, us_futures=None):
+    def set_commission(
+        self,
+        us_equities: EquityCommissionModel = None,
+        us_futures: FutureCommissionModel = None
+        ) -> None:
         """Sets the commission models for the simulation.
 
         Parameters
@@ -1574,7 +1599,7 @@ class TradingAlgorithm(object):
             self.blotter.commission_models[Future] = us_futures
 
     @api_method
-    def set_cancel_policy(self, cancel_policy):
+    def set_cancel_policy(self, cancel_policy: CancelPolicy) -> None:
         """
         Sets the order cancellation policy for the strategy. Cancellation
         policies can only be set in the initialize() function.
@@ -1608,12 +1633,14 @@ class TradingAlgorithm(object):
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
-    def order_percent(self,
-                      asset,
-                      percent,
-                      limit_price=None,
-                      stop_price=None,
-                      style=None):
+    def order_percent(
+        self,
+        asset: Asset,
+        percent: float,
+        limit_price: float = None,
+        stop_price: float = None,
+        style: ExecutionStyle = None
+        ) -> Union[str, None]:
         """Place an order in the specified asset corresponding to the given
         percent of the current portfolio value.
 
@@ -1667,12 +1694,14 @@ class TradingAlgorithm(object):
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
-    def order_target(self,
-                     asset,
-                     target,
-                     limit_price=None,
-                     stop_price=None,
-                     style=None):
+    def order_target(
+        self,
+        asset: Asset,
+        target: int,
+        limit_price: float = None,
+        stop_price: float = None,
+        style: ExecutionStyle = None
+        ) -> Union[str, None]:
         """Place an order to adjust a position to a target number of shares. If
         the position doesn't already exist, this is equivalent to placing a new
         order. If the position does exist, this is equivalent to placing an
@@ -1744,12 +1773,14 @@ class TradingAlgorithm(object):
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
-    def order_target_value(self,
-                           asset,
-                           target,
-                           limit_price=None,
-                           stop_price=None,
-                           style=None):
+    def order_target_value(
+        self,
+        asset: Asset,
+        target: float,
+        limit_price: float = None,
+        stop_price: float = None,
+        style: ExecutionStyle = None
+        ) -> Union[str, None]:
         """Place an order to adjust a position to a target value. If
         the position doesn't already exist, this is equivalent to placing a new
         order. If the position does exist, this is equivalent to placing an
@@ -1816,8 +1847,14 @@ class TradingAlgorithm(object):
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
-    def order_target_percent(self, asset, target,
-                             limit_price=None, stop_price=None, style=None):
+    def order_target_percent(
+        self,
+        asset: Asset,
+        target: float,
+        limit_price: float = None,
+        stop_price: float = None,
+        style: ExecutionStyle = None
+        ) -> Union[str, None]:
         """Place an order to adjust a position to a target percent of the
         current portfolio value. If the position doesn't already exist, this is
         equivalent to placing a new order. If the position does exist, this is
@@ -1888,7 +1925,7 @@ class TradingAlgorithm(object):
     @api_method
     @expect_types(share_counts=pd.Series)
     @expect_dtypes(share_counts=int64_dtype)
-    def batch_market_order(self, share_counts):
+    def batch_market_order(self, share_counts: pd.Series) -> pd.Index:
         """Place a batch market order for multiple assets.
 
         Parameters
@@ -1912,7 +1949,10 @@ class TradingAlgorithm(object):
     @error_keywords(sid='Keyword argument `sid` is no longer supported for '
                         'get_open_orders. Use `asset` instead.')
     @api_method
-    def get_open_orders(self, asset=None):
+    def get_open_orders(
+        self,
+        asset: Asset = None
+        ) -> Union[list[Order], dict[Asset, list[Order]]]:
         """Retrieve all of the current open orders.
 
         Parameters
@@ -1941,7 +1981,7 @@ class TradingAlgorithm(object):
         return []
 
     @api_method
-    def get_order(self, order_id):
+    def get_order(self, order_id: str) -> Order:
         """Lookup an order based on the order id returned from one of the
         order functions.
 
@@ -1959,7 +1999,7 @@ class TradingAlgorithm(object):
             return self.blotter.orders[order_id].to_api_obj()
 
     @api_method
-    def cancel_order(self, order_param):
+    def cancel_order(self, order_param: Union[str, Order]) -> None:
         """Cancel an open order.
 
         Parameters
@@ -1993,7 +2033,7 @@ class TradingAlgorithm(object):
                              self.trading_client.current_data)
 
     @api_method
-    def set_max_leverage(self, max_leverage):
+    def set_max_leverage(self, max_leverage: float) -> None:
         """Set a limit on the maximum leverage of the algorithm.
 
         Parameters
@@ -2006,7 +2046,11 @@ class TradingAlgorithm(object):
         self.register_account_control(control)
 
     @api_method
-    def set_min_leverage(self, min_leverage, grace_period):
+    def set_min_leverage(
+        self,
+        min_leverage: float,
+        grace_period: pd.Timedelta
+        ) -> None:
         """Set a limit on the minimum leverage of the algorithm.
 
         Parameters
@@ -2033,11 +2077,13 @@ class TradingAlgorithm(object):
         self.trading_controls.append(control)
 
     @api_method
-    def set_max_position_size(self,
-                              asset=None,
-                              max_shares=None,
-                              max_notional=None,
-                              on_error='fail'):
+    def set_max_position_size(
+        self,
+        asset: Asset = None,
+        max_shares: int = None,
+        max_notional: float = None,
+        on_error: str = 'fail'
+        ) -> None:
         """Set a limit on the number of shares and/or dollar value held for the
         given sid. Limits are treated as absolute values and are enforced at
         the time that the algo attempts to place an order for sid. This means
@@ -2066,11 +2112,13 @@ class TradingAlgorithm(object):
         self.register_trading_control(control)
 
     @api_method
-    def set_max_order_size(self,
-                           asset=None,
-                           max_shares=None,
-                           max_notional=None,
-                           on_error='fail'):
+    def set_max_order_size(
+        self,
+        asset: Asset = None,
+        max_shares: int = None,
+        max_notional: float = None,
+        on_error: str = 'fail'
+        ) -> None:
         """Set a limit on the number of shares and/or dollar value of any single
         order placed for sid.  Limits are treated as absolute values and are
         enforced at the time that the algo attempts to place an order for sid.
@@ -2095,7 +2143,11 @@ class TradingAlgorithm(object):
         self.register_trading_control(control)
 
     @api_method
-    def set_max_order_count(self, max_count, on_error='fail'):
+    def set_max_order_count(
+        self,
+        max_count: int,
+        on_error: str = 'fail'
+        ) -> None:
         """Set a limit on the number of orders that can be placed in a single
         day.
 
@@ -2112,7 +2164,11 @@ class TradingAlgorithm(object):
         restrictions=Restrictions,
         on_error=str,
     )
-    def set_asset_restrictions(self, restrictions, on_error='fail'):
+    def set_asset_restrictions(
+        self,
+        restrictions: Restrictions,
+        on_error: str = 'fail'
+        ) -> None:
         """Set a restriction on which assets can be ordered.
 
         Parameters
@@ -2129,7 +2185,7 @@ class TradingAlgorithm(object):
         self.restrictions |= restrictions
 
     @api_method
-    def set_long_only(self, on_error='fail'):
+    def set_long_only(self, on_error: str ='fail') -> None:
         """Set a rule specifying that this algorithm cannot take short
         positions.
         """
@@ -2145,7 +2201,13 @@ class TradingAlgorithm(object):
         name=string_types,
         chunks=(int, Iterable, type(None)),
     )
-    def attach_pipeline(self, pipeline, name, chunks=None, eager=True):
+    def attach_pipeline(
+        self,
+        pipeline: Pipeline,
+        name: str,
+        chunks: int = None,
+        eager: bool = True
+        ) -> Pipeline:
         """Register a pipeline to be computed at the start of each day.
 
         Parameters
@@ -2190,7 +2252,7 @@ class TradingAlgorithm(object):
 
     @api_method
     @require_initialized(PipelineOutputDuringInitialize())
-    def pipeline_output(self, name):
+    def pipeline_output(self, name: str) -> pd.DataFrame:
         """
         Get results of the pipeline attached by with name ``name``.
 
@@ -2324,7 +2386,11 @@ class TradingAlgorithm(object):
     ##################
 
     @api_method
-    def set_realtime_db(self, code, fields={}):
+    def set_realtime_db(
+        self,
+        code: str,
+        fields: dict[str, str] = {}
+        ) -> None:
         """
         Sets the realtime database to use for querying up-to-date minute bars in
         live trading.

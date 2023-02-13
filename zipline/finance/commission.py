@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from abc import abstractmethod
+from typing import Union
 from collections import defaultdict
 
 from six import with_metaclass
@@ -156,8 +157,8 @@ class PerShare(EquityCommissionModel):
     """
 
     def __init__(self,
-                 cost=0.001,
-                 min_trade_cost=0.0):
+                 cost: float = 0.001,
+                 min_trade_cost: float = 0.0):
         self.cost_per_share = float(cost)
         self.min_trade_cost = min_trade_cost or 0
 
@@ -205,9 +206,9 @@ class PerContract(FutureCommissionModel):
     """
 
     def __init__(self,
-                 cost,
-                 exchange_fee,
-                 min_trade_cost=0.0):
+                 cost: Union[float, dict[str, float]],
+                 exchange_fee: Union[float, dict[str, float]],
+                 min_trade_cost: float = 0.0):
         # If 'cost' or 'exchange fee' are constants, use a dummy mapping to
         # treat them as a dictionary that always returns the same value.
         # NOTE: These dictionary does not handle unknown root symbols, so it
@@ -285,7 +286,7 @@ class PerTrade(CommissionModel):
         The flat amount of commissions paid per equity trade.
     """
 
-    def __init__(self, cost=0.0):
+    def __init__(self, cost: float = 0.0):
         """
         Cost parameter is the cost of a trade, regardless of share count.
         $5.00 per trade is fairly typical of discount brokers.
@@ -327,7 +328,7 @@ class PerFutureTrade(PerContract):
         symbols to the commission cost for trading contracts of that symbol.
     """
 
-    def __init__(self, cost=0.0):
+    def __init__(self, cost: Union[float, dict[str, float]] = 0.0):
         # The per-trade cost can be represented as the exchange fee in a
         # per-contract model because the exchange fee is just a one time cost
         # incurred on the first fill.
@@ -357,7 +358,7 @@ class PerDollar(EquityCommissionModel):
         The flat amount of commissions paid per dollar of equities
         traded. Default is a commission of $0.0015 per dollar transacted.
     """
-    def __init__(self, cost=0.0015):
+    def __init__(self, cost: float = 0.0015):
         """
         Cost parameter is the cost of a trade per-dollar. 0.0015
         on $1 million means $1,500 commission (=1M * 0.0015)

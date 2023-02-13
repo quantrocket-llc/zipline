@@ -1,3 +1,6 @@
+from zipline.assets import Asset, Future, ContinuousFuture
+from typing import Union
+import pandas as pd
 
 class check_parameters(object):
     """
@@ -44,7 +47,11 @@ class BarData:
         """
         ...
 
-    def current(self, assets, fields):
+    def current(
+      self,
+      assets: Union[Asset, list[Asset]],
+      fields: Union[str, list[str]]
+      ) -> Union[float, pd.Series, pd.DataFrame]:
         """
         Returns the "current" value of the given fields for the given assets
         at the current simulation time.
@@ -114,7 +121,10 @@ class BarData:
         """
         ...
 
-    def current_chain(self, continuous_future):
+    def current_chain(
+      self,
+      continuous_future: ContinuousFuture
+      ) -> list[Future]:
         """
         Returns the current futures chain as of the simulation date.
 
@@ -132,7 +142,10 @@ class BarData:
         """
         ...
 
-    def can_trade(self, assets):
+    def can_trade(
+      self,
+      assets: Union[Asset, list[Asset]]
+      ) -> bool:
         """
         For the given asset or iterable of assets, returns True if all of the
         following are true:
@@ -172,7 +185,10 @@ class BarData:
 
     def _can_trade_for_asset(self, asset, dt, adjusted_dt, data_portal): ...
 
-    def is_stale(self, assets):
+    def is_stale(
+      self,
+      assets: Union[Asset, list[Asset]]
+      ) -> bool:
         """
         For the given asset or iterable of assets, returns True if the asset
         is alive and there is no trade data for the current simulation time.
@@ -199,7 +215,13 @@ class BarData:
     def _is_stale_for_asset(self, asset, dt, adjusted_dt, data_portal):
         ...
 
-    def history(self, assets, fields, bar_count, frequency):
+    def history(
+      self,
+      assets: Union[Asset, list[Asset]],
+      fields: Union[str, list[str]],
+      bar_count: int,
+      frequency: str
+      ) -> Union[pd.DataFrame, pd.Series]:
         """
         Returns a trailing window of length ``bar_count`` containing data for
         the given assets, fields, and frequency.

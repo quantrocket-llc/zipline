@@ -1,6 +1,7 @@
 """
 factor.py
 """
+from typing import Union
 from operator import attrgetter
 from numbers import Number
 from math import ceil
@@ -477,7 +478,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     __rtruediv__ = clsdict['__rdiv__']
 
     clsdict["_abs"] = clsdict["abs"]
-    def abs(self):
+    def abs(self) -> "Factor":
         """
         Create a Factor that computes the absolute value of each output.
 
@@ -491,7 +492,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     clsdict["abs"] = clsdict["_abs"]
     del clsdict["_abs"]
 
-    def eq(self, other):
+    def eq(self, other: 'Factor') -> 'Factor':
         """
         Create a `zipline.pipeline.Filter` computing
         ``self == other``.
@@ -518,7 +519,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(mask=(Filter, type(None)))
     @float64_only
-    def mean(self, mask=None):
+    def mean(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily mean across assets.
 
         Parameters
@@ -541,7 +542,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(mask=(Filter, type(None)))
     @float64_only
-    def stddev(self, mask=None):
+    def stddev(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily standard deviation
         across assets.
 
@@ -565,7 +566,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(mask=(Filter, type(None)))
     @float64_only
-    def max(self, mask=None):
+    def max(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily max across assets.
 
         Parameters
@@ -588,7 +589,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(mask=(Filter, type(None)))
     @float64_only
-    def min(self, mask=None):
+    def min(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily min across assets.
 
         Parameters
@@ -611,7 +612,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(mask=(Filter, type(None)))
     @float64_only
-    def median(self, mask=None):
+    def median(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily median across assets.
 
         Parameters
@@ -634,7 +635,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(mask=(Filter, type(None)))
     @float64_only
-    def sum(self, mask=None):
+    def sum(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily sum across assets.
 
         Parameters
@@ -657,7 +658,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(mask=(Filter, type(None)))
     @float64_only
-    def notnull_count(self, mask=None):
+    def notnull_count(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily count of not-null
         values across assets.
 
@@ -679,18 +680,20 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             dtype=self.dtype,
         )
 
-    def fillna(self, fill_value):
+    def fillna(
+        self,
+        fill_value: Union['Factor', float]
+        ) -> 'Factor':
         """
-        Create a new term that fills missing values of this term's output with
+        Create a new Factor that fills missing values of this factor's output with
         ``fill_value``.
 
         Parameters
         ----------
-        fill_value : zipline.pipeline.ComputableTerm, or object.
+        fill_value : zipline.pipeline.Factor, or object.
             Object to use as replacement for missing values.
 
-            If a ComputableTerm (e.g. a Factor) is passed, that term's results
-            will be used as fill values.
+            If a Factor is passed, that term's results will be used as fill values.
 
             If a scalar (e.g. a number) is passed, the scalar will be used as a
             fill value.
@@ -712,7 +715,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             2017-03-13    1.0    0.0    3.0    4.0
             2017-03-14    1.5    2.5    0.0    0.0
 
-        **Filling with a Term:**
+        **Filling with a Factor:**
 
         Let ``f`` be as above, and let ``g`` be another Factor which would
         produce the following output::
@@ -729,19 +732,95 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
         Returns
         -------
-        filled : zipline.pipeline.ComputableTerm
-            A term computing the same results as ``self``, but with missing
-            values filled in using values from ``fill_value``.
+        filled : zipline.pipeline.Factor
+            A Factor computing the same results as the original factor,
+            but with missing values filled in using values from ``fill_value``.
         """
-        # redefined here to get docstring on Factor
-        return super().fillna(fill_value=fill_value)
+        # redefined here to get docstring on Factor and for better type hints
+        return super()._fillna(fill_value=fill_value)
+
+    def where(
+        self,
+        condition: Filter,
+        fill_value: Union['Factor', float] = None
+        ) -> 'Factor':
+        """
+        Create a new Factor that preserves original values where `condition` is
+        True and replaced values with `fill_value` (or NaN if `fill_value` is
+        omitted) where `condition` is False.
+
+        Parameters
+        ----------
+        condition : zipline.pipeline.Filter
+            a Filter indicating which values to keep
+
+        fill_value : zipline.pipeline.Factor, or object, optional
+            Object to use as replacement for values not fulfilling condition.
+
+            If a Factor is passed, that term's results will be used as fill
+            values.
+
+            If a scalar (e.g. a number) is passed, the scalar will be used as a
+            fill value.
+
+        Examples
+        --------
+
+        Let ``f`` be a Factor which would produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0    0.0    3.0    4.0
+            2017-03-14    1.5    2.5    0.0    0.0
+
+        Then ``f.where(f > 0)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0    NaN    3.0    4.0
+            2017-03-14    1.5    2.5    NaN    NaN
+
+        **Filling with a Scalar:**
+
+        Let ``f`` be as above. Then ``f.where(f > 0, -1)`` produces the
+        following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0   -1.0    3.0    4.0
+            2017-03-14    1.5    2.5   -1.0   -1.0
+
+        **Filling with a Factor:**
+
+        Let ``f`` be as above, and let ``g`` be another Factor which would
+        produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13   10.0   20.0   30.0   40.0
+            2017-03-14   15.0   25.0   35.0   45.0
+
+        Then, ``f.where(f > 0, g)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13    1.0   20.0    3.0    4.0
+            2017-03-14    1.5    2.5   35.0   45.0
+
+        Returns
+        -------
+        filled : zipline.pipeline.Factor
+            A Factor computing the same results as the original Factor where
+            ``condition`` is True, and ``fill_value`` (or NaN if ``fill value``
+            is omitted) where ``condition`` is False.
+        """
+        return super()._where(condition=condition, fill_value=fill_value)
 
     @expect_types(
         mask=(Filter, type(None)),
         groupby=(Classifier, type(None)),
     )
     @float64_only
-    def demean(self, mask=None, groupby=None):
+    def demean(
+        self,
+        mask: Filter = None,
+        groupby: Classifier = None
+        ) -> 'Factor':
         """
         Construct a Factor that computes ``self`` and subtracts the mean from
         row of the result.
@@ -870,7 +949,11 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         groupby=(Classifier, type(None)),
     )
     @float64_only
-    def zscore(self, mask=None, groupby=None):
+    def zscore(
+        self,
+        mask: Filter = None,
+        groupby: Classifier = None
+        ) -> 'Factor':
         """
         Construct a Factor that Z-Scores each day's results.
 
@@ -932,11 +1015,13 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             window_safe=True,
         )
 
-    def rank(self,
-             method='ordinal',
-             ascending=True,
-             mask=None,
-             groupby=None):
+    def rank(
+        self,
+        method: str = 'ordinal',
+        ascending: bool = True,
+        mask: Filter = None,
+        groupby: Classifier = None
+        ) -> 'Factor':
         """
         Construct a new Factor representing the sorted rank of each column
         within each row.
@@ -994,7 +1079,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     @expect_types(
         target=Term, correlation_length=int, mask=(Filter, type(None)),
     )
-    def pearsonr(self, target, correlation_length, mask=None):
+    def pearsonr(
+        self,
+        target: Term,
+        correlation_length: int,
+        mask: Filter = None
+        ) -> 'Factor':
         """
         Construct a new Factor that computes rolling pearson correlation
         coefficients between ``target`` and the columns of ``self``.
@@ -1065,7 +1155,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     @expect_types(
         target=Term, correlation_length=int, mask=(Filter, type(None)),
     )
-    def spearmanr(self, target, correlation_length, mask=None):
+    def spearmanr(
+        self,
+        target: Term,
+        correlation_length: int,
+        mask: Filter = None
+        ) -> 'Factor':
         """
         Construct a new Factor that computes rolling spearman rank correlation
         coefficients between ``target`` and the columns of ``self``.
@@ -1135,7 +1230,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     @expect_types(
         target=Term, regression_length=int, mask=(Filter, type(None)),
     )
-    def linear_regression(self, target, regression_length, mask=None):
+    def linear_regression(
+        self,
+        target: Term,
+        regression_length: int,
+        mask: Filter = None
+        ) -> 'Factor':
         """
         Construct a new Factor that performs an ordinary least-squares
         regression predicting the columns of `self` from `target`.
@@ -1206,11 +1306,13 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         groupby=(Classifier, type(None)),
     )
     @float64_only
-    def winsorize(self,
-                  min_percentile,
-                  max_percentile,
-                  mask=None,
-                  groupby=None):
+    def winsorize(
+        self,
+        min_percentile: Union[int, float],
+        max_percentile: Union[int, float],
+        mask: Filter = None,
+        groupby: Classifier = None
+        ) -> 'Factor':
         """
         Construct a new factor that winsorizes the result of this factor.
 
@@ -1304,7 +1406,11 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         )
 
     @expect_types(bins=int, mask=(Filter, type(None)))
-    def quantiles(self, bins, mask=None):
+    def quantiles(
+        self,
+        bins: int,
+        mask: Filter = None
+        ) -> Classifier:
         """
         Construct a Classifier computing quantiles of the output of ``self``.
 
@@ -1331,7 +1437,10 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return Quantiles(inputs=(self,), bins=bins, mask=mask)
 
     @expect_types(mask=(Filter, type(None)))
-    def quartiles(self, mask=None):
+    def quartiles(
+        self,
+        mask: Filter = None
+        ) -> Classifier:
         """
         Construct a Classifier computing quartiles over the output of ``self``.
 
@@ -1355,7 +1464,10 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return self.quantiles(bins=4, mask=mask)
 
     @expect_types(mask=(Filter, type(None)))
-    def quintiles(self, mask=None):
+    def quintiles(
+        self,
+        mask: Filter = None
+        ) -> Classifier:
         """
         Construct a Classifier computing quintile labels on ``self``.
 
@@ -1379,7 +1491,10 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return self.quantiles(bins=5, mask=mask)
 
     @expect_types(mask=(Filter, type(None)))
-    def deciles(self, mask=None):
+    def deciles(
+        self,
+        mask: Filter = None
+        ) -> Classifier:
         """
         Construct a Classifier computing decile labels on ``self``.
 
@@ -1402,7 +1517,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         """
         return self.quantiles(bins=10, mask=mask)
 
-    def top(self, N, mask=None, groupby=None):
+    def top(
+        self,
+        N: int,
+        mask: Filter = None,
+        groupby: Classifier = None
+        ) -> Filter:
         """
         Construct a Filter matching the top N asset values of self each day.
 
@@ -1430,7 +1550,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             return self._maximum(mask=mask, groupby=groupby)
         return self.rank(ascending=False, mask=mask, groupby=groupby) <= N
 
-    def bottom(self, N, mask=None, groupby=None):
+    def bottom(
+        self,
+        N: int,
+        mask: Filter = None,
+        groupby: Classifier = None
+        ) -> Filter:
         """
         Construct a Filter matching the bottom N asset values of self each day.
 
@@ -1457,10 +1582,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     def _maximum(self, mask=None, groupby=None):
         return MaximumFilter(self, groupby=groupby, mask=mask)
 
-    def percentile_between(self,
-                           min_percentile,
-                           max_percentile,
-                           mask=None):
+    def percentile_between(
+        self,
+        min_percentile: float,
+        max_percentile: float,
+        mask: Filter = None
+        ) -> Filter:
         """
         Construct a Filter matching values of self that fall within the range
         defined by ``min_percentile`` and ``max_percentile``.
@@ -1491,7 +1618,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         )
 
     @if_not_float64_tell_caller_to_use_isnull
-    def isnan(self):
+    def isnan(self) -> Filter:
         """
         A Filter producing True for all values where this Factor is NaN.
 
@@ -1502,7 +1629,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return self != self
 
     @if_not_float64_tell_caller_to_use_isnull
-    def notnan(self):
+    def notnan(self) -> Filter:
         """
         A Filter producing True for values where this Factor is not NaN.
 
@@ -1513,14 +1640,19 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return ~self.isnan()
 
     @if_not_float64_tell_caller_to_use_isnull
-    def isfinite(self):
+    def isfinite(self) -> Filter:
         """
         A Filter producing True for values where this Factor is anything but
         NaN, inf, or -inf.
         """
         return (-inf < self) & (self < inf)
 
-    def clip(self, min_bound, max_bound, mask=None):
+    def clip(
+        self,
+        min_bound: float,
+        max_bound: float,
+        mask: Filter = None
+        ) -> 'Factor':
         """
         Clip (limit) the values in a factor.
 

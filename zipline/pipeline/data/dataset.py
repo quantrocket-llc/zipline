@@ -1,4 +1,5 @@
 import abc
+from typing import Union
 from collections import namedtuple, OrderedDict
 from itertools import repeat
 from textwrap import dedent
@@ -351,7 +352,10 @@ class BoundColumn(LoadableTerm):
         return out
 
     @property
-    def latest(self):
+    def latest(self) -> Union[LatestFilter, LatestFactor, LatestClassifier]:
+        """
+        Return the latest value of this column.
+        """
         dtype = self.dtype
         if dtype in Filter.ALLOWED_DTYPES:
             Latest = LatestFilter
@@ -386,6 +390,66 @@ class BoundColumn(LoadableTerm):
         """Short repr used to render in recursive contexts."""
         return self.qualname
 
+# The following BoundColumn subclasses are only used for type hints.
+class BoundBooleanColumn(BoundColumn):
+    """
+    A DataSet column for boolean values.
+    """
+
+    @property
+    def latest(self) -> LatestFilter:
+        """
+        Filter that returns the latest value of this column.
+        """
+        return super().latest
+
+class BoundFloatColumn(BoundColumn):
+    """
+    A DataSet column for floating point values.
+    """
+
+    @property
+    def latest(self) -> LatestFactor:
+        """
+        Factor that returns the latest value of this column.
+        """
+        return super().latest
+
+class BoundDatetimeColumn(BoundColumn):
+    """
+    A DataSet column for datetime values.
+    """
+
+    @property
+    def latest(self) -> LatestFactor:
+        """
+        Factor that returns the latest value of this column.
+        """
+        return super().latest
+
+class BoundIntColumn(BoundColumn):
+    """
+    A DataSet column for integer values.
+    """
+
+    @property
+    def latest(self) -> LatestClassifier:
+        """
+        Classifier that returns the latest value of this column.
+        """
+        return super().latest
+
+class BoundObjectColumn(BoundColumn):
+    """
+    A DataSet column for strings.
+    """
+
+    @property
+    def latest(self) -> LatestClassifier:
+        """
+        Classifier that returns the latest value of this column.
+        """
+        return super().latest
 
 class DataSetMeta(type):
     """
@@ -439,7 +503,7 @@ class DataSetMeta(type):
         return newtype
 
     @expect_types(domain=Domain)
-    def specialize(self, domain):
+    def specialize(self, domain: Domain) -> 'DataSet':
         """
         Specialize a generic DataSet to a concrete domain.
 
@@ -477,7 +541,7 @@ class DataSetMeta(type):
             self._domain_specializations[domain] = new_type
             return new_type
 
-    def unspecialize(self):
+    def unspecialize(self) -> 'DataSet':
         """
         Unspecialize a dataset to its generic form.
 
@@ -523,13 +587,13 @@ class DataSetMeta(type):
         return out
 
     @property
-    def columns(self):
+    def columns(self) -> set[BoundColumn]:
         return frozenset(
             getattr(self, colname) for colname in self._column_names
         )
 
     @property
-    def qualname(self):
+    def qualname(self) -> str:
         if self.domain is GENERIC:
             specialization_key = ''
         else:
@@ -630,7 +694,7 @@ class DataSet(with_metaclass(DataSetMeta, object)):
     ndim = 2
 
     @classmethod
-    def get_column(cls, name):
+    def get_column(cls, name: str) -> BoundColumn:
         """Look up a column by name.
 
         Parameters
@@ -1005,7 +1069,7 @@ class DataSetFamily(with_metaclass(DataSetFamilyMeta)):
         return Slice
 
     @classmethod
-    def slice(cls, *args, **kwargs):
+    def slice(cls, *args, **kwargs) -> DataSet:
         """Take a slice of a DataSetFamily to produce a dataset
         indexed by asset and date.
 

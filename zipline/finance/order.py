@@ -17,6 +17,7 @@ import uuid
 
 from six import text_type
 
+import pandas as pd
 import zipline.protocol as zp
 from zipline.assets import Asset
 from zipline.utils.enum import enum
@@ -47,8 +48,17 @@ class Order(object):
                  "limit_reached", "direction", "type", "broker_order_id"]
 
     @expect_types(asset=Asset)
-    def __init__(self, dt, asset, amount, stop=None, limit=None, filled=0,
-                 commission=0, id=None):
+    def __init__(
+        self,
+        dt: pd.Timestamp,
+        asset: Asset,
+        amount: int,
+        stop: float = None,
+        limit: float = None,
+        filled: int = 0,
+        commission: float = 0,
+        id: str = None
+        ):
         """
         An order placed by an algorithm.
 

@@ -1,6 +1,9 @@
 """
 classifier.py
 """
+from typing import Callable, Union, TYPE_CHECKING
+if TYPE_CHECKING:
+    from zipline.pipeline.factors import Factor
 from functools import partial
 from numbers import Number
 import operator
@@ -27,7 +30,7 @@ from zipline.utils.numpy_utils import (
     vectorized_is_element,
 )
 
-from ..filters import ArrayPredicate, NumExprFilter
+from ..filters import Filter, ArrayPredicate, NumExprFilter
 from ..mixins import (
     CustomTermMixin,
     LatestMixin,
@@ -99,7 +102,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
                 opargs=(other,),
             )
 
-    def __ne__(self, other):
+    def __ne__(
+        self,
+        other: 'Classifier'
+        ) -> Filter:
         """
         Construct a Filter returning True for asset/date pairs where the output
         of ``self`` matches ``other``.
@@ -131,7 +137,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
 
     @string_classifiers_only
     @expect_types(prefix=(bytes, unicode))
-    def startswith(self, prefix):
+    def startswith(
+        self,
+        prefix: str
+        ) -> Filter:
         """
         Construct a Filter matching values starting with ``prefix``.
 
@@ -154,7 +163,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
 
     @string_classifiers_only
     @expect_types(suffix=(bytes, unicode))
-    def endswith(self, suffix):
+    def endswith(
+        self,
+        suffix: str
+        ) -> Filter:
         """
         Construct a Filter matching values ending with ``suffix``.
 
@@ -177,7 +189,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
 
     @string_classifiers_only
     @expect_types(substring=(bytes, unicode))
-    def has_substring(self, substring):
+    def has_substring(
+        self,
+        substring: str
+        ) -> Filter:
         """
         Construct a Filter matching values containing ``substring``.
 
@@ -200,7 +215,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
 
     @string_classifiers_only
     @expect_types(pattern=(bytes, unicode, type(re.compile(''))))
-    def matches(self, pattern):
+    def matches(
+        self,
+        pattern: str
+        ) -> Filter:
         """
         Construct a Filter that checks regex matches against ``pattern``.
 
@@ -227,7 +245,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
 
     # TODO: Support relabeling for integer dtypes.
     @string_classifiers_only
-    def relabel(self, relabeler):
+    def relabel(
+        self,
+        relabeler: Callable[[str], str]
+        ) -> 'Classifier':
         """
         Convert ``self`` into a new classifier by mapping a function over each
         element produced by ``self``.
@@ -245,7 +266,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         """
         return Relabel(term=self, relabeler=relabeler)
 
-    def isin(self, choices):
+    def isin(self, choices: list[Union[str, int]]) -> Filter:
         """
         Construct a Filter indicating whether values are in ``choices``.
 
@@ -381,7 +402,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
             )
         return group_labels, null_label
 
-    def peer_count(self, mask=None):
+    def peer_count(
+        self,
+        mask: Filter = None
+        ) -> 'Factor':
         """
         Construct a factor that gives the number of occurrences of
         each distinct category in a classifier.
@@ -424,6 +448,135 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         from ..factors import PeerCount
         return PeerCount(inputs=[self], mask=mask)
 
+    def fillna(
+        self,
+        fill_value: Union['Classifier', str, int]
+        ) -> 'Classifier':
+        """
+        Create a new Classifier that fills missing values of this classifier's output with
+        ``fill_value``.
+
+        Parameters
+        ----------
+        fill_value : zipline.pipeline.Classifier, or object.
+            Object to use as replacement for missing values.
+
+            If a Classifier is passed, that term's results will be used as fill values.
+
+            If a scalar (e.g. a number) is passed, the scalar will be used as a
+            fill value.
+
+        Examples
+        --------
+
+        **Filling with a Scalar:**
+
+        Let ``c`` be a Classifier which would produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      A             B      B
+            2017-03-14      A      A
+
+        Then ``c.fillna('C')`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      A      C      B      B
+            2017-03-14      A      A      C      C
+
+        **Filling with a Classifier:**
+
+        Let ``c`` be as above, and let ``d`` be another Classifier which would
+        produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      D      E      F      G
+            2017-03-14      D      E      F      G
+
+        Then, ``c.fillna(d)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      A      E      B      B
+            2017-03-14      A      A      F      G
+
+        Returns
+        -------
+        filled : zipline.pipeline.Classifier
+            A Classifier computing the same results as the original classifier,
+            but with missing values filled in using values from ``fill_value``.
+        """
+        return super()._fillna(fill_value=fill_value)
+
+    def where(
+        self,
+        condition: Filter,
+        fill_value: Union['Classifier', float] = None
+        ) -> 'Classifier':
+        """
+        Create a new Classifier that preserves original values where `condition` is
+        True and replaced values with `fill_value` (or empty string if `fill_value`
+        is omitted) where `condition` is False.
+
+        Parameters
+        ----------
+        condition : zipline.pipeline.Filter
+            a Filter indicating which values to keep
+
+        fill_value : zipline.pipeline.Classifier, or object, optional
+            Object to use as replacement for values not fulfilling condition.
+
+            If a Classifier is passed, that term's results will be used as fill
+            values.
+
+            If a scalar (e.g. a number) is passed, the scalar will be used as a
+            fill value.
+
+        Examples
+        --------
+
+        Let ``c`` be a Classifier which would produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      A            B      B
+            2017-03-14      A      A
+
+        Then ``c.where(c == 'A')`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      A
+            2017-03-14      A      A
+
+        **Filling with a Scalar:**
+
+        Let ``c`` be as above. Then ``c.where(c == 'A', 'Z')`` produces the
+        following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      A      Z      Z      Z
+            2017-03-14      A      A      Z      Z
+
+        **Filling with a Classifier:**
+
+        Let ``C`` be as above, and let ``d`` be another Classifier which would
+        produce the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      R      S      T      U
+            2017-03-14      R      S      T      U
+
+        Then, ``c.where(c == 'A', d)`` produces the following output::
+
+                         AAPL   MSFT    MCD     BK
+            2017-03-13      A      S      T      U
+            2017-03-14      A      A      T      U
+
+        Returns
+        -------
+        filled : zipline.pipeline.Classifier
+            A Classifier computing the same results as the original Classifier where
+            ``condition`` is True, and ``fill_value`` (or empty string if ``fill value``
+            is omitted) where ``condition`` is False.
+        """
+        return super()._where(condition=condition, fill_value=fill_value)
 
 class Everything(Classifier):
     """

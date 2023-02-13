@@ -25,7 +25,11 @@ from zipline.protocol import BarData
 from quantrocket.zipline import get_default_bundle, get_bundle_config
 from trading_calendars import get_calendar
 
-def get_data(dt, bundle=None, data_frequency=None):
+def get_data(
+    dt: str,
+    bundle: str = None,
+    data_frequency: str = None
+    ) -> BarData:
     """
     Return a zipline.protocol.BarData object for the specified bundle (or default bundle)
     as of the specified datetime. This is the same object that is passed

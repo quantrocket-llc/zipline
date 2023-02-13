@@ -134,7 +134,11 @@ class Portfolio(object):
         Amount of cash in the portfolio at the start of the backtest.
     """
 
-    def __init__(self, start_date=None, capital_base=0.0):
+    def __init__(
+        self,
+        start_date: pd.Timestamp = None,
+        capital_base: float = 0.0
+        ):
         self_ = MutableView(self)
         self_.cash_flow = 0.0
         self_.starting_cash = capital_base

@@ -1,12 +1,25 @@
+from typing import Union, Callable
 import collections
-from zipline.assets import Asset, Equity, Future
+import pandas as pd
+from zipline.algorithm import TradingAlgorithm
+from zipline.assets import Asset, Equity, Future, ContinuousFuture
 from zipline.finance.asset_restrictions import Restrictions
 from zipline.finance.cancel_policy import CancelPolicy
+from zipline.finance.execution import ExecutionStyle
+from zipline.finance.commission import EquityCommissionModel, FutureCommissionModel
+from zipline.finance.slippage import EquitySlippageModel, FutureSlippageModel
 from zipline.pipeline import Pipeline
 from zipline.protocol import Order
+from zipline._protocol import BarData
 from zipline.utils.events import EventRule
+from trading_calendars import TradingCalendar
 
-def attach_pipeline(pipeline, name, chunks=None, eager=True):
+def attach_pipeline(
+    pipeline: Pipeline,
+    name: str,
+    chunks: int = None,
+    eager: bool = True
+    ) -> Pipeline:
     """Register a pipeline to be computed at the start of each day.
 
     Parameters
@@ -35,7 +48,7 @@ def attach_pipeline(pipeline, name, chunks=None, eager=True):
     :func:`zipline.api.pipeline_output`
     """
 
-def batch_market_order(share_counts):
+def batch_market_order(share_counts: pd.Series) -> pd.Index:
     """Place a batch market order for multiple assets.
 
     Parameters
@@ -49,7 +62,7 @@ def batch_market_order(share_counts):
         Index of ids for newly-created orders.
     """
 
-def cancel_order(order_param):
+def cancel_order(order_param: Union[str, Order]) -> None:
     """Cancel an open order.
 
     Parameters
@@ -58,7 +71,12 @@ def cancel_order(order_param):
         The order_id or order object to cancel.
     """
 
-def continuous_future(root_symbol_str, offset=0, roll='volume', adjustment='mul'):
+def continuous_future(
+    root_symbol_str: str,
+    offset: int = 0,
+    roll: str = 'volume',
+    adjustment: str = 'mul'
+    ) -> ContinuousFuture:
     """Create a specifier for a continuous contract.
 
     Parameters
@@ -87,7 +105,7 @@ def continuous_future(root_symbol_str, offset=0, roll='volume', adjustment='mul'
         The continuous future specifier.
     """
 
-def future_symbol(symbol):
+def future_symbol(symbol: str) -> Future:
     """Lookup a futures contract with a given symbol.
 
     Parameters
@@ -106,7 +124,7 @@ def future_symbol(symbol):
         Raised when no contract named 'symbol' is found.
     """
 
-def get_datetime(tz=None):
+def get_datetime(tz: str = None) -> pd.Timestamp:
     """
 Returns the current simulation datetime.
 
@@ -121,7 +139,7 @@ dt : datetime
     The current simulation datetime converted to ``tz``.
     """
 
-def get_environment(field='platform'):
+def get_environment(field: str = 'platform') -> Union[str, pd.Timestamp]:
     """Query the execution environment.
 
     Parameters
@@ -171,7 +189,9 @@ def get_environment(field='platform'):
     >>>     ...                                         # doctest: +SKIP
     """
 
-def get_open_orders(asset=None):
+def get_open_orders(
+    asset: Asset = None
+    ) -> Union[list[Order], dict[Asset, list[Order]]]:
     """Retrieve all of the current open orders.
 
     Parameters
@@ -189,7 +209,7 @@ def get_open_orders(asset=None):
         orders for this asset.
     """
 
-def get_order(order_id):
+def get_order(order_id: str) -> Order:
     """Lookup an order based on the order id returned from one of the
     order functions.
 
@@ -204,11 +224,13 @@ def get_order(order_id):
         The order object.
     """
 
-def history(bar_count, frequency, field, ffill=True):
-    """DEPRECATED: use ``data.history`` instead.
-    """
-
-def order(asset, amount, limit_price=None, stop_price=None, style=None):
+def order(
+    asset: Asset,
+    amount: int,
+    limit_price: float = None,
+    stop_price: float = None,
+    style: ExecutionStyle = None
+    ) -> Union[str, None]:
     """Place an order.
 
     Parameters
@@ -255,7 +277,13 @@ def order(asset, amount, limit_price=None, stop_price=None, style=None):
     :func:`zipline.api.order_target_percent`
     """
 
-def order_percent(asset, percent, limit_price=None, stop_price=None, style=None):
+def order_percent(
+    asset: Asset,
+    percent: float,
+    limit_price: float = None,
+    stop_price: float = None,
+    style: ExecutionStyle = None
+    ) -> Union[str, None]:
     """Place an order in the specified asset corresponding to the given
     percent of the current portfolio value.
 
@@ -296,7 +324,13 @@ def order_percent(asset, percent, limit_price=None, stop_price=None, style=None)
     :func:`zipline.api.order_target_percent`
     """
 
-def order_target(asset, target, limit_price=None, stop_price=None, style=None):
+def order_target(
+    asset: Asset,
+    target: int,
+    limit_price: float = None,
+    stop_price: float = None,
+    style: ExecutionStyle = None
+    ) -> Union[str, None]:
     """Place an order to adjust a position to a target number of shares. If
     the position doesn't already exist, this is equivalent to placing a new
     order. If the position does exist, this is equivalent to placing an
@@ -352,7 +386,13 @@ def order_target(asset, target, limit_price=None, stop_price=None, style=None):
     :func:`zipline.api.order_target_percent`
     """
 
-def order_target_percent(asset, target, limit_price=None, stop_price=None, style=None):
+def order_target_percent(
+    asset: Asset,
+    target: float,
+    limit_price: float = None,
+    stop_price: float = None,
+    style: ExecutionStyle = None
+    ) -> Union[str, None]:
     """Place an order to adjust a position to a target percent of the
     current portfolio value. If the position doesn't already exist, this is
     equivalent to placing a new order. If the position does exist, this is
@@ -409,7 +449,13 @@ def order_target_percent(asset, target, limit_price=None, stop_price=None, style
     :func:`zipline.api.order_target_value`
     """
 
-def order_target_value(asset, target, limit_price=None, stop_price=None, style=None):
+def order_target_value(
+    asset: Asset,
+    target: float,
+    limit_price: float = None,
+    stop_price: float = None,
+    style: ExecutionStyle = None
+    ) -> Union[str, None]:
     """Place an order to adjust a position to a target value. If
     the position doesn't already exist, this is equivalent to placing a new
     order. If the position does exist, this is equivalent to placing an
@@ -466,7 +512,13 @@ def order_target_value(asset, target, limit_price=None, stop_price=None, style=N
     :func:`zipline.api.order_target_percent`
     """
 
-def order_value(asset, value, limit_price=None, stop_price=None, style=None):
+def order_value(
+    asset: Asset,
+    value: float,
+    limit_price: float = None,
+    stop_price: float = None,
+    style: ExecutionStyle = None
+    ) -> Union[str, None]:
     """
     Place an order for a fixed amount of money.
 
@@ -511,7 +563,7 @@ def order_value(asset, value, limit_price=None, stop_price=None, style=None):
     :func:`zipline.api.order_target_percent`
     """
 
-def pipeline_output(name):
+def pipeline_output(name: str) -> pd.DataFrame:
     """Get the results of the pipeline that was attached with the name:
     ``name``.
 
@@ -536,7 +588,7 @@ def pipeline_output(name):
     :func:`zipline.api.attach_pipeline`
     """
 
-def record(*args, **kwargs):
+def record(self, *args, **kwargs) -> None:
     """Track and record values each day.
 
     Parameters
@@ -549,7 +601,10 @@ def record(*args, **kwargs):
     These values will appear in the results CSV returned in backtests.
     """
 
-def set_realtime_db(code, fields={}):
+def set_realtime_db(
+    code: str,
+    fields: dict[str, str] = {}
+    ) -> None:
     """
     Sets the realtime database to use for querying up-to-date minute bars in
     live trading.
@@ -583,7 +638,14 @@ def set_realtime_db(code, fields={}):
     """
     ...
 
-def schedule_function(func, date_rule=None, time_rule=None, half_days=True, calendar=None):
+def schedule_function(
+    self,
+    func: Callable[[TradingAlgorithm, BarData], None],
+    date_rule: EventRule = None,
+    time_rule: EventRule = None,
+    half_days: bool = True,
+    calendar: TradingCalendar = None
+    ) -> None:
     """
     Schedule a function to be called repeatedly in the future.
 
@@ -630,7 +692,7 @@ class date_rules:
     :func:`~zipline.api.schedule_function`
     """
 
-    def every_day():
+    def every_day() -> EventRule:
         """Create a rule that triggers every day.
 
         Returns
@@ -639,7 +701,7 @@ class date_rules:
         """
         ...
 
-    def month_start(days_offset=0):
+    def month_start(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
         start of each month.
@@ -657,7 +719,7 @@ class date_rules:
         """
         ...
 
-    def month_end(days_offset=0):
+    def month_end(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
         end of each month.
@@ -674,7 +736,7 @@ class date_rules:
         """
         ...
 
-    def week_start(days_offset=0):
+    def week_start(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
         start of each week.
@@ -687,7 +749,7 @@ class date_rules:
         """
         ...
 
-    def week_end(days_offset=0):
+    def week_end(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
         end of each week.
@@ -708,7 +770,11 @@ class time_rules:
     :func:`~zipline.api.schedule_function`
     """
 
-    def market_open(offset=None, hours=None, minutes=None):
+    def market_open(
+        offset: pd.Timedelta = None,
+        hours: int = None,
+        minutes: int = None
+        ) -> EventRule:
         """
         Create a rule that triggers at a fixed offset from market open.
 
@@ -740,7 +806,11 @@ class time_rules:
         """
         ...
 
-    def market_close(offset=None, hours=None, minutes=None):
+    def market_close(
+        offset: pd.Timedelta = None,
+        hours: int = None,
+        minutes: int = None
+        ) -> EventRule:
         """
         Create a rule that triggers at a fixed offset from market close.
 
@@ -772,13 +842,16 @@ class time_rules:
         """
         ...
 
-    def every_minute():
+    def every_minute() -> EventRule:
         """
         Create a rule that always triggers.
         """
         ...
 
-def set_asset_restrictions(restrictions, on_error='fail'):
+def set_asset_restrictions(
+    restrictions: Restrictions,
+    on_error: str = 'fail'
+    ) -> None:
     """Set a restriction on which assets can be ordered.
 
     Parameters
@@ -791,7 +864,7 @@ def set_asset_restrictions(restrictions, on_error='fail'):
     zipline.finance.asset_restrictions.StaticRestrictions
     """
 
-def set_benchmark(benchmark):
+def set_benchmark(benchmark: Asset) -> None:
     """Set the benchmark asset.
 
     Parameters
@@ -813,7 +886,7 @@ def set_benchmark(benchmark):
     automatically reinvested.
     """
 
-def set_cancel_policy(cancel_policy):
+def set_cancel_policy(cancel_policy: CancelPolicy) -> None:
     """Sets the order cancellation policy for the simulation.
 
     Parameters
@@ -838,7 +911,7 @@ class EODCancel:
     warn_on_cancel : bool, optional
         Should a warning be raised if this causes an order to be cancelled?
     """
-    def __init__(self, warn_on_cancel=True):
+    def __init__(self, warn_on_cancel: bool =True):
         ...
 
 class NeverCancel:
@@ -857,7 +930,10 @@ class NeverCancel:
     """
     ...
 
-def set_commission(us_equities=None, us_futures=None):
+def set_commission(
+    us_equities: EquityCommissionModel = None,
+    us_futures: FutureCommissionModel = None
+    ) -> None:
     """Sets the commission models for the simulation.
 
     Parameters
@@ -887,12 +963,12 @@ def set_commission(us_equities=None, us_futures=None):
     :class:`zipline.finance.commission.PerDollar`
     """
 
-def set_long_only(on_error='fail'):
+def set_long_only(on_error: str ='fail') -> None:
     """Set a rule specifying that this algorithm cannot take short
     positions.
     """
 
-def set_max_leverage(max_leverage):
+def set_max_leverage(max_leverage: float) -> None:
     """Set a limit on the maximum leverage of the algorithm.
 
     Parameters
@@ -902,7 +978,10 @@ def set_max_leverage(max_leverage):
         be no maximum.
     """
 
-def set_max_order_count(max_count, on_error='fail'):
+def set_max_order_count(
+    max_count: int,
+    on_error: str = 'fail'
+    ) -> None:
     """Set a limit on the number of orders that can be placed in a single
     day.
 
@@ -912,7 +991,12 @@ def set_max_order_count(max_count, on_error='fail'):
         The maximum number of orders that can be placed on any single day.
     """
 
-def set_max_order_size(asset=None, max_shares=None, max_notional=None, on_error='fail'):
+def set_max_order_size(
+    asset: Asset = None,
+    max_shares: int = None,
+    max_notional: float = None,
+    on_error: str = 'fail'
+    ) -> None:
     """Set a limit on the number of shares and/or dollar value of any single
     order placed for sid.  Limits are treated as absolute values and are
     enforced at the time that the algo attempts to place an order for sid.
@@ -931,7 +1015,12 @@ def set_max_order_size(asset=None, max_shares=None, max_notional=None, on_error=
         The maximum value that can be ordered at one time.
     """
 
-def set_max_position_size(asset=None, max_shares=None, max_notional=None, on_error='fail'):
+def set_max_position_size(
+    asset: Asset = None,
+    max_shares: int = None,
+    max_notional: float = None,
+    on_error: str = 'fail'
+    ) -> None:
     """Set a limit on the number of shares and/or dollar value held for the
     given sid. Limits are treated as absolute values and are enforced at
     the time that the algo attempts to place an order for sid. This means
@@ -954,7 +1043,10 @@ def set_max_position_size(asset=None, max_shares=None, max_notional=None, on_err
         The maximum value to hold for an asset.
     """
 
-def set_min_leverage(min_leverage, grace_period):
+def set_min_leverage(
+    min_leverage: float,
+    grace_period: pd.Timedelta
+    ) -> None:
     """Set a limit on the minimum leverage of the algorithm.
 
     Parameters
@@ -965,7 +1057,10 @@ def set_min_leverage(min_leverage, grace_period):
         The offset from the start date used to enforce a minimum leverage.
     """
 
-def set_slippage(us_equities=None, us_futures=None):
+def set_slippage(
+    us_equities: EquitySlippageModel = None,
+    us_futures: FutureSlippageModel = None
+    ) -> None:
     """Set the slippage models for the simulation.
 
     Parameters
@@ -993,7 +1088,7 @@ def set_slippage(us_equities=None, us_futures=None):
     :class:`zipline.finance.slippage.SlippageModel`
     """
 
-def sid(sid):
+def sid(sid: Union[str, int]) -> Asset:
     """Lookup an Asset by its unique asset identifier.
 
     Parameters

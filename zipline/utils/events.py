@@ -619,7 +619,7 @@ class date_rules(object):
     """
 
     @staticmethod
-    def every_day():
+    def every_day() -> EventRule:
         """Create a rule that triggers every day.
 
         Returns
@@ -629,7 +629,7 @@ class date_rules(object):
         return Always()
 
     @staticmethod
-    def month_start(days_offset=0):
+    def month_start(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
         start of each month.
@@ -648,7 +648,7 @@ class date_rules(object):
         return NthTradingDayOfMonth(n=days_offset)
 
     @staticmethod
-    def month_end(days_offset=0):
+    def month_end(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
         end of each month.
@@ -666,7 +666,7 @@ class date_rules(object):
         return NDaysBeforeLastTradingDayOfMonth(n=days_offset)
 
     @staticmethod
-    def week_start(days_offset=0):
+    def week_start(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
         start of each week.
@@ -680,7 +680,7 @@ class date_rules(object):
         return NthTradingDayOfWeek(n=days_offset)
 
     @staticmethod
-    def week_end(days_offset=0):
+    def week_end(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
         end of each week.
@@ -703,7 +703,11 @@ class time_rules(object):
     """
 
     @staticmethod
-    def market_open(offset=None, hours=None, minutes=None):
+    def market_open(
+        offset: pd.Timedelta = None,
+        hours: int = None,
+        minutes: int = None
+        ) -> EventRule:
         """
         Create a rule that triggers at a fixed offset from market open.
 
@@ -736,7 +740,11 @@ class time_rules(object):
         return AfterOpen(offset=offset, hours=hours, minutes=minutes)
 
     @staticmethod
-    def market_close(offset=None, hours=None, minutes=None):
+    def market_close(
+        offset: pd.Timedelta = None,
+        hours: int = None,
+        minutes: int = None
+        ) -> EventRule:
         """
         Create a rule that triggers at a fixed offset from market close.
 

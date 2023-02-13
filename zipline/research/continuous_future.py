@@ -16,12 +16,19 @@
 import os
 import pandas as pd
 from zipline.data import bundles
+from zipline.assets import ContinuousFuture
 from zipline.utils.extensions import load_extensions
 from zipline.research.exceptions import ValidationError
 from zipline.research._asset import asset_finder_cache
 from quantrocket.zipline import get_default_bundle
 
-def continuous_future(root_symbol_str, offset=0, roll="volume", adjustment="mul", bundle=None):
+def continuous_future(
+    root_symbol_str: str,
+    offset: int = 0,
+    roll: str = "volume",
+    adjustment: str = "mul",
+    bundle: str = None
+    ) -> ContinuousFuture:
     """
     Return a ContinuousFuture object for the specified root symbol in the specified bundle
     (or default bundle).

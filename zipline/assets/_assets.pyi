@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pandas as pd
+
 class Asset:
     """
     Base class for entities that can be owned by a trading algorithm.
@@ -64,7 +66,7 @@ class Asset:
         """
         ...
 
-    def is_alive_for_session(self, session_label):
+    def is_alive_for_session(self, session_label: pd.Timestamp) -> bool:
         """
         Returns whether the asset is alive at the given dt.
 
@@ -79,7 +81,7 @@ class Asset:
         """
         ...
 
-    def is_exchange_open(self, dt_minute):
+    def is_exchange_open(self, dt_minute: pd.Timestamp) -> bool:
         """
         Parameters
         ----------

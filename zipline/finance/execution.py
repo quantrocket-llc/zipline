@@ -14,13 +14,14 @@
 # limitations under the License.
 
 import abc
+from typing import Union
 from sys import float_info
 from six import with_metaclass
 from numpy import isfinite
 import zipline.utils.math_utils as zp_math
 from zipline.errors import BadOrderParameters
 from zipline.utils.compat import consistent_round
-
+from zipline.assets import Asset
 
 class ExecutionStyle(with_metaclass(abc.ABCMeta)):
     """Base class for order execution styles.
@@ -76,7 +77,11 @@ class MarketOrder(ExecutionStyle):
     >>> algo.order(asset, 100, style=style)                                                # doctest: +SKIP
     """
 
-    def __init__(self, exchange=None, order_params=None):
+    def __init__(
+        self,
+        exchange: str = None,
+        order_params: dict[str, Union[str, float, int]] = None
+        ):
         self._exchange = exchange
         self.order_params = order_params
 
@@ -104,7 +109,13 @@ class LimitOrder(ExecutionStyle):
         Additional broker-specific order parameters to use in live trading.
         Ignored in backtests.
     """
-    def __init__(self, limit_price, asset=None, exchange=None, order_params=None):
+    def __init__(
+        self,
+        limit_price: float,
+        asset: Asset = None,
+        exchange: str = None,
+        order_params: dict[str, Union[str, float, int]] = None
+        ):
         check_stoplimit_prices(limit_price, 'limit')
 
         self.limit_price = limit_price
@@ -141,7 +152,13 @@ class StopOrder(ExecutionStyle):
         Additional broker-specific order parameters to use in live trading.
         Ignored in backtests.
     """
-    def __init__(self, stop_price, asset=None, exchange=None, order_params=None):
+    def __init__(
+        self,
+        stop_price: float,
+        asset: Asset = None,
+        exchange: str = None,
+        order_params: dict[str, Union[str, float, int]] = None
+        ):
         check_stoplimit_prices(stop_price, 'stop')
 
         self.stop_price = stop_price
@@ -181,7 +198,14 @@ class StopLimitOrder(ExecutionStyle):
         Additional broker-specific order parameters to use in live trading.
         Ignored in backtests.
     """
-    def __init__(self, limit_price, stop_price, asset=None, exchange=None, order_params=None):
+    def __init__(
+        self,
+        limit_price: float,
+        stop_price: float,
+        asset: Asset = None,
+        exchange: str = None,
+        order_params: dict[str, Union[str, float, int]] = None
+        ):
         check_stoplimit_prices(limit_price, 'limit')
         check_stoplimit_prices(stop_price, 'stop')
 
