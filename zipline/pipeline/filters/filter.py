@@ -370,6 +370,145 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
             filter=self
         )
 
+    def all(self, window_length: int, mask: 'Filter' = None) -> 'Filter':
+        """
+        Create a new Filter that returns True for assets that
+        produce True for `window_length` consecutive days.
+
+        Parameters
+        ----------
+        window_length : int
+            the number of consecutive days over which assets
+            must return True
+
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        filter : Filter
+            Filter returning True for assets that produce True for
+            `window_length` consecutive days.
+
+        Examples
+        --------
+        Start with a Filter for assets with nonzero volume:
+
+        >>> from zipline.pipeline.data import EquityPricing
+        >>> has_volume = EquityPricing.volume.latest > 0
+
+        Create a new Filter for assets with nonzero volume for
+        200 consecutive days:
+
+        >>> consistently_has_volume = has_volume.all(200)
+        """
+        # avoid circular import
+        from zipline.pipeline.filters.smoothing import All
+        return All(
+            [self],
+            window_length=window_length,
+            mask=mask
+        )
+
+    def any(self, window_length: int, mask: 'Filter' = None) -> 'Filter':
+        """
+        Create a new Filter that returns True for assets that
+        produce True for at least one day in the last `window_length`
+        days.
+
+        Parameters
+        ----------
+        window_length : int
+            the number of days over which assets must return True
+            on at least one day
+
+        Returns
+        -------
+        filter : Filter
+            Filter returning True for assets that produce True for
+            at least one day in the last `window_length` days.
+
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Examples
+        --------
+        Start with a Filter for assets with returns greater
+        than 10%:
+
+        >>> from zipline.pipeline.factors import DailyReturns
+        >>> has_big_gain = DailyReturns() > 0.10
+
+        Create a new Filter for assets with a big gain on
+        any of the last 5 days:
+
+        >>> has_recent_big_gain = has_big_gain.any(5)
+        """
+        # avoid circular import
+        from zipline.pipeline.filters.smoothing import Any
+        return Any(
+            [self],
+            window_length=window_length,
+            mask=mask
+        )
+
+    def at_least_n(
+        self,
+        N: int,
+        window_length: int,
+        mask: 'Filter' = None
+        ) -> 'Filter':
+        """
+        Create a new Filter that returns True for assets that
+        produce True for at least `N` days in the last `window_length`
+        days.
+
+        Parameters
+        ----------
+        N : int
+            the minimum number of days on which assets must return
+            True
+
+        window_length : int
+            the number of days over which assets must return True
+            on at least N days
+
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        filter : Filter
+            Filter returning True for assets that produce True for
+            at least `N` days in the last `window_length` days.
+
+        Examples
+        --------
+        Start with a Filter for assets with returns greater
+        than 10%:
+
+        >>> from zipline.pipeline.factors import DailyReturns
+        >>> has_big_gain = DailyReturns() > 0.10
+
+        Create a new Filter for assets with a big gain on
+        at least 2 of the last 5 days:
+
+        >>> has_multiple_big_gains = has_big_gain.at_least_n(2, window_length=5)
+        """
+        # avoid circular import
+        from zipline.pipeline.filters.smoothing import AtLeastN
+        return AtLeastN(
+            [self],
+            window_length=window_length,
+            N=N,
+            mask=mask
+        )
 
 class NumExprFilter(NumericalExpression, Filter):
     """
@@ -763,6 +902,9 @@ class StaticUniverse(StaticSids):
 
 class AllPresent(CustomFilter, SingleInputMixin, StandardOutputs):
     """Pipeline filter indicating input term has data for a given window.
+
+    This filter is normally used by calling the `.all_present()` method on
+    a BoundColumn, Factor, or Classifier.
     """
     def _validate(self):
 

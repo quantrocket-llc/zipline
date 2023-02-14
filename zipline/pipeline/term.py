@@ -393,6 +393,46 @@ class Term(with_metaclass(ABCMeta, object)):
         # Default recursive_repr is just the name of the type.
         return type(self).__name__
 
+    def all_present(
+        self,
+        window_length: int,
+        mask: 'Filter' = None,
+        ) -> 'Filter':
+        """
+        Create a Filter that returns True for assets with no missing
+        values for `window_length` consecutive days.
+
+        Parameters
+        ----------
+        window_length : int
+            the number of consecutive days over which there must be no
+            missing values
+
+        mask : zipline.pipeline.Filter, optional
+           A Filter representing assets to consider when computing results.
+           If supplied, we ignore asset/date pairs where ``mask`` produces
+           ``False``.
+
+        Returns
+        -------
+        filter : Filter
+            Filter returning True for assets with no missing values for
+            `window_length` consecutive days.
+
+        Examples
+        --------
+        Create a Filter for assets with no missing price data
+        for 200 consecutive days:
+
+        >>> from zipline.pipeline.data import EquityPricing
+        >>> consistently_has_data = EquityPricing.close.all_present(200)
+        """
+        from zipline.pipeline.filters import AllPresent
+        return AllPresent(
+            inputs=[self],
+            window_length=window_length,
+            mask=mask
+        )
 
 class AssetExists(Term):
     """

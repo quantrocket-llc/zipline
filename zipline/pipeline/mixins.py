@@ -258,6 +258,7 @@ class LatestMixin(SingleInputMixin):
     :class:`~zipline.pipeline.CustomClassifier` for string or integer columns.
     """
     window_length = 1
+    window_safe = True
 
     def compute(self, today, assets, out, data):
         out[:] = data[-1]

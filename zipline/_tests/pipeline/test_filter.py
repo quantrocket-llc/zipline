@@ -30,6 +30,7 @@ import pandas as pd
 from zipline.errors import BadPercentileBounds
 from zipline.lib.labelarray import labelarray_where
 from zipline.pipeline import Filter, Factor, Pipeline
+from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.classifiers import Classifier
 from zipline.pipeline.domain import US_EQUITIES
 from zipline.pipeline.factors import CustomFactor
@@ -446,10 +447,24 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
                             [1, 1, 1, 1, 0, 0],
                             [1, 1, 1, 1, 1, 0],
                             [1, 1, 1, 1, 1, 1]], dtype=bool)
+        # using AllPresent class
         self.check_terms(
             terms={
                 '3': AllPresent([input_factor], window_length=3),
                 '4': AllPresent([input_factor], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={input_factor: data},
+            mask=self.build_mask(ones(shape=shape))
+        )
+        # using .all_present() method
+        self.check_terms(
+            terms={
+                '3': input_factor.all_present(window_length=3),
+                '4': input_factor.all_present(4),
             },
             expected={
                 '3': expected_3,
@@ -490,10 +505,25 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
                             [1, 1, 1, 1, 0, 0],
                             [1, 1, 1, 1, 1, 0],
                             [1, 1, 1, 1, 1, 1]], dtype=bool)
+        # using AllPresent class
         self.check_terms(
             terms={
                 '3': AllPresent([input_factor], window_length=3),
                 '4': AllPresent([input_factor], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={input_factor: data},
+            mask=self.build_mask(ones(shape=shape))
+        )
+
+        # using .all_present() method
+        self.check_terms(
+            terms={
+                '3': input_factor.all_present(window_length=3),
+                '4': input_factor.all_present(window_length=4),
             },
             expected={
                 '3': expected_3,
@@ -539,10 +569,25 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
                             [1, 1, 1, 1, 1, 0],
                             [1, 1, 1, 1, 1, 1]], dtype=bool)
 
+        # using AllPresent class
         self.check_terms(
             terms={
                 '3': AllPresent([input_factor], window_length=3),
                 '4': AllPresent([input_factor], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={input_factor: data},
+            mask=self.build_mask(ones(shape=shape))
+        )
+
+        # using .all_present() method
+        self.check_terms(
+            terms={
+                '3': input_factor.all_present(window_length=3),
+                '4': input_factor.all_present(4),
             },
             expected={
                 '3': expected_3,
@@ -594,6 +639,7 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
             inputs = ()
             window_length = 0
 
+        # using All class
         self.check_terms(
             terms={
                 '3': All(inputs=[Input()], window_length=3),
@@ -605,6 +651,69 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
             },
             initial_workspace={Input(): data},
             mask=self.build_mask(ones(shape=data.shape)),
+        )
+
+        # using .all() method
+        self.check_terms(
+            terms={
+                '3': Input().all(window_length=3),
+                '4': Input().all(4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={Input(): data},
+            mask=self.build_mask(ones(shape=data.shape)),
+        )
+
+    def test_all_present_column_input(self):
+        """Test BoundColumn input to `AllPresent`
+        """
+        shape = (10, 6)
+        data = self.randn_data(seed=10, shape=shape)
+        data[eye(*shape, dtype=bool)] = USEquityPricing.close.missing_value
+
+        expected_3 = array([[1, 0, 0, 0, 1, 1],
+                            [1, 1, 0, 0, 0, 1],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+
+        expected_4 = array([[0, 0, 0, 0, 1, 1],
+                            [1, 0, 0, 0, 0, 1],
+                            [1, 1, 0, 0, 0, 0],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+        # using AllPresent class
+        self.check_terms(
+            terms={
+                '3': AllPresent([USEquityPricing.close], window_length=3),
+                '4': AllPresent([USEquityPricing.close], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={USEquityPricing.close: data},
+            mask=self.build_mask(ones(shape=shape))
+        )
+        # using .all_present() method
+        self.check_terms(
+            terms={
+                '3': USEquityPricing.close.all_present(window_length=3),
+                '4': USEquityPricing.close.all_present(4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={USEquityPricing.close: data},
+            mask=self.build_mask(ones(shape=shape))
         )
 
     def test_any(self):
@@ -654,10 +763,25 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
             inputs = ()
             window_length = 0
 
+        # using Any class
         self.check_terms(
             terms={
                 '3': Any(inputs=[Input()], window_length=3),
                 '4': Any(inputs=[Input()], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={Input(): data},
+            mask=self.build_mask(ones(shape=data.shape)),
+        )
+
+        # using .any() method
+        self.check_terms(
+            terms={
+                '3': Input().any(window_length=3),
+                '4': Input().any(4),
             },
             expected={
                 '3': expected_3,
@@ -710,7 +834,15 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
                                window_length=4,
                                N=3)
 
+        all_but_one_method = Input().at_least_n(
+                               window_length=4,
+                               N=3)
+
         all_but_two = AtLeastN(inputs=[Input()],
+                               window_length=4,
+                               N=2)
+
+        all_but_two_method = Input().at_least_n(
                                window_length=4,
                                N=2)
 
@@ -725,18 +857,26 @@ class FilterTestCase(BaseUSEquityPipelineTestCase):
         self.check_terms(
             terms={
                 'AllButOne': all_but_one,
+                'all_but_one_method': all_but_one_method,
                 'AllButTwo': all_but_two,
+                'all_but_two_method': all_but_two_method,
                 'AnyEquiv': any_equiv,
                 'AllEquiv': all_equiv,
                 'Any': Any(inputs=[Input()], window_length=4),
-                'All': All(inputs=[Input()], window_length=4)
+                'any_method': Input().any(window_length=4),
+                'All': All(inputs=[Input()], window_length=4),
+                'all_method': Input().all(window_length=4)
             },
             expected={
                 'Any': expected_1,
+                'any_method': expected_1,
                 'AnyEquiv': expected_1,
                 'AllButTwo': expected_2,
+                'all_but_two_method': expected_2,
                 'AllButOne': expected_3,
+                'all_but_one_method': expected_3,
                 'All': expected_4,
+                'all_method': expected_4,
                 'AllEquiv': expected_4,
             },
             initial_workspace={Input(): data},

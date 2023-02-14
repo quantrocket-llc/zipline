@@ -492,7 +492,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     clsdict["abs"] = clsdict["_abs"]
     del clsdict["_abs"]
 
-    def eq(self, other: 'Factor') -> 'Factor':
+    def eq(self, other: 'Factor') -> 'Filter':
         """
         Create a `zipline.pipeline.Filter` computing
         ``self == other``.

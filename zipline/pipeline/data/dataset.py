@@ -142,19 +142,6 @@ class BoundColumn(LoadableTerm):
     ----------
     dtype : numpy.dtype
         The dtype of data produced when this column is loaded.
-    latest : zipline.pipeline.LoadableTerm
-        A :class:`~zipline.pipeline.Filter`, :class:`~zipline.pipeline.Factor`,
-        or :class:`~zipline.pipeline.Classifier` computing the most recently
-        known value of this column on each date.
-        See :class:`zipline.pipeline.mixins.LatestMixin` for more details.
-    dataset : zipline.pipeline.data.DataSet
-        The dataset to which this column is bound.
-    name : str
-        The name of this column.
-    metadata : dict
-        Extra metadata associated with this column.
-    currency_aware : bool
-        Whether or not this column produces currency-denominated data.
 
     Notes
     -----
@@ -324,6 +311,10 @@ class BoundColumn(LoadableTerm):
     def dataset(self):
         """
         The dataset to which this column is bound.
+
+        Returns
+        -------
+        zipline.pipeline.data.DataSet
         """
         return self._dataset
 
@@ -337,7 +328,7 @@ class BoundColumn(LoadableTerm):
     @property
     def metadata(self):
         """
-        A copy of the metadata for this column.
+        Extra metadata associated with this column.
         """
         return self._metadata.copy()
 

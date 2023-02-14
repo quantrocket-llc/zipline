@@ -9,7 +9,5 @@ from .classifier import (
 __all__ = [
     'Classifier',
     'CustomClassifier',
-    'Everything',
     'Latest',
-    'Quantiles',
 ]

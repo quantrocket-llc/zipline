@@ -15,6 +15,8 @@ class All(CustomFilter):
     **Default Inputs:** None
 
     **Default Window Length:** None
+
+    This filter is normally used by calling the `.all()` method on a Filter.
     """
 
     def compute(self, today, assets, out, arg):
@@ -29,6 +31,8 @@ class Any(CustomFilter):
     **Default Inputs:** None
 
     **Default Window Length:** None
+
+    This filter is normally used by calling the `.any()` method on a Filter.
     """
 
     def compute(self, today, assets, out, arg):
@@ -43,6 +47,9 @@ class AtLeastN(CustomFilter):
     **Default Inputs:** None
 
     **Default Window Length:** None
+
+    This filter is normally used by calling the `.at_least_n()` method on
+    a Filter.
     """
 
     params = ('N',)
