@@ -1,4 +1,4 @@
-from trading_calendars import get_calendar
+from trading_calendars import get_calendar, TradingCalendar
 
 
 class ExchangeInfo(object):
@@ -9,13 +9,15 @@ class ExchangeInfo(object):
     name : str or None
         The full name of the exchange, for example 'NEW YORK STOCK EXCHANGE' or
         'NASDAQ GLOBAL MARKET'.
+
     canonical_name : str
         The canonical name of the exchange, for example 'NYSE' or 'NASDAQ'. If
         None this will be the same as the name.
+
     country_code : str
         The ISO 3166 alpha-2 country code where the exchange is located.
     """
-    def __init__(self, name, canonical_name, country_code):
+    def __init__(self, name: str, canonical_name: str, country_code: str):
         self.name = name
 
         if canonical_name is None:
@@ -33,7 +35,7 @@ class ExchangeInfo(object):
         )
 
     @property
-    def calendar(self):
+    def calendar(self) -> 'TradingCalendar':
         return get_calendar(self.canonical_name)
 
     def __eq__(self, other):

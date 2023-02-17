@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import overload, Union
 from zipline.utils.numpy_utils import float64_dtype, object_dtype, bool_dtype
 from zipline.pipeline.factors import Factor
 from zipline.pipeline.filters import Filter
@@ -37,6 +38,15 @@ class Constant:
 
     window_length = 0
     inputs = ()
+
+    @overload
+    def __new__(cls, const: bool) -> Filter:...
+
+    @overload
+    def __new__(cls, const: Union[float, int]) -> Factor:...
+
+    @overload
+    def __new__(cls, const: str) -> Classifier:...
 
     def __new__(cls, const):
         if isinstance(const, (float, int)):

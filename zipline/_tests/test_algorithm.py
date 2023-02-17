@@ -44,7 +44,6 @@ from zipline.errors import (
     CannotOrderDelistedAsset,
     IncompatibleSlippageModel,
     RegisterTradingControlPostInit,
-    ScheduleFunctionInvalidCalendar,
     SetCancelPolicyPostInit,
     SymbolNotFound,
     TradingControlViolation,
@@ -430,22 +429,23 @@ def handle_data(context, data):
         # using the NYSE cal
         algotext = """
 from zipline.api import (
-    schedule_function, get_datetime, time_rules, date_rules, calendars,
+    schedule_function, get_datetime, time_rules, date_rules,
 )
+from trading_calendars import get_calendar
 
 def initialize(context):
     schedule_function(
         func=log_nyse_open,
         date_rule=date_rules.every_day(),
         time_rule=time_rules.market_open(),
-        calendar=calendars.US_EQUITIES,
+        calendar=get_calendar('XNYS'),
     )
 
     schedule_function(
         func=log_nyse_close,
         date_rule=date_rules.every_day(),
         time_rule=time_rules.market_close(),
-        calendar=calendars.US_EQUITIES,
+        calendar=get_calendar('XNYS'),
     )
 
     context.nyse_opens = []
@@ -479,30 +479,6 @@ def log_nyse_close(context, data):
             session_label = nyse.minute_to_session_label(minute)
             session_close = nyse.session_close(session_label)
             self.assertEqual(session_close - timedelta(minutes=1), minute)
-
-        # Test that passing an invalid calendar parameter raises an error.
-        erroring_algotext = dedent(
-            """
-            from zipline.api import schedule_function
-            from trading_calendars import get_calendar
-
-            def initialize(context):
-                schedule_function(func=my_func, calendar=get_calendar('XNYS'))
-
-            def my_func(context, data):
-                pass
-            """
-        )
-
-        algo = self.make_algo(
-            script=erroring_algotext,
-            sim_params=self.make_simparams(
-                trading_calendar=get_calendar("CMES"),
-            ),
-        )
-
-        with self.assertRaises(ScheduleFunctionInvalidCalendar):
-            algo.run()
 
     def test_schedule_function(self):
         us_eastern = pytz.timezone('US/Eastern')

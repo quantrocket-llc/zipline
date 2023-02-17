@@ -74,5 +74,4 @@ __all__ = [
     'SimpleMovingAverage',
     'TrueRange',
     'VWAP',
-    'WeightedAverageValue',
 ]

@@ -1,5 +1,9 @@
 """Simple common factors.
 """
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from zipline.pipeline.data.dataset import BoundColumn
+
 from numbers import Number
 from numpy import (
     arange,
@@ -39,12 +43,12 @@ class Returns(CustomFactor):
     """
     Calculates the percent change in close price over the given window_length.
 
-    **Default Inputs**: [EquityPricing.close]
+    **Default Inputs**: EquityPricing.close
 
     Parameters
     ----------
-    inputs : length-1 list or tuple of BoundColumn
-        The expression for which to compute returns.
+    inputs : BoundColumn
+        The expression for which to compute returns. Default is EquityPricing.close.
 
     window_length : int > 0
         Length of the lookback window over which to compute returns.
@@ -58,12 +62,20 @@ class Returns(CustomFactor):
     --------
     Calculate returns over the past year, excluding the most recent month:
 
-        >>> returns = Returns(window_length=252, exclude_window_length=21)
+    >>> returns = Returns(window_length=252, exclude_window_length=21)
     """
     inputs = [EquityPricing.close]
     window_safe = True
 
     params = {'exclude_window_length': 0}
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: 'BoundColumn' = EquityPricing.close,
+            window_length: int = None,
+            exclude_window_length: int=0):
+            pass
 
     def _validate(self):
         super(Returns, self)._validate()
@@ -94,11 +106,32 @@ class PercentChange(SingleInputMixin, CustomFactor):
 
     **Default Window Length:** None
 
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression for which to compute percent change.
+
+    window_length : int > 0
+        Length of the lookback window over which to compute percent change.
+
+    Examples
+    --------
+    Calculate 5-day percent change of opening price:
+
+    >>> percent_change = PercentChange(inputs=EquityPricing.open, window_length=5)
+
     Notes
     -----
     Percent change is calculated as ``(new - old) / abs(old)``.
     """
     window_safe = True
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: 'BoundColumn',
+            window_length: int):
+            pass
 
     def _validate(self):
         super(PercentChange, self)._validate()
@@ -119,10 +152,26 @@ class DailyReturns(Returns):
     Calculates daily percent change in close price.
 
     **Default Inputs**: [EquityPricing.close]
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression for which to compute daily returns.
+        Default is EquityPricing.close.
+
+    Examples
+    --------
+    Calculate daily returns:
+
+    >>> daily_returns = DailyReturns()
     """
     inputs = [EquityPricing.close]
     window_safe = True
     window_length = 2
+
+    if TYPE_CHECKING:
+        def __init__(self, inputs: 'BoundColumn' = EquityPricing.close):
+            pass
 
 
 class SimpleMovingAverage(SingleInputMixin, CustomFactor):
@@ -132,7 +181,28 @@ class SimpleMovingAverage(SingleInputMixin, CustomFactor):
     **Default Inputs**: None
 
     **Default Window Length**: None
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression for which to compute the moving average.
+
+    window_length : int > 0
+        Length of the lookback window over which to compute the moving average.
+
+    Examples
+    --------
+    Calculate a 200-day simple moving average of daily close price:
+
+    >>> sma_200 = SimpleMovingAverage(inputs=EquityPricing.close, window_length=200)
     """
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: 'BoundColumn',
+            window_length: int):
+            pass
+
     # numpy's nan functions throw warnings when passed an array containing only
     # nans, but they still returns the desired value (nan), so we ignore the
     # warning.
@@ -161,7 +231,24 @@ class VWAP(WeightedAverageValue):
     **Default Inputs:** [EquityPricing.close, EquityPricing.volume]
 
     **Default Window Length:** None
+
+    Parameters
+    ----------
+    window_length : int > 0
+        Length of the lookback window over which to compute VWAP.
+
+    Examples
+    --------
+    Calculate a 5-day VWAP:
+
+    >>> vwap = VWAP(window_length=5)
     """
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            window_length: int):
+            pass
+
     inputs = (EquityPricing.close, EquityPricing.volume)
 
 
@@ -172,8 +259,29 @@ class MaxDrawdown(SingleInputMixin, CustomFactor):
     **Default Inputs:** None
 
     **Default Window Length:** None
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression for which to compute max drawdown.
+
+    window_length : int > 0
+        Length of the lookback window over which to compute max drawdown.
+
+    Examples
+    --------
+    Calculate max drawdown over a rolling 200-day lookback window:
+
+    >>> max_drawdown = MaxDrawdown(inputs=EquityPricing.close, window_length=200)
     """
     ctx = ignore_nanwarnings()
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: 'BoundColumn',
+            window_length: int):
+            pass
 
     def compute(self, today, assets, out, data):
         drawdowns = fmax.accumulate(data, axis=0) - data
@@ -193,8 +301,23 @@ class AverageDollarVolume(CustomFactor):
     **Default Inputs:** [EquityPricing.close, EquityPricing.volume]
 
     **Default Window Length:** None
+
+    Parameters
+    ----------
+    window_length : int > 0
+        Length of the lookback window over which to compute average dollar volume.
+
+    Examples
+    --------
+    Calculate 30-day average dollar volume:
+
+    >>> avg_dollar_volume = AverageDollarVolume(window_length=30)
     """
     inputs = [EquityPricing.close, EquityPricing.volume]
+
+    if TYPE_CHECKING:
+        def __init__(self, window_length: int):
+            pass
 
     def compute(self, today, assets, out, close, volume):
         out[:] = nansum(close * volume, axis=0) / len(close)
@@ -398,10 +521,12 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
 
     Parameters
     ----------
-    inputs : length-1 list/tuple of BoundColumn
+    inputs : BoundColumn
         The expression over which to compute the average.
+
     window_length : int > 0
         Length of the lookback window over which to compute the average.
+
     decay_rate : float, 0 < decay_rate <= 1
         Weighting factor by which to discount past observations.
 
@@ -409,6 +534,12 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
         sequence::
 
             decay_rate, decay_rate ** 2, decay_rate ** 3, ...
+
+    Examples
+    --------
+    Calculate the 30-day EWMA of `EquityPricing.close` with a decay rate of 0.08.
+
+    >>> ewma = ExponentialWeightedMovingAverage(inputs=EquityPricing.close, window_length=30, decay_rate=0.08)
 
     Notes
     -----
@@ -418,6 +549,13 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
     --------
     :meth:`pandas.DataFrame.ewm`
     """
+    if TYPE_CHECKING:
+        def __init__(self,
+                     inputs: BoundColumn,
+                     window_length: int,
+                     decay_rate: float):
+            pass
+
     def compute(self, today, assets, out, data, decay_rate):
         out[:] = average(
             data,
@@ -436,10 +574,12 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
 
     Parameters
     ----------
-    inputs : length-1 list/tuple of BoundColumn
+    inputs : BoundColumn
         The expression over which to compute the average.
+
     window_length : int > 0
         Length of the lookback window over which to compute the average.
+
     decay_rate : float, 0 < decay_rate <= 1
         Weighting factor by which to discount past observations.
 
@@ -447,6 +587,11 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
         sequence::
 
             decay_rate, decay_rate ** 2, decay_rate ** 3, ...
+
+    --------
+    Calculate the 30-day EWMSTD of `EquityPricing.close` with a decay rate of 0.08.
+
+    >>> ewmstd = ExponentialWeightedMovingStdDev(inputs=EquityPricing.close, window_length=30, decay_rate=0.08)
 
     Notes
     -----
@@ -456,6 +601,12 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
     --------
     :func:`pandas.DataFrame.ewm`
     """
+    if TYPE_CHECKING:
+        def __init__(self,
+                     inputs: BoundColumn,
+                     window_length: int,
+                     decay_rate: float):
+            pass
 
     def compute(self, today, assets, out, data, decay_rate):
         weights = exponential_weights(len(data), decay_rate)
@@ -477,11 +628,31 @@ class LinearWeightedMovingAverage(SingleInputMixin, CustomFactor):
     **Default Inputs**: None
 
     **Default Window Length**: None
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression for which to compute the average.
+
+    window_length : int > 0
+        Length of the lookback window over which to compute the average.
+
+    Examples
+    --------
+    Calculate a 60-day linearly weighted moving average of `EquityPricing.close`:
+
+    >>> lwma = LinearWeightedMovingAverage(inputs=EquityPricing.close, window_length=60)
     """
     # numpy's nan functions throw warnings when passed an array containing only
     # nans, but they still returns the desired value (nan), so we ignore the
     # warning.
     ctx = ignore_nanwarnings()
+
+    if TYPE_CHECKING:
+        def __init__(self,
+                     inputs: BoundColumn,
+                     window_length: int):
+            pass
 
     def compute(self, today, assets, out, data):
         ndays = data.shape[0]
@@ -512,10 +683,22 @@ class AnnualizedVolatility(CustomFactor):
     annualization_factor : float, optional
         The number of time units per year. Defaults is 252, the number of NYSE
         trading days in a normal year.
+
+    Examples
+    --------
+
+    Calculate annualized volatility:
+
+    >>> annual_vol = AnnualizedVolatility()
     """
     inputs = [Returns(window_length=2)]
     params = {'annualization_factor': 252.0}
     window_length = 252
+
+    if TYPE_CHECKING:
+        def __init__(self,
+                     annualization_factor: float = 252):
+            pass
 
     def compute(self, today, assets, out, returns, annualization_factor):
         out[:] = nanstd(returns, axis=0) * (annualization_factor ** .5)

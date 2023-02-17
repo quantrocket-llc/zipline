@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
 import os
 import pandas as pd
 from zipline.data import bundles
@@ -25,8 +26,8 @@ from quantrocket.zipline import get_default_bundle
 def continuous_future(
     root_symbol_str: str,
     offset: int = 0,
-    roll: str = "volume",
-    adjustment: str = "mul",
+    roll: Literal["volume", "calendar"] = "volume",
+    adjustment: Literal["mul", "add", None] = "mul",
     bundle: str = None
     ) -> ContinuousFuture:
     """

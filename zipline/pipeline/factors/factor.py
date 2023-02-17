@@ -1,7 +1,7 @@
 """
 factor.py
 """
-from typing import Union
+from typing import Union, TYPE_CHECKING
 from operator import attrgetter
 from numbers import Number
 from math import ceil
@@ -442,6 +442,100 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     :meth:`percentile_between`).
     """
     ALLOWED_DTYPES = FACTOR_DTYPES  # Used by RestrictedDTypeMixin
+
+    # define magic method operators for pyright
+    if TYPE_CHECKING:
+        def __add__(self, other) -> 'Factor':
+            pass
+
+        def __sub__(self, other) -> 'Factor':
+            pass
+
+        def __mul__(self, other) -> 'Factor':
+            pass
+
+        def __div__(self, other) -> 'Factor':
+            pass
+
+        def __truediv__(self, other) -> 'Factor':
+            pass
+
+        def __mod__(self, other) -> 'Factor':
+            pass
+
+        def __pow__(self, other) -> 'Factor':
+            pass
+
+        def __lt__(self, other) -> Filter:
+            pass
+
+        def __le__(self, other) -> Filter:
+            pass
+
+        def __gt__(self, other) -> Filter:
+            pass
+
+        def __ge__(self, other) -> Filter:
+            pass
+
+        def __eq__(self, other) -> Filter:
+            pass
+
+        def __ne__(self, other) -> Filter:
+            pass
+
+        def __neg__(self) -> 'Factor':
+            pass
+
+        def __invert__(self) -> 'Factor':
+            pass
+
+        def __iadd__(self, other) -> 'Factor':
+            pass
+
+        def __isub__(self, other) -> 'Factor':
+            pass
+
+        def __imul__(self, other) -> 'Factor':
+            pass
+
+        def __idiv__(self, other) -> 'Factor':
+            pass
+
+        def __itruediv__(self, other) -> 'Factor':
+            pass
+
+        def __imod__(self, other) -> 'Factor':
+            pass
+
+        def __ipow__(self, other) -> 'Factor':
+            pass
+
+        # As of 2023-02-14, defining __radd__, __rsub__, etc.
+        # doesn't work well with pyright because pyright looks
+        # at the __add__, __sub__, etc. of the left-hand operand.
+        # E.g. for 1 + Factor(), pyright looks at int's __add__,
+        # which says its returns an int
+        def __radd__(self, other) -> 'Factor':
+            pass
+
+        def __rsub__(self, other) -> 'Factor':
+            pass
+
+        def __rmul__(self, other) -> 'Factor':
+            pass
+
+        def __rdiv__(self, other) -> 'Factor':
+            pass
+
+        def __rtruediv__(self, other) -> 'Factor':
+            pass
+
+        def __rmod__(self, other) -> 'Factor':
+            pass
+
+        def __rpow__(self, other) -> 'Factor':
+            pass
 
     # Dynamically add functions for creating NumExprFactor/NumExprFilter
     # instances.

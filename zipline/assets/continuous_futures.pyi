@@ -1,3 +1,5 @@
+from typing import Literal
+import pandas as pd
 
 ADJUSTMENT_STYLES = ...
 
@@ -5,25 +7,69 @@ class ContinuousFuture:
     """
     Represents a specifier for a chain of future contracts, where the
     coordinates for the chain are:
+
+    Parameters
+    ----------
     root_symbol : str
         The root symbol of the contracts.
+
     offset : int
         The distance from the primary chain.
         e.g. 0 specifies the primary chain, 1 the secondary, etc.
+        Default is 0.
+
     roll_style : str
-        How rolls from contract to contract should be calculated.
-        Currently supports 'calendar'.
+        How rolls are determined. Possible choices: 'volume',
+        (roll when back contract volume exceeds front contract
+        volume), or 'calendar' (roll on rollover date). Default
+        is 'volume'.
+
+    adjustment : str
+        Method for adjusting lookback prices between rolls. Options are
+        'mul', 'add' or None. 'mul' calculates the ratio of front and back
+        contracts on the roll date ((back - front)/front) and multiplies
+        front contract prices by (1 + ratio). 'add' calculates the difference
+        between back and front contracts on the roll date (back - front)
+        and adds the difference to front contract prices. None concatenates
+        contracts without any adjustment. Default is 'mul'.
+
+    start_date : pd.Timestamp
+        The date on which the continuous future chain begins.
+
+    end_date : pd.Timestamp
+        The date on which the continuous future chain ends.
 
     Instances of this class are exposed to the algorithm.
     """
-    ...
+
+    def __init__(self):
+
+        self.root_symbol: str = None
+        """The root symbol of the contracts."""
+        self.roll_style: Literal['calendar', 'volume'] = None
+        """How rolls are determined. Possible choices: 'volume', (roll when back contract volume exceeds front contract volume), or 'calendar' (roll on rollover date). Default is 'volume'."""
+        self.offset: int = None
+        """The distance from the primary chain. e.g. 0 specifies the primary chain, 1 the secondary, etc. Default is 0."""
+        self.adjustment: Literal['mul', 'add', None] = None
+        """Method for adjusting lookback prices between rolls. Options are
+        'mul', 'add' or None. 'mul' calculates the ratio of front and back
+        contracts on the roll date ((back - front)/front) and multiplies
+        front contract prices by (1 + ratio). 'add' calculates the difference
+        between back and front contracts on the roll date (back - front)
+        and adds the difference to front contract prices. None concatenates
+        contracts without any adjustment. Default is 'mul'."""
+        self.start_date: pd.Timestamp = None
+        """The date on which the continuous future chain begins."""
+        self.end_date: pd.Timestamp = None
+        """The date on which the continuous future chain ends."""
+
     def from_dict(cls, dict_):
         """
         Build an ContinuousFuture instance from a dict.
         """
         ...
 
-    def is_alive_for_session(self, session_label):
+    def is_alive_for_session(self, session_label: pd.Timestamp) -> bool:
         """
         Returns whether the continuous future is alive at the given dt.
 
@@ -38,7 +84,7 @@ class ContinuousFuture:
         """
         ...
 
-    def is_exchange_open(self, dt_minute):
+    def is_exchange_open(self, dt_minute: pd.Timestamp) -> bool:
         """
         Parameters
         ----------

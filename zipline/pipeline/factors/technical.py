@@ -4,6 +4,10 @@ Technical Analysis Factors
 """
 from __future__ import division
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from zipline.pipeline.data.dataset import BoundColumn
+
 from numpy import (
     abs,
     average,
@@ -47,10 +51,30 @@ class RSI(SingleInputMixin, CustomFactor):
     **Default Inputs**: :data:`zipline.pipeline.data.EquityPricing.close`
 
     **Default Window Length**: 15
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression for which to compute the indicator.
+
+    window_length : int > 0
+        Length of the lookback window over which to compute the indicator.
+
+    Examples
+    --------
+    Calculate a 15-day RSI:
+
+    >>> rsi = RSI(window_length=15)
     """
     window_length = 15
     inputs = (EquityPricing.close,)
     window_safe = True
+
+    if TYPE_CHECKING:
+        def __init__(self,
+                     inputs: 'BoundColumn' = EquityPricing.close,
+                     window_length: int = 15):
+            pass
 
     def compute(self, today, assets, out, closes):
         diffs = diff(closes, axis=0)
@@ -73,18 +97,34 @@ class BollingerBands(CustomFactor):
 
     Parameters
     ----------
-    inputs : length-1 iterable[BoundColumn]
+    inputs : BoundColumn
         The expression over which to compute bollinger bands.
+
     window_length : int > 0
         Length of the lookback window over which to compute the bollinger
         bands.
+
     k : float
         The number of standard deviations to add or subtract to create the
         upper and lower bands.
+
+    Examples
+    --------
+    Calculate 14-day Bolling Bands at 2 standard deviations:
+
+    >>> bbands = BollingerBands(window_length=14, k=2)
     """
     params = ('k',)
     inputs = (EquityPricing.close,)
     outputs = 'lower', 'middle', 'upper'
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: 'BoundColumn' = EquityPricing.close,
+            window_length: int = None,
+            k: float = None):
+            pass
 
     def compute(self, today, assets, out, close, k):
         difference = k * nanstd(close, axis=0)
@@ -106,10 +146,17 @@ class Aroon(CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute the Aroon
         indicator.
-    """ # noqa
+    """
 
     inputs = (EquityPricing.low, EquityPricing.high)
     outputs = ('down', 'up')
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: list[BoundColumn] = [EquityPricing.low, EquityPricing.high],
+            window_length: int = None):
+            pass
 
     def compute(self, today, assets, out, lows, highs):
         wl = self.window_length
@@ -151,10 +198,23 @@ class FastStochasticOscillator(CustomFactor):
     Returns
     -------
     out: %K oscillator
+
+    Examples
+    --------
+    Calculate a 14-day Fast Stochastic Oscillator:
+
+    >>> fast_stochastic = FastStochasticOscillator(window_length=14)
     """
     inputs = (EquityPricing.close, EquityPricing.low, EquityPricing.high)
     window_safe = True
     window_length = 14
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: list[BoundColumn] = [EquityPricing.close, EquityPricing.low, EquityPricing.high],
+            window_length: int = 14):
+            pass
 
     def compute(self, today, assets, out, closes, lows, highs):
 
@@ -188,12 +248,21 @@ class IchimokuKinkoHyo(CustomFactor):
     ----------
     window_length : int > 0
         The length the the window for the senkou span b.
+
     tenkan_sen_length : int >= 0, <= window_length
         The length of the window for the tenkan-sen.
+
     kijun_sen_length : int >= 0, <= window_length
         The length of the window for the kijou-sen.
+
     chikou_span_length : int >= 0, <= window_length
         The lag for the chikou span.
+
+    Examples
+    --------
+    Compute the Ichimoku Kinko Hyo with default parameters:
+
+    >>> ikh = IchimokuKinkoHyo()
     """ # noqa
 
     params = {
@@ -210,6 +279,16 @@ class IchimokuKinkoHyo(CustomFactor):
         'chikou_span',
     )
     window_length = 52
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: list[BoundColumn] = [EquityPricing.high, EquityPricing.low, EquityPricing.close],
+            window_length: int = 52,
+            tenkan_sen_length: int = 9,
+            kijun_sen_length: int = 26,
+            chikou_span_length: int = 26):
+            pass
 
     def _validate(self):
         super(IchimokuKinkoHyo, self)._validate()
@@ -259,9 +338,29 @@ class RateOfChangePercentage(CustomFactor):
     **Default Inputs:** :data:`zipline.pipeline.data.EquityPricing.close`
 
     **Default Window Length:** None
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression for which to compute the indicator.
+
+    window_length : int > 0
+        Length of the lookback window over which to compute the indicator.
+
+    Examples
+    --------
+    Calculate 30-day rate of change:
+
+    >>> rate_of_change = RateOfChangePercentage(window_length=30)
     """
     inputs = [EquityPricing.close]
     window_length = None
+
+    if TYPE_CHECKING:
+        def __init__(self,
+                    inputs: BoundColumn = EquityPricing.close,
+                     window_length: int = None):
+            pass
 
     def compute(self, today, assets, out, close):
         today_close = close[-1]
@@ -288,6 +387,12 @@ class TrueRange(CustomFactor):
                         :data:`zipline.pipeline.data.EquityPricing.close`
 
     **Default Window Length:** 2
+
+    Examples
+    --------
+    Calculate true range:
+
+    >>> true_range = TrueRange()
     """
     inputs = (
         EquityPricing.high,
@@ -295,6 +400,13 @@ class TrueRange(CustomFactor):
         EquityPricing.close,
     )
     window_length = 2
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: list[BoundColumn, BoundColumn, BoundColumn] = [EquityPricing.high, EquityPricing.low, EquityPricing.close],
+            window_length: int = 2):
+            pass
 
     def compute(self, today, assets, out, highs, lows, closes):
         high_to_low = highs[1:] - lows[1:]
@@ -326,10 +438,18 @@ class MACDSignal(CustomFactor):
     ----------
     fast_period : int > 0, optional
         The window length for the "fast" EWMA. Default is 12.
+
     slow_period : int > 0, > fast_period, optional
         The window length for the "slow" EWMA. Default is 26.
+
     signal_period : int > 0, < fast_period, optional
         The window length for the signal line. Default is 9.
+
+    Examples
+    --------
+    Construct a 12/26/9 MACD Signal factor:
+
+    >>> macd_signal = MACDSignal()
 
     Notes
     -----
@@ -343,6 +463,15 @@ class MACDSignal(CustomFactor):
     # __new__.
     params = ('fast_period', 'slow_period', 'signal_period')
 
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: BoundColumn = EquityPricing.close,
+            fast_period: int = 12,
+            slow_period: int = 26,
+            signal_period: int = 9):
+            pass
+
     @expect_bounded(
         __funcname='MACDSignal',
         fast_period=(1, None),  # These must all be >= 1.
@@ -350,9 +479,9 @@ class MACDSignal(CustomFactor):
         signal_period=(1, None),
     )
     def __new__(cls,
-                fast_period=12,
-                slow_period=26,
-                signal_period=9,
+                fast_period: int = 12,
+                slow_period: int = 26,
+                signal_period: int = 9,
                 *args,
                 **kwargs):
 

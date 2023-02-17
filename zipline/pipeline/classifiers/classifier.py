@@ -67,7 +67,8 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
     # We explicitly don't support classifier to classifier comparisons, since
     # the stored values likely don't mean the same thing. This may be relaxed
     # in the future, but for now we're starting conservatively.
-    def eq(self, other):
+    @expect_types(other=(bytes, str, Number))
+    def eq(self, other: Union[str, int]) -> 'Filter':
         """
         Construct a Filter returning True for asset/date pairs where the output
         of ``self`` matches ``other``.
@@ -102,9 +103,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
                 opargs=(other,),
             )
 
+    @expect_types(other=(bytes, str, Number))
     def __ne__(
         self,
-        other: 'Classifier'
+        other: Union[str, int]
         ) -> Filter:
         """
         Construct a Filter returning True for asset/date pairs where the output
@@ -509,7 +511,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
     def where(
         self,
         condition: Filter,
-        fill_value: Union['Classifier', float] = None
+        fill_value: Union['Classifier', str] = None
         ) -> 'Classifier':
         """
         Create a new Classifier that preserves original values where `condition` is

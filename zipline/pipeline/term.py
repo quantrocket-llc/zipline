@@ -104,16 +104,15 @@ class Term(with_metaclass(ABCMeta, object)):
                 # params is explicitly not allowed to be passed to an instance.
                 *args,
                 **kwargs):
-        """
-        Memoized constructor for Terms.
+        # Memoized constructor for Terms.
 
-        Caching previously-constructed Terms is useful because it allows us to
-        only compute equivalent sub-expressions once when traversing a Pipeline
-        dependency graph.
+        # Caching previously-constructed Terms is useful because it allows us to
+        # only compute equivalent sub-expressions once when traversing a Pipeline
+        # dependency graph.
 
-        Caching previously-constructed Terms is **sane** because terms and
-        their inputs are both conceptually immutable.
-        """
+        # Caching previously-constructed Terms is **sane** because terms and
+        # their inputs are both conceptually immutable.
+
         # Subclasses can override these class-level attributes to provide
         # different default values for instances.
         if domain is None:

@@ -20,6 +20,7 @@ from zipline.errors import (
     NonExistentAssetInTimeFrame,
     UnsupportedDataType,
 )
+from zipline.assets import Asset
 from zipline.lib.labelarray import LabelArray
 from zipline.lib.rank import grouped_masked_is_maximal
 from zipline.utils.numpy_utils import is_missing
@@ -192,6 +193,30 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
     # Used by RestrictedDTypeMixin
     ALLOWED_DTYPES = FILTER_DTYPES
     dtype = bool_dtype
+
+    # define magic method operators for pyright
+    if TYPE_CHECKING:
+
+        def __invert__(self) -> 'Filter':
+            pass
+
+        def __and__(self, other) -> 'Filter':
+            pass
+
+        def __or__(self, other) -> 'Filter':
+            pass
+
+        def __iand__(self, other) -> 'Filter':
+            pass
+
+        def __ior__(self, other) -> 'Filter':
+            pass
+
+        def __rand__(self, other) -> 'Filter':
+            pass
+
+        def __ror__(self, other) -> 'Filter':
+            pass
 
     clsdict = locals()
     clsdict.update(
@@ -792,14 +817,30 @@ class Latest(LatestMixin, CustomFilter):
 class SingleAsset(Filter):
     """
     A Filter that computes to True only for the given asset.
+
+    Parameters
+    ----------
+    asset : Asset
+        The asset for which this Filter should compute to True.
+
+    Returns
+    -------
+    filter : Filter
+        a Filter that computes to True only for the given asset.
+
+    Examples
+    --------
+    Create a filter that computes to True only for Apple:
+
+    >>> aapl_filter = SingleAsset(sid('FIBBG000B9XRY4'))                # doctest: +SKIP
     """
     inputs = []
     window_length = 1
 
-    def __new__(cls, asset):
+    def __new__(cls, asset: Asset) -> Filter:
         return super(SingleAsset, cls).__new__(cls, asset=asset)
 
-    def _init(self, asset, *args, **kwargs):
+    def _init(self, asset: Asset, *args, **kwargs):
         self._asset = asset
         return super(SingleAsset, self)._init(*args, **kwargs)
 
@@ -832,12 +873,23 @@ class StaticAssets(Filter):
     ----------
     assets : iterable[Asset]
         An iterable of assets for which to filter.
+
+    Returns
+    -------
+    filter : Filter
+        A Filter that computes True for a specific set of predetermined assets.
+
+    Examples
+    --------
+    Create a filter that computes True for Apple and SPY:
+
+    >>> screen = StaticAssets([sid('FIBBG000B9XRY4'), sid('FIBBG000BDTBL9')])          # doctest: +SKIP
     """
     inputs = ()
     window_length = 0
     params = ('sids',)
 
-    def __new__(cls, assets):
+    def __new__(cls, assets: list[Asset]) -> Filter:
         sids = frozenset(asset.sid for asset in assets)
         return super(StaticAssets, cls).__new__(cls, sids=sids)
 
@@ -865,7 +917,7 @@ class StaticSids(Filter):
     window_length = 1
     params = ("sids",)
 
-    def __new__(cls, sids):
+    def __new__(cls, sids: list[str]) -> Filter:
         # avoid circular import
         from zipline.pipeline.data.master import SecuritiesMaster
         inputs = [SecuritiesMaster.Sid]
@@ -895,7 +947,7 @@ class StaticUniverse(StaticSids):
     >>> pipe = Pipeline(screen=StaticUniverse("energy-stk"))              # doctest: +SKIP
     """
 
-    def __new__(cls, code):
+    def __new__(cls, code: str) -> Filter:
         securities = get_securities(universes=code, fields="Sid")
         sids = securities.index.tolist()
         return super(StaticUniverse, cls).__new__(cls, sids)

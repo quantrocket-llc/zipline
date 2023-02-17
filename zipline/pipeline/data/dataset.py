@@ -245,7 +245,7 @@ class BoundColumn(LoadableTerm):
 
         return type(self)(**kw)
 
-    def specialize(self, domain):
+    def specialize(self, domain: Domain) -> 'BoundColumn':
         """Specialize ``self`` to a concrete domain.
         """
         if domain == self.domain:
@@ -253,7 +253,7 @@ class BoundColumn(LoadableTerm):
 
         return self._replace(dataset=self._dataset.specialize(domain))
 
-    def unspecialize(self):
+    def unspecialize(self) -> 'BoundColumn':
         """
         Unspecialize a column to its generic form.
 
@@ -262,7 +262,7 @@ class BoundColumn(LoadableTerm):
         return self.specialize(GENERIC)
 
     @coerce_types(currency=(str, Currency))
-    def fx(self, currency):
+    def fx(self, currency: str) -> 'BoundColumn':
         """
         Construct a currency-converted version of this column.
 
@@ -301,14 +301,14 @@ class BoundColumn(LoadableTerm):
         return self._currency_conversion
 
     @property
-    def currency_aware(self):
+    def currency_aware(self) -> bool:
         """
         Whether or not this column produces currency-denominated data.
         """
         return self._currency_aware
 
     @property
-    def dataset(self):
+    def dataset(self) -> 'DataSet':
         """
         The dataset to which this column is bound.
 
@@ -319,7 +319,7 @@ class BoundColumn(LoadableTerm):
         return self._dataset
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         The name of this column.
         """
@@ -333,7 +333,7 @@ class BoundColumn(LoadableTerm):
         return self._metadata.copy()
 
     @property
-    def qualname(self):
+    def qualname(self) -> str:
         """The fully-qualified name of this column.
         """
         out = '.'.join([self.dataset.qualname, self.name])

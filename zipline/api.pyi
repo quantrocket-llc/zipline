@@ -1,18 +1,211 @@
-from typing import Union, Callable
-import collections
+from typing import Union, Callable, Literal, overload, Any, TypeVar
 import pandas as pd
-from zipline.algorithm import TradingAlgorithm
-from zipline.assets import Asset, Equity, Future, ContinuousFuture
-from zipline.finance.asset_restrictions import Restrictions
-from zipline.finance.cancel_policy import CancelPolicy
-from zipline.finance.execution import ExecutionStyle
-from zipline.finance.commission import EquityCommissionModel, FutureCommissionModel
-from zipline.finance.slippage import EquitySlippageModel, FutureSlippageModel
+from zipline.assets import Asset, Future, ContinuousFuture
+from zipline.finance import (
+    asset_restrictions,
+    commission,
+    execution,
+    slippage,
+    cancel_policy
+)
+from zipline.finance.order import ORDER_STATUS
 from zipline.pipeline import Pipeline
-from zipline.protocol import Order
+from zipline.protocol import Account, Portfolio
 from zipline._protocol import BarData
+from zipline.finance.order import Order
 from zipline.utils.events import EventRule
-from trading_calendars import TradingCalendar
+
+__all__ = [
+    'asset_restrictions',
+    'cancel_policy',
+    'commission',
+    'execution',
+    'slippage',
+    'date_rules',
+    'time_rules',
+    'Context',
+    'BarData',
+    'attach_pipeline',
+    'batch_market_order',
+    'cancel_order',
+    'continuous_future',
+    'future_symbol',
+    'get_datetime',
+    'get_environment',
+    'get_open_orders',
+    'get_order',
+    'order',
+    'order_percent',
+    'order_target',
+    'order_target_percent',
+    'order_target_value',
+    'order_value',
+    'pipeline_output',
+    'record',
+    'set_realtime_db',
+    'schedule_function',
+    'set_asset_restrictions',
+    'set_benchmark',
+    'set_cancel_policy',
+    'EODCancel',
+    'NeverCancel',
+    'set_commission',
+    'set_long_only',
+    'set_max_leverage',
+    'set_max_order_count',
+    'set_max_order_size',
+    'set_max_position_size',
+    'set_min_leverage',
+    'set_slippage',
+    'sid',
+    'ORDER_STATUS',
+]
+
+# The user interacts with zipline.algorithm.TradingAlgorithm via zipline.api
+# functions and via the context object, which provides access to the account
+# and portfolio objects and allows storage of arbitrary values. The Context
+# class below cannot be used directly, but is used to document the context
+# object passed to initialize(), handle_data(), before_trading_start(), and
+# scheduled functions. The reason this class exists is to provide type hints,
+# as the TradingAlgorithm class contains many methods not relevant to the user.
+class Context:
+    """
+    The `context` object is passed to `initialize()`, `handle_data()`,
+    `before_trading_start()`, and scheduled functions, and provides access to
+    the account and portfolio as well as any custom variables saved by the
+    user.
+
+    Attributes
+    ----------
+    portfolio : :class:`zipline.protocol.Portfolio`
+        The current portfolio.
+
+    account : :class:`zipline.protocol.Account`
+        The current account.
+
+    recorded_vars : dict
+        A copy of the variables that have been recorded using
+        zipline.api.record().
+
+    Examples
+    --------
+    >>> import zipline.api as algo
+    >>> def initialize(context: algo.Context):
+    ...     context.my_var = 1
+    """
+
+    # This will make pyright allow assignment to context.x
+    def __setattr__(self, name: Any, value: Any) -> None:
+        ...
+
+    # This will make pyright allow access to any context.x
+    def __getattr__(self, name: Any) -> Any:
+        ...
+
+    @property
+    def recorded_vars(self) -> dict[str, Any]:
+        """
+        A copy of the variables that have been recorded
+        using the `zipline.api.record()` function."""
+        ...
+
+    @property
+    def portfolio(self) -> Portfolio:
+        """
+        The current portfolio.
+
+        Attributes
+        ----------
+        positions : dict-like of :class:`zipline.assets.Asset` to :class:`zipline.protocol.Position`
+            Dict-like object where the keys are assets and the values contain information about the
+            currently-held position for that asset.
+
+        cash : float
+            Amount of cash currently held in portfolio.
+
+        cash_flow : float
+            The change in cash over the lifetime of the portfolio.
+
+        portfolio_value : float
+            Current liquidation value of the portfolio's holdings.
+            This is equal to ``cash + sum(shares * price)``
+
+        starting_cash : float
+            Amount of cash in the portfolio at the start of the backtest.
+
+        positions_value : float
+            The net value of all positions in the portfolio.
+
+        positions_exposure : float
+            The net exposure of all positions in the portfolio.
+
+        start_date : pd.Timestamp
+            The start date for the period being recorded.
+
+        pnl : float
+            The portfolio's profit and loss for the period being recorded.
+
+        returns : float
+            The portfolio's returns for the period being recorded.
+        """
+        ...
+
+    @property
+    def account(self) -> Account:
+        """
+        The current account details.
+
+        The values are updated as the algorithm runs and its keys remain
+        unchanged. These values are calculated by Zipline based on the
+        algorithm's capital base and order activity and do not reflect the
+        actual values of the broker.
+
+        Attributes
+        ----------
+        settled_cash : float
+            the amount of settled cash in the account
+
+        accrued_interest : float
+
+        buying_power : float
+
+        equity_with_loan : float
+            the portfolio value plus any cash in the account
+
+        total_positions_value : float
+            the value of all positions
+
+        total_positions_exposure : float
+            the total exposure of all positions in the portfolio
+
+        regt_equity : float
+
+        regt_margin : float
+
+        initial_margin_requirement : float
+
+        maintenance_margin_requirement : float
+
+        available_funds : float
+
+        excess_liquidity : float
+
+        cushion : float
+
+        day_trades_remaining : float
+
+        leverage : float
+            the gross leverage of the account, that is, the gross value of all positions
+            divided by the account value
+
+        net_leverage : float
+            the net leverage of the account, that is, the net value of all positions
+            divided by the account value
+
+        net_liquidation : float
+            the total account value
+        """
+        ...
 
 def attach_pipeline(
     pipeline: Pipeline,
@@ -48,7 +241,7 @@ def attach_pipeline(
     :func:`zipline.api.pipeline_output`
     """
 
-def batch_market_order(share_counts: pd.Series) -> pd.Index:
+def batch_market_order(share_counts: 'pd.Series[int]') -> pd.Index:
     """Place a batch market order for multiple assets.
 
     Parameters
@@ -74,8 +267,8 @@ def cancel_order(order_param: Union[str, Order]) -> None:
 def continuous_future(
     root_symbol_str: str,
     offset: int = 0,
-    roll: str = 'volume',
-    adjustment: str = 'mul'
+    roll: Literal["volume", "calendar"] = "volume",
+    adjustment: Literal["mul", "add", None] = "mul",
     ) -> ContinuousFuture:
     """Create a specifier for a continuous contract.
 
@@ -88,7 +281,10 @@ def continuous_future(
         The distance from the primary contract. Default is 0.
 
     roll_style : str, optional
-        How rolls are determined. Default is 'volume'.
+        How rolls are determined. Possible choices: 'volume',
+        (roll when back contract volume exceeds front contract
+        volume), or 'calendar' (roll on rollover date). Default
+        is 'volume'.
 
     adjustment : str, optional
         Method for adjusting lookback prices between rolls. Options are
@@ -139,12 +335,28 @@ dt : datetime
     The current simulation datetime converted to ``tz``.
     """
 
-def get_environment(field: str = 'platform') -> Union[str, pd.Timestamp]:
+@overload
+def get_environment(
+    field: Literal['platform', 'arena', 'data_frequency']) -> str: ...
+
+@overload
+def get_environment(
+    field: Literal['start', 'end']) -> pd.Timestamp: ...
+
+@overload
+def get_environment(
+    field: Literal['capital_base']) -> float: ...
+
+@overload
+def get_environment(
+    field: Literal['*']) -> dict[str, Union[str, float, pd.Timestamp]]: ...
+
+def get_environment(field):
     """Query the execution environment.
 
     Parameters
     ----------
-    field : {'platform', 'arena', 'data_frequency', 'start', 'end', 'capital_base', 'platform', '*'}
+    field : {'arena', 'data_frequency', 'start', 'end', 'capital_base', 'platform', '*'}
         The field to query. The options have the following meanings:
             arena : str
                 The arena from the simulation parameters. ``'backtest'`` or ``'trade'``.
@@ -189,9 +401,17 @@ def get_environment(field: str = 'platform') -> Union[str, pd.Timestamp]:
     >>>     ...                                         # doctest: +SKIP
     """
 
+@overload
 def get_open_orders(
-    asset: Asset = None
-    ) -> Union[list[Order], dict[Asset, list[Order]]]:
+    asset: Literal[None] = None
+    ) -> dict[Asset, list[Order]]:...
+
+@overload
+def get_open_orders(
+    asset: Asset
+    ) -> list[Order]:...
+
+def get_open_orders(asset):
     """Retrieve all of the current open orders.
 
     Parameters
@@ -229,7 +449,7 @@ def order(
     amount: int,
     limit_price: float = None,
     stop_price: float = None,
-    style: ExecutionStyle = None
+    style: execution.ExecutionStyle = None
     ) -> Union[str, None]:
     """Place an order.
 
@@ -245,7 +465,7 @@ def order(
         The limit price for the order.
     stop_price : float, optional
         The stop price for the order.
-    style : ExecutionStyle, optional
+    style : zipline.api.execution.ExecutionStyle, optional
         The execution style for the order.
 
     Returns
@@ -266,10 +486,10 @@ def order(
 
     See Also
     --------
-    :class:`zipline.finance.execution.MarketOrder`
-    :class:`zipline.finance.execution.LimitOrder`
-    :class:`zipline.finance.execution.StopOrder`
-    :class:`zipline.finance.execution.StopLimitOrder`
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
     :func:`zipline.api.order_value`
     :func:`zipline.api.order_percent`
     :func:`zipline.api.order_target`
@@ -282,7 +502,7 @@ def order_percent(
     percent: float,
     limit_price: float = None,
     stop_price: float = None,
-    style: ExecutionStyle = None
+    style: execution.ExecutionStyle = None
     ) -> Union[str, None]:
     """Place an order in the specified asset corresponding to the given
     percent of the current portfolio value.
@@ -298,7 +518,7 @@ def order_percent(
         The limit price for the order.
     stop_price : float, optional
         The stop price for the order.
-    style : ExecutionStyle
+    style: zipline.api.execution.ExecutionStyle
         The execution style for the order.
 
     Returns
@@ -313,10 +533,10 @@ def order_percent(
 
     See Also
     --------
-    :class:`zipline.finance.execution.MarketOrder`
-    :class:`zipline.finance.execution.LimitOrder`
-    :class:`zipline.finance.execution.StopOrder`
-    :class:`zipline.finance.execution.StopLimitOrder`
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
     :func:`zipline.api.order_value`
     :func:`zipline.api.order`
     :func:`zipline.api.order_target`
@@ -329,7 +549,7 @@ def order_target(
     target: int,
     limit_price: float = None,
     stop_price: float = None,
-    style: ExecutionStyle = None
+    style: execution.ExecutionStyle = None
     ) -> Union[str, None]:
     """Place an order to adjust a position to a target number of shares. If
     the position doesn't already exist, this is equivalent to placing a new
@@ -347,7 +567,7 @@ def order_target(
         The limit price for the order.
     stop_price : float, optional
         The stop price for the order.
-    style : ExecutionStyle
+    style: zipline.api.execution.ExecutionStyle
         The execution style for the order.
 
     Returns
@@ -375,10 +595,10 @@ def order_target(
 
     See Also
     --------
-    :class:`zipline.finance.execution.MarketOrder`
-    :class:`zipline.finance.execution.LimitOrder`
-    :class:`zipline.finance.execution.StopOrder`
-    :class:`zipline.finance.execution.StopLimitOrder`
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
     :func:`zipline.api.order_value`
     :func:`zipline.api.order`
     :func:`zipline.api.order_percent`
@@ -391,7 +611,7 @@ def order_target_percent(
     target: float,
     limit_price: float = None,
     stop_price: float = None,
-    style: ExecutionStyle = None
+    style: execution.ExecutionStyle = None
     ) -> Union[str, None]:
     """Place an order to adjust a position to a target percent of the
     current portfolio value. If the position doesn't already exist, this is
@@ -411,7 +631,7 @@ def order_target_percent(
         The limit price for the order.
     stop_price : float, optional
         The stop price for the order.
-    style : ExecutionStyle
+    style: zipline.api.execution.ExecutionStyle
         The execution style for the order.
 
     Returns
@@ -438,10 +658,10 @@ def order_target_percent(
 
     See Also
     --------
-    :class:`zipline.finance.execution.MarketOrder`
-    :class:`zipline.finance.execution.LimitOrder`
-    :class:`zipline.finance.execution.StopOrder`
-    :class:`zipline.finance.execution.StopLimitOrder`
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
     :func:`zipline.api.order_value`
     :func:`zipline.api.order`
     :func:`zipline.api.order_percent`
@@ -454,7 +674,7 @@ def order_target_value(
     target: float,
     limit_price: float = None,
     stop_price: float = None,
-    style: ExecutionStyle = None
+    style: execution.ExecutionStyle = None
     ) -> Union[str, None]:
     """Place an order to adjust a position to a target value. If
     the position doesn't already exist, this is equivalent to placing a new
@@ -474,7 +694,7 @@ def order_target_value(
         The limit price for the order.
     stop_price : float, optional
         The stop price for the order.
-    style : ExecutionStyle
+    style: zipline.api.execution.ExecutionStyle
         The execution style for the order.
 
     Returns
@@ -501,10 +721,10 @@ def order_target_value(
 
     See Also
     --------
-    :class:`zipline.finance.execution.MarketOrder`
-    :class:`zipline.finance.execution.LimitOrder`
-    :class:`zipline.finance.execution.StopOrder`
-    :class:`zipline.finance.execution.StopLimitOrder`
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
     :func:`zipline.api.order_value`
     :func:`zipline.api.order`
     :func:`zipline.api.order_percent`
@@ -517,7 +737,7 @@ def order_value(
     value: float,
     limit_price: float = None,
     stop_price: float = None,
-    style: ExecutionStyle = None
+    style: execution.ExecutionStyle = None
     ) -> Union[str, None]:
     """
     Place an order for a fixed amount of money.
@@ -537,7 +757,7 @@ def order_value(
         The limit price for the order.
     stop_price : float, optional
         The stop price for the order.
-    style : ExecutionStyle
+    style: zipline.api.execution.ExecutionStyle
         The execution style for the order.
 
     Returns
@@ -552,10 +772,10 @@ def order_value(
 
     See Also
     --------
-    :class:`zipline.finance.execution.MarketOrder`
-    :class:`zipline.finance.execution.LimitOrder`
-    :class:`zipline.finance.execution.StopOrder`
-    :class:`zipline.finance.execution.StopLimitOrder`
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
     :func:`zipline.api.order`
     :func:`zipline.api.order_percent`
     :func:`zipline.api.order_target`
@@ -588,7 +808,7 @@ def pipeline_output(name: str) -> pd.DataFrame:
     :func:`zipline.api.attach_pipeline`
     """
 
-def record(self, *args, **kwargs) -> None:
+def record(**kwargs: Any) -> None:
     """Track and record values each day.
 
     Parameters
@@ -638,13 +858,13 @@ def set_realtime_db(
     """
     ...
 
+ContextOrSubclass = TypeVar('ContextOrSubclass', bound=Context)
+
 def schedule_function(
-    self,
-    func: Callable[[TradingAlgorithm, BarData], None],
+    func: Callable[[ContextOrSubclass, BarData], None],
     date_rule: EventRule = None,
     time_rule: EventRule = None,
-    half_days: bool = True,
-    calendar: TradingCalendar = None
+    half_days: bool = True
     ) -> None:
     """
     Schedule a function to be called repeatedly in the future.
@@ -663,8 +883,6 @@ def schedule_function(
         day.
     half_days : bool, optional
         Should this rule fire on half days? Default is True.
-    calendar : Sentinel, optional
-        Calendar used to compute rules that depend on the trading calendar.
 
     Examples
     --------
@@ -692,6 +910,7 @@ class date_rules:
     :func:`~zipline.api.schedule_function`
     """
 
+    @staticmethod
     def every_day() -> EventRule:
         """Create a rule that triggers every day.
 
@@ -701,6 +920,7 @@ class date_rules:
         """
         ...
 
+    @staticmethod
     def month_start(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
@@ -719,6 +939,7 @@ class date_rules:
         """
         ...
 
+    @staticmethod
     def month_end(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
@@ -736,6 +957,7 @@ class date_rules:
         """
         ...
 
+    @staticmethod
     def week_start(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
@@ -749,6 +971,7 @@ class date_rules:
         """
         ...
 
+    @staticmethod
     def week_end(days_offset: int = 0) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
@@ -770,6 +993,7 @@ class time_rules:
     :func:`~zipline.api.schedule_function`
     """
 
+    @staticmethod
     def market_open(
         offset: pd.Timedelta = None,
         hours: int = None,
@@ -806,6 +1030,7 @@ class time_rules:
         """
         ...
 
+    @staticmethod
     def market_close(
         offset: pd.Timedelta = None,
         hours: int = None,
@@ -842,6 +1067,7 @@ class time_rules:
         """
         ...
 
+    @staticmethod
     def every_minute() -> EventRule:
         """
         Create a rule that always triggers.
@@ -849,14 +1075,14 @@ class time_rules:
         ...
 
 def set_asset_restrictions(
-    restrictions: Restrictions,
-    on_error: str = 'fail'
+    restrictions: asset_restrictions.Restrictions,
+    on_error: Literal['fail', 'log'] = 'fail'
     ) -> None:
     """Set a restriction on which assets can be ordered.
 
     Parameters
     ----------
-    restricted_list : Restrictions
+    restricted_list : zipline.finance.asset_restrictions.Restrictions
         An object providing information about restricted assets.
 
     See Also
@@ -886,7 +1112,7 @@ def set_benchmark(benchmark: Asset) -> None:
     automatically reinvested.
     """
 
-def set_cancel_policy(cancel_policy: CancelPolicy) -> None:
+def set_cancel_policy(cancel_policy: cancel_policy.CancelPolicy) -> None:
     """Sets the order cancellation policy for the simulation.
 
     Parameters
@@ -931,16 +1157,16 @@ class NeverCancel:
     ...
 
 def set_commission(
-    us_equities: EquityCommissionModel = None,
-    us_futures: FutureCommissionModel = None
+    us_equities: commission.EquityCommissionModel = None,
+    us_futures: commission.FutureCommissionModel = None
     ) -> None:
     """Sets the commission models for the simulation.
 
     Parameters
     ----------
-    us_equities : EquityCommissionModel
+    us_equities : zipline.api.commission.EquityCommissionModel
         The commission model to use for trading US equities.
-    us_futures : FutureCommissionModel
+    us_futures : zipline.api.commission.FutureCommissionModel
         The commission model to use for trading US futures.
 
     Notes
@@ -953,17 +1179,16 @@ def set_commission(
     Set the equities commission to 0.001 per share:
 
     >>> import zipline.api as algo
-    >>> from zipline.finance import commission
-    >>> algo.set_commission(commission.PerShare(cost=0.001))    # doctest: +SKIP
+    >>> algo.set_commission(algo.commission.PerShare(cost=0.001))    # doctest: +SKIP
 
     See Also
     --------
-    :class:`zipline.finance.commission.PerShare`
-    :class:`zipline.finance.commission.PerTrade`
-    :class:`zipline.finance.commission.PerDollar`
+    :class:`zipline.api.commission.PerShare`
+    :class:`zipline.api.commission.PerTrade`
+    :class:`zipline.api.commission.PerDollar`
     """
 
-def set_long_only(on_error: str ='fail') -> None:
+def set_long_only(on_error: Literal['fail', 'log'] ='fail') -> None:
     """Set a rule specifying that this algorithm cannot take short
     positions.
     """
@@ -980,7 +1205,7 @@ def set_max_leverage(max_leverage: float) -> None:
 
 def set_max_order_count(
     max_count: int,
-    on_error: str = 'fail'
+    on_error: Literal['fail', 'log'] = 'fail'
     ) -> None:
     """Set a limit on the number of orders that can be placed in a single
     day.
@@ -995,7 +1220,7 @@ def set_max_order_size(
     asset: Asset = None,
     max_shares: int = None,
     max_notional: float = None,
-    on_error: str = 'fail'
+    on_error: Literal['fail', 'log'] = 'fail'
     ) -> None:
     """Set a limit on the number of shares and/or dollar value of any single
     order placed for sid.  Limits are treated as absolute values and are
@@ -1019,7 +1244,7 @@ def set_max_position_size(
     asset: Asset = None,
     max_shares: int = None,
     max_notional: float = None,
-    on_error: str = 'fail'
+    on_error: Literal['fail', 'log'] = 'fail'
     ) -> None:
     """Set a limit on the number of shares and/or dollar value held for the
     given sid. Limits are treated as absolute values and are enforced at
@@ -1058,16 +1283,16 @@ def set_min_leverage(
     """
 
 def set_slippage(
-    us_equities: EquitySlippageModel = None,
-    us_futures: FutureSlippageModel = None
+    us_equities: slippage.EquitySlippageModel = None,
+    us_futures: slippage.FutureSlippageModel = None
     ) -> None:
     """Set the slippage models for the simulation.
 
     Parameters
     ----------
-    us_equities : EquitySlippageModel
+    us_equities : zipline.api.slippage.EquitySlippageModel
         The slippage model to use for trading US equities.
-    us_futures : FutureSlippageModel
+    us_futures : zipline.api.slippage.FutureSlippageModel
         The slippage model to use for trading US futures.
 
     Examples
@@ -1075,8 +1300,7 @@ def set_slippage(
     Set the equities slippage to 5 basis points:
 
     >>> import zipline.api as algo
-    >>> from zipline.finance import slippage
-    >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))    # doctest: +SKIP
+    >>> algo.set_slippage(algo.slippage.FixedBasisPointsSlippage(basis_points=5.0))    # doctest: +SKIP
 
     Notes
     -----
@@ -1085,16 +1309,16 @@ def set_slippage(
 
     See Also
     --------
-    :class:`zipline.finance.slippage.SlippageModel`
+    :class:`zipline.api.slippage.SlippageModel`
     """
 
-def sid(sid: Union[str, int]) -> Asset:
+def sid(sid: str) -> Asset:
     """Lookup an Asset by its unique asset identifier.
 
     Parameters
     ----------
-    sid : int
-        The unique integer that identifies an asset.
+    sid : str
+        The QuantRocket sid that identifies the asset.
 
     Returns
     -------

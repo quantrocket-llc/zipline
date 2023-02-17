@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from numexpr import evaluate
 import numpy as np
 from numpy import broadcast_arrays
@@ -9,7 +11,7 @@ from scipy.stats import (
 from zipline.assets import Asset
 from zipline.errors import IncompatibleTerms
 from zipline.pipeline.factors.factor import CustomFactor
-from zipline.pipeline.filters import SingleAsset
+from zipline.pipeline.filters import SingleAsset, Filter
 from zipline.pipeline.mixins import StandardOutputs
 from zipline.pipeline.term import AssetExists
 from zipline.utils.input_validation import (
@@ -266,7 +268,7 @@ class RollingPearsonOfReturns(RollingPearson):
     achieve this by doing::
 
         rolling_correlations = RollingPearsonOfReturns(
-            target=sid(8554),
+            target=sid('FIBBG000BDTBL9'),
             returns_length=10,
             correlation_length=5,
         )
@@ -292,10 +294,10 @@ class RollingPearsonOfReturns(RollingPearson):
     :class:`zipline.pipeline.factors.RollingLinearRegressionOfReturns`
     """
     def __new__(cls,
-                target,
-                returns_length,
-                correlation_length,
-                mask=None):
+                target: Asset,
+                returns_length: int,
+                correlation_length: int,
+                mask: Filter = None):
         # Use the `SingleAsset` filter here because it protects against
         # inputting a non-existent target asset.
         returns = Returns(
@@ -342,10 +344,10 @@ class RollingSpearmanOfReturns(RollingSpearman):
     :class:`zipline.pipeline.factors.RollingLinearRegressionOfReturns`
     """
     def __new__(cls,
-                target,
-                returns_length,
-                correlation_length,
-                mask=None):
+                target: Asset,
+                returns_length: int,
+                correlation_length: int,
+                mask: Filter = None):
         # Use the `SingleAsset` filter here because it protects against
         # inputting a non-existent target asset.
         returns = Returns(
@@ -418,8 +420,8 @@ class RollingLinearRegressionOfReturns(RollingLinearRegression):
     over rolling 5-day look back windows. We can compute rolling regression
     coefficients (alpha and beta) from 2017-03-17 to 2017-03-22 by doing::
 
-        regression_factor = RollingRegressionOfReturns(
-            target=sid(8554),
+        regression_factor = RollingLinearRegressionOfReturns(
+            target=sid('FIBBG000BDTBL9'),
             returns_length=10,
             regression_length=5,
         )
@@ -461,10 +463,10 @@ class RollingLinearRegressionOfReturns(RollingLinearRegression):
     window_safe = True
 
     def __new__(cls,
-                target,
-                returns_length,
-                regression_length,
-                mask=None):
+                target: Asset,
+                returns_length: int,
+                regression_length: int,
+                mask: Filter = None):
         # Use the `SingleAsset` filter here because it protects against
         # inputting a non-existent target asset.
         returns = Returns(
@@ -496,10 +498,24 @@ class SimpleBeta(CustomFactor, StandardOutputs):
         to be missing when calculating betas. Assets with more than this
         percentage of returns observations missing will produce values of
         NaN. Default behavior is that 25% of inputs can be missing.
+
+    Examples
+    --------
+    Calculate 1-year simple betas for each stock against SPY:
+
+    >>> beta = SimpleBeta(target=sid('FIBBG000BDTBL9'), regression_length=252)          # doctest: +SKIP
     """
     window_safe = True
     dtype = float64_dtype
     params = ('allowed_missing_count',)
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            target: Asset,
+            regression_length: int,
+            allowed_missing_percentage: float = 0.25):
+            pass
 
     @expect_types(
         target=Asset,
@@ -513,9 +529,9 @@ class SimpleBeta(CustomFactor, StandardOutputs):
         __funcname='SimpleBeta',
     )
     def __new__(cls,
-                target,
-                regression_length,
-                allowed_missing_percentage=0.25):
+                target: Asset,
+                regression_length: int,
+                allowed_missing_percentage: float = 0.25):
         daily_returns = Returns(
             window_length=2,
             mask=(AssetExists() | SingleAsset(asset=target)),

@@ -6,6 +6,7 @@ import pandas as pd
 from zipline import api
 from zipline.assets import Equity, Future
 from zipline.assets.synthetic import make_commodity_future_info
+from zipline.finance.order import ORDER_STATUS
 from zipline.data.data_portal import DataPortal
 from zipline.data.resample import MinuteResampleSessionBarReader
 from zipline._testing import (
@@ -813,7 +814,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             'open': False,
             'reason': None,
             'sid': self.equity,
-            'status': 1,
+            'status': ORDER_STATUS.FILLED,
             'stop': None,
             'stop_reached': False
         }
@@ -1196,7 +1197,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
                 'open': False,
                 'reason': None,
                 'sid': self.future,
-                'status': 1,
+                'status': ORDER_STATUS.FILLED,
                 'stop': None,
                 'stop_reached': False
             }],
@@ -1749,7 +1750,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'open': False,
             'reason': None,
             'sid': self.equity,
-            'status': 1,
+            'status': ORDER_STATUS.FILLED,
             'stop': None,
             'stop_reached': False
         }
@@ -2170,7 +2171,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'open': False,
             'reason': None,
             'sid': self.future,
-            'status': 1,
+            'status': ORDER_STATUS.FILLED,
             'stop': None,
             'stop_reached': False
         }

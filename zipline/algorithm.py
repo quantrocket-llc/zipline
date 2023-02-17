@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Callable, Union
+from typing import Callable, Union, Literal, Any
 from collections import namedtuple
 from collections.abc import Iterable
 from copy import copy
@@ -37,7 +37,7 @@ from trading_calendars import get_calendar, TradingCalendar
 
 from zipline._protocol import (
     handle_non_market_minutes,
-    BarData
+    BarData as BarData,
 )
 from zipline.errors import (
     AttachPipelineAfterInitialize,
@@ -51,7 +51,6 @@ from zipline.errors import (
     PipelineOutputDuringInitialize,
     RegisterAccountControlPostInit,
     RegisterTradingControlPostInit,
-    ScheduleFunctionInvalidCalendar,
     SetBenchmarkOutsideInitialize,
     SetCancelPolicyPostInit,
     SetCommissionPostInit,
@@ -828,7 +827,7 @@ class TradingAlgorithm(object):
                  'delta': capital_change_amount}
         }
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def get_environment(self, field: str = 'platform') -> Union[str, pd.Timestamp]:
         """Query the execution environment.
 
@@ -909,15 +908,14 @@ class TradingAlgorithm(object):
             zipline.utils.events.Event(rule, callback),
         )
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def schedule_function(
         self,
-        func: Callable[['TradingAlgorithm', BarData], None],
-        date_rule: EventRule = None,
-        time_rule: EventRule = None,
-        half_days: bool = True,
-        calendar: TradingCalendar = None
-        ) -> None:
+        func,
+        date_rule=None,
+        time_rule=None,
+        half_days=True,
+        calendar=None):
         """
         Schedule a function to be called repeatedly in the future.
 
@@ -974,25 +972,14 @@ class TradingAlgorithm(object):
         # Note that the ExchangeTradingSchedule is currently the only
         # TradingSchedule class, so this is unlikely to be hit
         if calendar is None:
-            cal = self.trading_calendar
-        elif calendar is calendars.US_EQUITIES:
-            cal = get_calendar('XNYS')
-        elif calendar is calendars.US_FUTURES:
-            cal = get_calendar('us_futures')
-        else:
-            raise ScheduleFunctionInvalidCalendar(
-                given_calendar=calendar,
-                allowed_calendars=(
-                    '[calendars.US_EQUITIES, calendars.US_FUTURES]'
-                ),
-            )
+            calendar = self.trading_calendar
 
         self.add_event(
-            make_eventrule(date_rule, time_rule, cal, half_days),
+            make_eventrule(date_rule, time_rule, calendar, half_days),
             func,
         )
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def record(self, *args, **kwargs) -> None:
         """Track and record values each day.
 
@@ -1016,7 +1003,7 @@ class TradingAlgorithm(object):
         for name, value in chain(positionals, iteritems(kwargs)):
             self._recorded_vars[name] = value
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_benchmark(self, benchmark: Asset) -> None:
         """Set the benchmark asset.
 
@@ -1043,14 +1030,14 @@ class TradingAlgorithm(object):
 
         self.benchmark_sid = benchmark
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @preprocess(root_symbol_str=ensure_upper_case)
     def continuous_future(
         self,
         root_symbol_str: str,
         offset: int = 0,
-        roll: str = 'volume',
-        adjustment: str = 'mul'
+        roll: Literal["volume", "calendar"] = "volume",
+        adjustment: Literal["mul", "add", None] = "mul",
         ) -> ContinuousFuture:
         """Create a specifier for a continuous contract.
 
@@ -1097,7 +1084,7 @@ class TradingAlgorithm(object):
             adjustment,
         )
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def sid(self, sid: Union[str, int]) -> Asset:
         """Lookup an Asset by its unique asset identifier.
 
@@ -1122,7 +1109,7 @@ class TradingAlgorithm(object):
         # by a monkey-patch at runtime and is not implemented here
         return self.asset_finder.retrieve_asset(sid)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @preprocess(symbol=ensure_upper_case)
     def future_symbol(self, symbol: str) -> Future:
         """Lookup a futures contract with a given symbol.
@@ -1207,7 +1194,7 @@ class TradingAlgorithm(object):
                     " {1}.".format(asset.symbol, asset.auto_close_date)
             )
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
     def order(
         self,
@@ -1358,7 +1345,7 @@ class TradingAlgorithm(object):
         else:
             return MarketOrder()
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
     def order_value(
         self,
@@ -1446,12 +1433,12 @@ class TradingAlgorithm(object):
             self._last_sync_time = dt
 
     @property
-    def portfolio(self):
+    def portfolio(self) -> zipline.protocol.Portfolio:
         self._sync_last_sale_prices()
         return self.metrics_tracker.portfolio
 
     @property
-    def account(self):
+    def account(self) -> zipline.protocol.Account:
         self._sync_last_sale_prices()
         return self.metrics_tracker.account
 
@@ -1466,7 +1453,7 @@ class TradingAlgorithm(object):
         self.datetime = dt
         self.blotter.set_date(dt)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @preprocess(tz=coerce_string(pytz.timezone))
     @expect_types(tz=optional(tzinfo))
     def get_datetime(self, tz: str = None) -> pd.Timestamp:
@@ -1489,7 +1476,7 @@ class TradingAlgorithm(object):
             dt = dt.astimezone(tz)
         return dt
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_slippage(
         self,
         us_equities: EquitySlippageModel = None,
@@ -1543,7 +1530,7 @@ class TradingAlgorithm(object):
                 )
             self.blotter.slippage_models[Future] = us_futures
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_commission(
         self,
         us_equities: EquityCommissionModel = None,
@@ -1598,7 +1585,7 @@ class TradingAlgorithm(object):
                 )
             self.blotter.commission_models[Future] = us_futures
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_cancel_policy(self, cancel_policy: CancelPolicy) -> None:
         """
         Sets the order cancellation policy for the strategy. Cancellation
@@ -1631,7 +1618,7 @@ class TradingAlgorithm(object):
         assert value in ('daily', 'minute')
         self.sim_params.data_frequency = value
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
     def order_percent(
         self,
@@ -1692,7 +1679,7 @@ class TradingAlgorithm(object):
         value = self.portfolio.portfolio_value * percent
         return self._calculate_order_value_amount(asset, value)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
     def order_target(
         self,
@@ -1771,7 +1758,7 @@ class TradingAlgorithm(object):
 
         return target
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
     def order_target_value(
         self,
@@ -1845,7 +1832,7 @@ class TradingAlgorithm(object):
                           stop_price=stop_price,
                           style=style)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
     def order_target_percent(
         self,
@@ -1922,7 +1909,7 @@ class TradingAlgorithm(object):
         target_amount = self._calculate_order_percent_amount(asset, target)
         return self._calculate_order_target_amount(asset, target_amount)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @expect_types(share_counts=pd.Series)
     @expect_dtypes(share_counts=int64_dtype)
     def batch_market_order(self, share_counts: pd.Series) -> pd.Index:
@@ -1948,7 +1935,7 @@ class TradingAlgorithm(object):
 
     @error_keywords(sid='Keyword argument `sid` is no longer supported for '
                         'get_open_orders. Use `asset` instead.')
-    @api_method
+    @api_method # document in zipline.api.pyi
     def get_open_orders(
         self,
         asset: Asset = None
@@ -1980,7 +1967,7 @@ class TradingAlgorithm(object):
             return [order.to_api_obj() for order in orders]
         return []
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def get_order(self, order_id: str) -> Order:
         """Lookup an order based on the order id returned from one of the
         order functions.
@@ -1998,7 +1985,7 @@ class TradingAlgorithm(object):
         if order_id in self.blotter.orders:
             return self.blotter.orders[order_id].to_api_obj()
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def cancel_order(self, order_param: Union[str, Order]) -> None:
         """Cancel an open order.
 
@@ -2032,7 +2019,7 @@ class TradingAlgorithm(object):
                              self.get_datetime(),
                              self.trading_client.current_data)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_max_leverage(self, max_leverage: float) -> None:
         """Set a limit on the maximum leverage of the algorithm.
 
@@ -2045,7 +2032,7 @@ class TradingAlgorithm(object):
         control = MaxLeverage(max_leverage)
         self.register_account_control(control)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_min_leverage(
         self,
         min_leverage: float,
@@ -2076,7 +2063,7 @@ class TradingAlgorithm(object):
             raise RegisterTradingControlPostInit()
         self.trading_controls.append(control)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_max_position_size(
         self,
         asset: Asset = None,
@@ -2111,7 +2098,7 @@ class TradingAlgorithm(object):
                                   on_error=on_error)
         self.register_trading_control(control)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_max_order_size(
         self,
         asset: Asset = None,
@@ -2142,7 +2129,7 @@ class TradingAlgorithm(object):
                                on_error=on_error)
         self.register_trading_control(control)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_max_order_count(
         self,
         max_count: int,
@@ -2159,7 +2146,7 @@ class TradingAlgorithm(object):
         control = MaxOrderCount(on_error, max_count)
         self.register_trading_control(control)
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @expect_types(
         restrictions=Restrictions,
         on_error=str,
@@ -2184,7 +2171,7 @@ class TradingAlgorithm(object):
         self.register_trading_control(control)
         self.restrictions |= restrictions
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_long_only(self, on_error: str ='fail') -> None:
         """Set a rule specifying that this algorithm cannot take short
         positions.
@@ -2194,7 +2181,7 @@ class TradingAlgorithm(object):
     ##############
     # Pipeline API
     ##############
-    @api_method
+    @api_method # document in zipline.api.pyi
     @require_not_initialized(AttachPipelineAfterInitialize())
     @expect_types(
         pipeline=Pipeline,
@@ -2250,7 +2237,7 @@ class TradingAlgorithm(object):
         # p = attach_pipeline(Pipeline(), 'name')
         return pipeline
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     @require_initialized(PipelineOutputDuringInitialize())
     def pipeline_output(self, name: str) -> pd.DataFrame:
         """
@@ -2385,7 +2372,7 @@ class TradingAlgorithm(object):
     # End Pipeline API
     ##################
 
-    @api_method
+    @api_method # document in zipline.api.pyi
     def set_realtime_db(
         self,
         code: str,

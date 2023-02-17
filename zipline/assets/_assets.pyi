@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pandas as pd
+from zipline.assets.exchange_info import ExchangeInfo
 
 class Asset:
     """
@@ -21,14 +22,14 @@ class Asset:
     Parameters
     ----------
     sid : int
-        Internal Zipline sid. Persistent unique identifier assigned to the asset.
+        Internal Zipline sid (security ID). For the QuantRocket sid, use real_sid.
     zipline_sid: int
-        Internal Zipline sid (alias for Asset.sid).
+        Internal Zipline sid (alias for Asset.sid). For the QuantRocket sid, use real_sid.
     real_sid: str
-        The QuantRocket sid.
+        The QuantRocket sid. Persistent unique identifier assigned to the asset.
     symbol : str
         Most recent ticker under which the asset traded. This field can change
-        without warning if the asset changes tickers. Use ``real_sid`` if you need a
+        without warning if the asset changes tickers. Use ``real_sid`` for a
         persistent identifier.
     asset_name : str
         Full name of the asset.
@@ -43,22 +44,64 @@ class Asset:
     currency : str
         ISO currency of asset.
     start_date : pd.Timestamp
-        Date on which the asset first traded.
+        First date for which price data is available for this asset
     end_date : pd.Timestamp
-        Last date on which the asset traded. This value is set
-        to the current (real time) date for assets that are still trading.
-    tick_size : float
-        Minimum amount that the price can change for this asset.
+        Last date for which price data is available for this asset
     multiplier : float
         The contract multiplier
     price_magnifier : float
         The price magnifier by which to divide prices when prices are quoted in a smaller
-        unit than the asset's currency.
+        unit than the asset's currency. Rarely used.
     auto_close_date : pd.Timestamp
-        Date on which positions in this asset will be automatically liquidated
-        to cash during a simulation. By default, this is three days after
-        ``end_date``.
+        Delisted date for equities, or last trade date for futures.
     """
+    def __init__(
+        self,
+        sid: int,
+        real_sid: str,
+        symbol: str,
+        asset_name: str,
+        exchange_info: ExchangeInfo,
+        currency: str,
+        start_date: pd.Timestamp,
+        end_date: pd.Timestamp,
+        first_traded: pd.Timestamp,
+        auto_close_date: pd.Timestamp,
+        tick_size: float,
+        multiplier: float,
+        price_magnifier: float
+        ):
+
+        self.sid: int = sid
+        """Internal Zipline sid (security ID). For the QuantRocket sid, use real_sid."""
+        self.zipline_sid: int = sid
+        """Internal Zipline sid (alias for Asset.sid). For the QuantRocket sid, use real_sid."""
+        self.real_sid : str = real_sid
+        """The QuantRocket sid. Persistent unique identifier assigned to the asset."""
+        self.symbol: str = symbol
+        """Most recent ticker under which the asset traded. This field can change without warning if the asset changes tickers. Use ``real_sid`` for a persistent identifier."""
+        self.asset_name: str = asset_name
+        """Full name of the asset."""
+        self.exchange: str = None
+        """Canonical short name of the exchange on which the asset trades (e.g.,
+        'NYSE')."""
+        self.exchange_full: str = None
+        """Full name of the exchange on which the asset trades (e.g., 'NEW YORK
+        STOCK EXCHANGE')."""
+        self.exchange_info: ExchangeInfo = exchange_info
+        """ExchangeInfo object."""
+        self.currency: str = currency
+        """ISO currency of asset."""
+        self.start_date: pd.Timestamp = start_date
+        """First date for which price data is available for this asset."""
+        self.end_date: pd.Timestamp = end_date
+        """Last date for which price data is available for this asset."""
+        self.auto_close_date: pd.Timestamp = auto_close_date
+        """Delisted date for equities, or last trade date for futures."""
+        self.price_multiplier: float = multiplier
+        """The contract multiplier"""
+        self.price_magnifier: float = price_magnifier
+        """The price magnifier by which to divide prices when prices are quoted in a smaller unit than the asset's currency. Rarely used."""
 
     def from_dict(cls, dict_):
         """

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import os
-from typing import Union
+from typing import Union, Any
 import pandas as pd
 from zipline.data import bundles
 import zipline.pipeline.domain as domain
@@ -220,7 +220,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     return engine.run_pipeline(pipeline, start_date, end_date)
 
 def get_forward_returns(
-    factor: pd.Series,
+    factor: 'pd.Series[Any]',
     periods: Union[int, list[int]] = None,
     bundle: str = None
     ) -> pd.DataFrame:

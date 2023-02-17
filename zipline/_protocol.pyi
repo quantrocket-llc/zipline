@@ -1,5 +1,5 @@
 from zipline.assets import Asset, Future, ContinuousFuture
-from typing import Union
+from typing import Union, overload, Any, Literal, Sequence
 import pandas as pd
 
 class check_parameters(object):
@@ -16,6 +16,8 @@ class check_parameters(object):
 
 def handle_non_market_minutes(bar_data): ...
 
+# the methods are summarized in the class docstring so that users hovering
+# over the data object in algorithms can see the methods
 class BarData:
     """
     Provides methods for accessing minutely and daily price/volume data from
@@ -27,6 +29,28 @@ class BarData:
     An instance of this object is passed as ``data`` to
     :func:`~zipline.api.handle_data` and
     :func:`~zipline.api.before_trading_start`.
+
+    Methods:
+
+    current(assets, field)
+        Returns the "current" value of the given fields for the given assets
+        at the current simulation time.
+
+    history(assets, fields, bar_count, frequency)
+        Returns a trailing window of length ``bar_count`` containing data for
+        the given assets, fields, and frequency.
+
+    can_trade(assets)
+        Returns True if the asset is alive, the exchange is open, and there is a
+        known last prices.
+
+    is_stale(assets)
+        Returns True if the asset is alive but the last price is stale.
+
+    current_chain(continuous_future)
+        Returns the current futures chain as of the simulation date.
+
+    See the individual methods for more details.
     """
     ...
 
@@ -47,11 +71,57 @@ class BarData:
         """
         ...
 
+    @overload
     def current(
-      self,
-      assets: Union[Asset, list[Asset]],
-      fields: Union[str, list[str]]
-      ) -> Union[float, pd.Series, pd.DataFrame]:
+        self,
+        assets: Asset,
+        fields: Literal['open', 'high', 'low', 'close', 'volume', 'price']
+        ) -> float:
+        ...
+
+    @overload
+    def current(
+        self,
+        assets: Asset,
+        fields: Literal['last_traded']
+        ) -> pd.Timestamp:
+        ...
+
+    @overload
+    def current(
+        self,
+        assets: Sequence[Asset],
+        fields: Literal['open', 'high', 'low', 'close', 'volume', 'price', 'last_traded']
+        ) -> 'pd.Series[Union[float, pd.Timestamp]]':
+        ...
+
+    @overload
+    def current(
+        self,
+        assets: Asset,
+        fields: Sequence[
+          Literal[
+            'open', 'high', 'low', 'close', 'volume', 'price', 'last_traded']]
+        ) -> 'pd.Series[Union[float, pd.Timestamp]]':
+        ...
+
+    @overload
+    def current(
+        self,
+        assets: Sequence[Asset],
+        fields: Sequence[
+          Literal[
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+            'price',
+            'last_traded']]
+        ) -> pd.DataFrame:
+        ...
+
+    def current(self, assets, fields):
         """
         Returns the "current" value of the given fields for the given assets
         at the current simulation time.
@@ -122,9 +192,9 @@ class BarData:
         ...
 
     def current_chain(
-      self,
-      continuous_future: ContinuousFuture
-      ) -> list[Future]:
+        self,
+        continuous_future: ContinuousFuture
+        ) -> list[Future]:
         """
         Returns the current futures chain as of the simulation date.
 
@@ -142,10 +212,21 @@ class BarData:
         """
         ...
 
+    @overload
     def can_trade(
-      self,
-      assets: Union[Asset, list[Asset]]
-      ) -> bool:
+        self,
+        assets: Asset
+        ) -> bool:
+        ...
+
+    @overload
+    def can_trade(
+        self,
+        assets: list[Asset]
+        ) -> 'pd.Series[bool]':
+        ...
+
+    def can_trade(self, assets):
         """
         For the given asset or iterable of assets, returns True if all of the
         following are true:
@@ -185,10 +266,21 @@ class BarData:
 
     def _can_trade_for_asset(self, asset, dt, adjusted_dt, data_portal): ...
 
+    @overload
     def is_stale(
-      self,
-      assets: Union[Asset, list[Asset]]
-      ) -> bool:
+        self,
+        assets: Asset
+        ) -> bool:
+        ...
+
+    @overload
+    def is_stale(
+        self,
+        assets: list[Asset]
+        ) -> 'pd.Series[bool]':
+        ...
+
+    def is_stale(self, assets):
         """
         For the given asset or iterable of assets, returns True if the asset
         is alive and there is no trade data for the current simulation time.
@@ -215,13 +307,62 @@ class BarData:
     def _is_stale_for_asset(self, asset, dt, adjusted_dt, data_portal):
         ...
 
+    @overload
     def history(
-      self,
-      assets: Union[Asset, list[Asset]],
-      fields: Union[str, list[str]],
-      bar_count: int,
-      frequency: str
-      ) -> Union[pd.DataFrame, pd.Series]:
+        self,
+        assets: Asset,
+        fields: Literal['open', 'high', 'low', 'close', 'volume', 'price', 'last_traded'],
+        bar_count: int,
+        frequency: Literal['1d', '1m']
+        ) -> 'pd.Series[Union[float, pd.Timestamp]]':
+        ...
+
+    @overload
+    def history(
+        self,
+        assets: Asset,
+        fields: Sequence[
+          Literal[
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+            'price',
+            'last_traded']],
+        bar_count: int,
+        frequency: Literal['1d', '1m']
+        ) -> pd.DataFrame:
+        ...
+
+    @overload
+    def history(
+        self,
+        assets: Sequence[Asset],
+        fields: Union[
+          Literal[
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+            'price',
+            'last_traded'],
+          Sequence[
+            Literal[
+              'open',
+              'high',
+              'low',
+              'close',
+              'volume',
+              'price',
+              'last_traded']]],
+        bar_count: int,
+        frequency: Literal['1d', '1m']
+        ) -> pd.DataFrame:
+        ...
+
+    def history(self, assets, fields, bar_count, frequency):
         """
         Returns a trailing window of length ``bar_count`` containing data for
         the given assets, fields, and frequency.

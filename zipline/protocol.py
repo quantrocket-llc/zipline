@@ -12,13 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from warnings import warn
+from typing import TYPE_CHECKING
 
 import pandas as pd
-
+from enum import Enum
 from .assets import Asset
-from .utils.enum import enum
-from ._protocol import BarData, InnerPosition  # noqa
+from ._protocol import BarData as BarData, InnerPosition  # noqa
 
 
 class MutableView(object):
@@ -48,8 +47,9 @@ class MutableView(object):
 
 # Datasource type should completely determine the other fields of a
 # message with its type.
-DATASOURCE_TYPE = enum(
-    'AS_TRADED_EQUITY',
+DATASOURCE_TYPE = Enum(
+    'DATASOURCE_TYPE',
+    ['AS_TRADED_EQUITY',
     'MERGER',
     'SPLIT',
     'DIVIDEND',
@@ -61,7 +61,7 @@ DATASOURCE_TYPE = enum(
     'CUSTOM',
     'BENCHMARK',
     'COMMISSION',
-    'CLOSE_POSITION'
+    'CLOSE_POSITION']
 )
 
 # Expected fields/index values for a dividend Series.
@@ -112,26 +112,39 @@ class Portfolio(object):
     """Object providing read-only access to current portfolio state.
     Available in algorithms via `context.portfolio`.
 
-    Parameters
-    ----------
-    start_date : pd.Timestamp
-        The start date for the period being recorded.
-    capital_base : float
-        The starting value for the portfolio. This will be used as the starting
-        cash, current cash, and portfolio value.
-
     Attributes
     ----------
     positions : dict-like of :class:`zipline.assets.Asset` to :class:`zipline.protocol.Position`
         Dict-like object where the keys are assets and the values contain information about the
         currently-held position for that asset.
+
     cash : float
         Amount of cash currently held in portfolio.
+
+    cash_flow : float
+        The change in cash over the lifetime of the portfolio.
+
     portfolio_value : float
         Current liquidation value of the portfolio's holdings.
         This is equal to ``cash + sum(shares * price)``
+
     starting_cash : float
         Amount of cash in the portfolio at the start of the backtest.
+
+    positions_value : float
+        The net value of all positions in the portfolio.
+
+    positions_exposure : float
+        The net exposure of all positions in the portfolio.
+
+    start_date : pd.Timestamp
+        The start date for the period being recorded.
+
+    pnl : float
+        The portfolio's profit and loss for the period being recorded.
+
+    returns : float
+        The portfolio's returns for the period being recorded.
     """
 
     def __init__(
@@ -139,20 +152,38 @@ class Portfolio(object):
         start_date: pd.Timestamp = None,
         capital_base: float = 0.0
         ):
-        self_ = MutableView(self)
-        self_.cash_flow = 0.0
-        self_.starting_cash = capital_base
-        self_.portfolio_value = capital_base
-        self_.pnl = 0.0
-        self_.returns = 0.0
-        self_.cash = capital_base
-        self_.positions = Positions()
-        self_.start_date = start_date
-        self_.positions_value = 0.0
-        self_.positions_exposure = 0.0
+        self = MutableView(self)
+        self.cash_flow: float = 0.0
+        """The change in cash over the lifetime of the portfolio."""
+        self.starting_cash: float = capital_base
+        """Amount of cash in the portfolio at the start of the backtest."""
+        self.portfolio_value: float = capital_base
+        """Current liquidation value of the portfolio's holdings. This is equal to ``cash + sum(shares * price)``"""
+        self.pnl: float = 0.0
+        """The portfolio's profit and loss for the period being recorded."""
+        self.returns: float = 0.0
+        """The portfolio's returns for the period being recorded."""
+        self.cash: float = capital_base
+        """Amount of cash currently held in portfolio."""
+        self.positions: dict[Asset, Position] = Positions()
+        """
+        Dict-like object where the keys are assets and the values contain
+        information about the currently-held position for that asset.
+
+        Examples
+        --------
+        >>> for asset, position in context.portfolio.positions.items():
+        ...     print(asset, position.amount)
+        """
+        self.start_date: pd.Timestamp = start_date
+        """The start date for the period being recorded."""
+        self.positions_value: float = 0.0
+        """The net value of all positions in the portfolio."""
+        self.positions_exposure: float = 0.0
+        """The net exposure of all positions in the portfolio."""
 
     @property
-    def capital_used(self):
+    def capital_used(self) -> float:
         return self.cash_flow
 
     def __setattr__(self, attr, value):
@@ -162,7 +193,7 @@ class Portfolio(object):
         return "Portfolio({0})".format(self.__dict__)
 
     @property
-    def current_portfolio_weights(self):
+    def current_portfolio_weights(self) -> 'pd.Series[float]':
         """
         Compute each asset's weight in the portfolio by calculating its held
         value divided by the total value of all positions.
@@ -170,6 +201,11 @@ class Portfolio(object):
         Each equity's value is its price times the number of shares held. Each
         futures contract's value is its unit price times number of shares held
         times the multiplier.
+
+        Returns
+        -------
+        weights : pd.Series[float]
+            Series mapping each asset to its weight in the portfolio.
         """
         position_values = pd.Series({
             asset: (
@@ -195,16 +231,20 @@ class Account(object):
     Attributes
     ----------
     settled_cash : float
+        the amount of settled cash in the account
 
     accrued_interest : float
 
     buying_power : float
 
     equity_with_loan : float
+        the portfolio value plus any cash in the account
 
     total_positions_value : float
+        the value of all positions
 
     total_positions_exposure : float
+        the total exposure of all positions in the portfolio
 
     regt_equity : float
 
@@ -223,31 +263,43 @@ class Account(object):
     day_trades_remaining : float
 
     leverage : float
+        the gross leverage of the account, that is, the gross value of all positions
+        divided by the account value
 
     net_leverage : float
+        the net leverage of the account, that is, the net value of all positions
+        divided by the account value
 
     net_liquidation : float
+        the total account value
     """
 
     def __init__(self):
-        self_ = MutableView(self)
-        self_.settled_cash = 0.0
-        self_.accrued_interest = 0.0
-        self_.buying_power = float('inf')
-        self_.equity_with_loan = 0.0
-        self_.total_positions_value = 0.0
-        self_.total_positions_exposure = 0.0
-        self_.regt_equity = 0.0
-        self_.regt_margin = float('inf')
-        self_.initial_margin_requirement = 0.0
-        self_.maintenance_margin_requirement = 0.0
-        self_.available_funds = 0.0
-        self_.excess_liquidity = 0.0
-        self_.cushion = 0.0
-        self_.day_trades_remaining = float('inf')
-        self_.leverage = 0.0
-        self_.net_leverage = 0.0
-        self_.net_liquidation = 0.0
+        self = MutableView(self)
+        self.settled_cash: float = 0.0
+        """The amount of settled cash in the account."""
+        self.accrued_interest: float = 0.0
+        self.buying_power: float = float('inf')
+        self.equity_with_loan: float = 0.0
+        """The portfolio value plus any cash in the account."""
+        self.total_positions_value: float = 0.0
+        """The value of all positions."""
+        self.total_positions_exposure: float = 0.0
+        """The total exposure of all positions in the portfolio."""
+        self.regt_equity: float = 0.0
+        self.regt_margin: float = float('inf')
+        self.initial_margin_requirement: float = 0.0
+        self.maintenance_margin_requirement: float = 0.0
+        self.available_funds: float = 0.0
+        self.excess_liquidity: float = 0.0
+        self.cushion: float = 0.0
+        self.day_trades_remaining: float = float('inf')
+        self.leverage: float = 0.0
+        """The gross leverage of the account, that is, the gross value of all positions divided by the account value."""
+        self.net_leverage: float = 0.0
+        """The net leverage of the account, that is, the net value of all positions divided by the account value."""
+        self.net_liquidation: float = 0.0
+        """The total account value."""
 
     def __setattr__(self, attr, value):
         raise AttributeError('cannot mutate Account objects')
@@ -263,13 +315,17 @@ class Position(object):
     ----------
     asset : zipline.assets.Asset
         The held asset.
+
     amount : int
         Number of shares held. Short positions are represented with negative
         values.
+
     cost_basis : float
         Average price at which currently-held shares were acquired.
+
     last_sale_price : float
         Most recent price for the position.
+
     last_sale_date : pd.Timestamp
         Datetime at which ``last_sale_price`` was last updated.
     """
@@ -278,6 +334,19 @@ class Position(object):
     def __init__(self, underlying_position):
         object.__setattr__(self, '_underlying_position', underlying_position)
 
+        if TYPE_CHECKING:
+            self.asset: Asset = None
+            """The held asset."""
+            self.amount: int = 0
+            """Number of shares held. Short positions are represented with negative
+            values."""
+            self.cost_basis: float = 0.0
+            """Average price at which currently-held shares were acquired."""
+            self.last_sale_price: float = 0.0
+            """Most recent price for the position."""
+            self.last_sale_date: pd.Timestamp = None
+            """Datetime at which ``last_sale_price`` was last updated."""
+
     def __getattr__(self, attr):
         return getattr(self._underlying_position, attr)
 
@@ -285,8 +354,10 @@ class Position(object):
         raise AttributeError('cannot mutate Position objects')
 
     @property
-    def sid(self):
-        # for backwards compatibility
+    def sid(self) -> Asset:
+        """
+        Alias for ``asset`` for backwards compatibility.
+        """
         return self.asset
 
     def __repr__(self):

@@ -154,7 +154,7 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
 
         Parameters
         ----------
-        data : zipline.protocol.BarData
+        data : zipline.api.BarData
             The data for the given bar.
         order : zipline.finance.order.Order
             The order to simulate.
