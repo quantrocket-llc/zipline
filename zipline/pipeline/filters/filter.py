@@ -809,7 +809,11 @@ class ArrayPredicate(SingleInputMixin, Filter):
 
 class Latest(LatestMixin, CustomFilter):
     """
-    Filter producing the most recently-known value of `inputs[0]` on each day.
+    Filter producing the most recently-known value of the input term on each day.
+
+    See Also
+    --------
+    zipline.pipeline.data.dataset.BoundColumn.latest
     """
     pass
 
@@ -899,7 +903,7 @@ class StaticAssets(Filter):
 
 class StaticSids(Filter):
     """
-    A filter limiting to specific sids.
+    A Filter that computes True for a specific set of predetermined sids.
 
     Parameters
     ----------
@@ -931,8 +935,8 @@ class StaticSids(Filter):
 
 class StaticUniverse(StaticSids):
     """
-    A filter limiting to assets that are members of a universe defined
-    in the securities master database.
+    A Filter that computes True for assets that are members of a specific
+    universe defined in the securities master database.
 
     Parameters
     ----------

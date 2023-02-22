@@ -12,6 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Zipline: An Algorithmic Trading Library
+
+Packages
+--------
+zipline.api
+    The public API for writing trading algorithms in Zipline.
+
+zipline.pipeline
+    An API for filtering and performing computations on large universes
+    of securities.
+
+zipline.research
+    The public API for working with Zipline in Jupyter notebooks.
+"""
 import os
 import numpy as np
 
@@ -73,15 +88,11 @@ if os.name == 'nt':
     del _
 
 __all__ = [
-    'Blotter',
-    'TradingAlgorithm',
     'api',
+    'pipeline',
+    'research',
     'data',
     'finance',
-    'get_calendar',
-    'gens',
-    'utils',
-    'extension_args'
 ]
 
 

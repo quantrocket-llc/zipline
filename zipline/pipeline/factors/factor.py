@@ -2263,7 +2263,7 @@ class RecarrayField(SingleInputMixin, Factor):
 
 class Latest(LatestMixin, CustomFactor):
     """
-    Factor producing the most recently-known value of `inputs[0]` on each day.
+    Factor producing the most recently-known value of the input term on each day.
 
     The `.latest` attribute of DataSet columns returns an instance of this
     Factor.

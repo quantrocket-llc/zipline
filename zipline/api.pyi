@@ -1,3 +1,157 @@
+"""
+Zipline Algorithm API.
+
+The functions in this module are intended to be used within the context of
+a Zipline algorithm. To use Zipline outside of the context of an algorithm,
+see the `zipline.research` and `zipline.pipeline` modules.
+
+Functions
+---------
+attach_pipeline
+    Register a pipeline to be computed at the start of each day.
+
+batch_market_order
+    Place a batch market order for multiple assets.
+
+cancel_order
+    Cancel an open order.
+
+continuous_future
+    Create a continuous future from a specified root symbol.
+
+future_symbol
+    Lookup a futures contract with a given symbol.
+
+get_datetime
+    Get the current simulation datetime.
+
+get_environment
+    Query the execution environment (such as the date range, data frequency,
+    and whether a backtest or live trading is running).
+
+get_open_orders
+    Retrieve all of the current open orders.
+
+get_order
+    Lookup an order based on the order id returned from one of the
+    order functions.
+
+order
+    Place an order.
+
+order_percent
+    Place an order in the specified asset corresponding to the given
+    percent of the current portfolio value.
+
+order_target
+    Place an order to adjust a position to a target number of shares.
+
+order_target_percent
+    Place an order to adjust a position to a target percent of the
+    current portfolio value.
+
+order_target_value
+    Place an order to adjust a position to a target value.
+
+order_value
+    Place an order for a fixed amount of money.
+
+pipeline_output
+    Get the results of a pipeline specified by name.
+
+record
+    Track and record values each day.
+
+schedule_function
+    Schedule a function to be called repeatedly in the future.
+
+set_asset_restrictions
+    Set a restriction on which assets can be ordered.
+
+set_benchmark
+    Set the benchmark asset.
+
+set_cancel_policy
+    Set the order cancellation policy for the simulation.
+
+set_commission
+    Set the commission models for the simulation.
+
+set_long_only
+    Set a rule specifying that this algorithm cannot take short
+    positions.
+
+set_max_leverage
+    Set a limit on the maximum leverage of the algorithm.
+
+set_max_order_count
+    Set a limit on the number of orders that can be placed in a single
+    day.
+
+set_max_order_size
+    Set a limit on the number of shares and/or dollar value of any single
+    order placed for a specified asset.
+
+set_max_position_size
+    Set a limit on the number of shares and/or dollar value held for a
+    given `asset`.
+
+set_min_leverage
+    Set a limit on the minimum leverage of the algorithm.
+
+set_realtime_db
+    Set the realtime database to use for querying up-to-date minute bars in
+    live trading.
+
+set_slippage
+    Set the slippage models for the simulation.
+
+sid
+    Lookup an Asset by its unique asset identifier.
+
+Classes
+-------
+BarData
+    The data object passed to handle_data(), before_trading_start(), and
+    scheduled functions. Provides methods for accessing minutely and daily
+    price/volume data from Algorithm API functions.
+
+Context
+    The context object passed to initialize(), handle_data(), before_trading_start(), and
+    scheduled functions. Provides access to the account and portfolio as well as any
+    custom variables saved by the user.
+
+date_rules
+    Factories for date-based rules for `zipline.api.schedule_function`.
+
+EODCancel
+    Order cancellation policy that cancels orders at the end of the day.
+
+NeverCancel
+    Order cancellation policy that never cancels orders.
+
+time_rules
+    Factories for time-based rules for `zipline.api.schedule_function`.
+
+Constants
+---------
+ORDER_STATUS
+    numeration of possible order statuses.
+
+Modules
+-------
+asset_restrictions
+    Classes for restricting trading of assets.
+
+commission
+    Commission models for simulations.
+
+execution
+    Execution styles (aka order types) for simulations.
+
+slippage
+    Slippage models for simulations.
+"""
 from typing import Union, Callable, Literal, overload, Any, TypeVar
 import pandas as pd
 from zipline.assets import Asset, Future, ContinuousFuture
@@ -270,7 +424,7 @@ def continuous_future(
     roll: Literal["volume", "calendar"] = "volume",
     adjustment: Literal["mul", "add", None] = "mul",
     ) -> ContinuousFuture:
-    """Create a specifier for a continuous contract.
+    """Create a continuous future from a specified root symbol.
 
     Parameters
     ----------
@@ -322,17 +476,17 @@ def future_symbol(symbol: str) -> Future:
 
 def get_datetime(tz: str = None) -> pd.Timestamp:
     """
-Returns the current simulation datetime.
+    Get the current simulation datetime.
 
-Parameters
-----------
-tz : tzinfo or str, optional
-    The timezone to return the datetime in. This defaults to utc.
+    Parameters
+    ----------
+    tz : tzinfo or str, optional
+        The timezone to return the datetime in. This defaults to utc.
 
-Returns
--------
-dt : datetime
-    The current simulation datetime converted to ``tz``.
+    Returns
+    -------
+    dt : datetime
+        The current simulation datetime converted to ``tz``.
     """
 
 @overload
@@ -826,7 +980,7 @@ def set_realtime_db(
     fields: dict[str, str] = {}
     ) -> None:
     """
-    Sets the realtime database to use for querying up-to-date minute bars in
+    Set the realtime database to use for querying up-to-date minute bars in
     live trading.
 
     Parameters
@@ -1113,7 +1267,7 @@ def set_benchmark(benchmark: Asset) -> None:
     """
 
 def set_cancel_policy(cancel_policy: cancel_policy.CancelPolicy) -> None:
-    """Sets the order cancellation policy for the simulation.
+    """Set the order cancellation policy for the simulation.
 
     Parameters
     ----------
@@ -1128,9 +1282,10 @@ def set_cancel_policy(cancel_policy: cancel_policy.CancelPolicy) -> None:
 
 class EODCancel:
     """
-    This policy cancels open orders at the end of the day. This is the default
-    policy and does not need to be explicitly set. In live trading, this cancel
-    policy will cause orders to be submitted with a Tif (time-in-force) of DAY.
+    Order cancellation policy that cancels orders at the end of the day. This is
+    the default policy and does not need to be explicitly set. In live trading,
+    this cancel policy will cause orders to be submitted with a Tif (time-in-force)
+    of DAY.
 
     Parameters
     ----------
@@ -1142,7 +1297,7 @@ class EODCancel:
 
 class NeverCancel:
     """
-    With this policy, orders are never automatically canceled. In live trading, this
+    Order cancellation policy that never cancels orders. In live trading, this
     cancel policy will cause orders to be submitted with a Tif (time-in-force) of GTC
     (Good-till-canceled).
 
@@ -1160,7 +1315,7 @@ def set_commission(
     us_equities: commission.EquityCommissionModel = None,
     us_futures: commission.FutureCommissionModel = None
     ) -> None:
-    """Sets the commission models for the simulation.
+    """Set the commission models for the simulation.
 
     Parameters
     ----------
@@ -1223,7 +1378,7 @@ def set_max_order_size(
     on_error: Literal['fail', 'log'] = 'fail'
     ) -> None:
     """Set a limit on the number of shares and/or dollar value of any single
-    order placed for sid.  Limits are treated as absolute values and are
+    order placed for `asset`.  Limits are treated as absolute values and are
     enforced at the time that the algo attempts to place an order for sid.
 
     If an algorithm attempts to place an order that would result in
@@ -1247,7 +1402,7 @@ def set_max_position_size(
     on_error: Literal['fail', 'log'] = 'fail'
     ) -> None:
     """Set a limit on the number of shares and/or dollar value held for the
-    given sid. Limits are treated as absolute values and are enforced at
+    given `asset`. Limits are treated as absolute values and are enforced at
     the time that the algo attempts to place an order for sid. This means
     that it's possible to end up with more than the max number of shares
     due to splits/dividends, and more than the max notional due to price

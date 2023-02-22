@@ -11,6 +11,30 @@ class EquityPricing(DataSet):
     """
     :class:`~zipline.pipeline.data.DataSet` containing daily trading prices and
     volumes.
+
+    Attributes
+    ----------
+    open : float64
+        The opening price of the asset for the day.
+
+    high : float64
+        The highest trade price of the asset for the day.
+
+    low : float64
+        The lowest trade price of the asset for the day.
+
+    close : float64
+        The closing price of the asset for the day.
+
+    volume : float64
+        The volume of shares traded for the asset for the day.
+
+    Examples
+    --------
+    Get a Pipeline factor that returns the closing price:
+
+    >>> from zipline.pipeline import EquityPricing
+    >>> close_price = EquityPricing.close.latest
     """
     open: BoundFloatColumn = Column(float64_dtype, currency_aware=True)
     high: BoundFloatColumn = Column(float64_dtype, currency_aware=True)

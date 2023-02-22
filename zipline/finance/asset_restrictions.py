@@ -1,3 +1,26 @@
+"""
+Classes for restricting trading of assets.
+
+Classes
+-------
+Restrictions
+    Abstract restricted list interface, representing a set of assets that an
+    algorithm is restricted from trading.
+
+NoRestrictions
+    A no-op restrictions that contains no restrictions.
+
+StaticRestrictions
+    Static restrictions that are constant regardless of datetime for each asset.
+
+HistoricalRestrictions
+    Historical restrictions with effective dates for each asset.
+
+Constants
+----------
+RESTRICTION_STATES
+    Enumeration of possible restriction states.
+"""
 import abc
 from typing import Union
 from numpy import vectorize
@@ -12,16 +35,28 @@ from zipline.utils.numpy_utils import vectorized_is_element
 from zipline.assets import Asset
 
 
+__all__ = [
+    'Restrictions',
+    'NoRestrictions',
+    'StaticRestrictions',
+    'HistoricalRestrictions',
+    'RESTRICTION_STATES',
+]
+
 Restriction = namedtuple(
     'Restriction', ['asset', 'effective_date', 'state']
 )
 
 
-RESTRICTION_STATES = Enum(
-    'RESTRICTION_STATES',
-    ['ALLOWED',
-    'FROZEN',]
-)
+class RESTRICTION_STATES(Enum):
+    """
+    Enumeration of possible restriction states. Possible choices:
+
+    - RESTRICTION_STATES.ALLOWED
+    - RESTRICTION_STATES.FROZEN
+    """
+    ALLOWED = 0
+    FROZEN = 1
 
 
 class Restrictions(with_metaclass(abc.ABCMeta)):

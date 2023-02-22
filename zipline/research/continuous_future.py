@@ -31,7 +31,7 @@ def continuous_future(
     bundle: str = None
     ) -> ContinuousFuture:
     """
-    Return a ContinuousFuture object for the specified root symbol in the specified bundle
+    Return a `zipline.assets.ContinuousFuture` object for the specified root symbol in the specified bundle
     (or default bundle).
 
     Parameters

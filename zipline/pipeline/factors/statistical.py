@@ -222,8 +222,8 @@ class RollingLinearRegression(CustomFactor):
 
 class RollingPearsonOfReturns(RollingPearson):
     """
-    Calculates the Pearson product-moment correlation coefficient of the
-    returns of the given asset with the returns of all other assets.
+    Factor that calculates the Pearson product-moment correlation coefficient
+    of the returns of the given asset with the returns of all other assets.
 
     Pearson correlation is what most people mean when they say "correlation
     coefficient" or "R-value".
@@ -315,8 +315,8 @@ class RollingPearsonOfReturns(RollingPearson):
 
 class RollingSpearmanOfReturns(RollingSpearman):
     """
-    Calculates the Spearman rank correlation coefficient of the returns of the
-    given asset with the returns of all other assets.
+    Factor that calculates the Spearman rank correlation coefficient of the
+    returns of the given asset with the returns of all other assets.
 
     Parameters
     ----------
@@ -365,8 +365,8 @@ class RollingSpearmanOfReturns(RollingSpearman):
 
 class RollingLinearRegressionOfReturns(RollingLinearRegression):
     """
-    Perform an ordinary least-squares regression predicting the returns of all
-    other assets on the given asset.
+    Factor that performs an ordinary least-squares regression predicting the
+    returns of all other assets on the given asset.
 
     Parameters
     ----------

@@ -24,7 +24,7 @@ from quantrocket.zipline import get_default_bundle
 
 def sid(sid: str, bundle: str = None) -> Asset:
     """
-    Return an Asset object for the specified sid in the specified bundle
+    Return a `zipline.assets.Asset` object for the specified sid in the specified bundle
     (or default bundle).
 
     Parameters

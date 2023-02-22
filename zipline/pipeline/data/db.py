@@ -13,7 +13,13 @@
 # limitations under the License.
 
 from typing import Sequence
-from zipline.pipeline.data import DataSet, Column as Column # re-export
+from zipline.pipeline.data import DataSet, Column
+
+Column = Column # re-export and customize docstring
+"""
+A Pipeline column representing a single field of a database queryable with
+`quantrocket.get_prices`.
+"""
 
 class Database(DataSet):
     """

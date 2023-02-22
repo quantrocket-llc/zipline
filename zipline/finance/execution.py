@@ -12,7 +12,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Execution styles (aka order types) for simulations.
 
+Classes
+-------
+ExecutionStyle
+    Base class for order execution styles.
+
+MarketOrder
+    Execution style for orders to be filled at current market price.
+
+LimitOrder
+    Execution style for orders to be filled at a price equal to or better than
+    a specified limit price.
+
+StopOrder
+    Execution style representing a market order to be placed if market price
+    reaches a threshold.
+
+StopLimitOrder
+    Execution style representing a limit order to be placed if market price
+    reaches a threshold.
+"""
 import abc
 from typing import Union
 from sys import float_info
@@ -22,6 +44,14 @@ import zipline.utils.math_utils as zp_math
 from zipline.errors import BadOrderParameters
 from zipline.utils.compat import consistent_round
 from zipline.assets import Asset
+
+__all__ = [
+    'ExecutionStyle',
+    'MarketOrder',
+    'LimitOrder',
+    'StopOrder',
+    'StopLimitOrder',
+]
 
 class ExecutionStyle(with_metaclass(abc.ABCMeta)):
     """Base class for order execution styles.

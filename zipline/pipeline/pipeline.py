@@ -18,7 +18,7 @@ from .term import AssetExists, ComputableTerm, Term
 class Pipeline(object):
     """
     A Pipeline object represents a collection of named expressions to be
-    compiled and executed by a PipelineEngine.
+    compiled and executed.
 
     A Pipeline has two important attributes: 'columns', a dictionary of named
     :class:`~zipline.pipeline.Term` instances, and 'screen', a

@@ -41,6 +41,9 @@ def run_pipeline(
     Compute values for pipeline from start_date to end_date, using the specified
     bundle or the default bundle.
 
+    This function can be used to run pipelines outside of the context of an algorithm.
+    Inside an algorithm, pipelines are run automatically.
+
     Parameters
     ----------
     pipeline : Pipeline, required
@@ -225,8 +228,9 @@ def get_forward_returns(
     bundle: str = None
     ) -> pd.DataFrame:
     """
-    Get forward returns for the dates and assets in ``factor``, calculated
-    over the given periods.
+    Get forward returns for the dates and assets in the input ``factor``
+    (typically the output of `run_pipeline`), calculated over the given
+    periods.
 
     Parameters
     ----------

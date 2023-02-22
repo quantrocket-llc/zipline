@@ -18,6 +18,15 @@ from zipline.assets import Asset
 from enum import Enum
 
 class ORDER_STATUS(Enum):
+    """
+    Enumeration of possible order statuses. Possible choices:
+
+    - ORDER_STATUS.OPEN
+    - ORDER_STATUS.FILLED
+    - ORDER_STATUS.CANCELLED
+    - ORDER_STATUS.REJECTED
+    - ORDER_STATUS.HELD
+    """
     OPEN = 0
     FILLED = 1
     CANCELLED = 2

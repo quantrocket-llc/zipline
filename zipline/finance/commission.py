@@ -12,6 +12,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Commission models for simulations.
+
+Classes
+-------
+CommissionModel
+    Abstract base class for commission models.
+
+PerShare
+    Calculates a commission for a transaction based on a per share cost with
+    an optional minimum cost per trade.
+
+PerTrade
+    Calculates a commission for a transaction based on a per trade cost.
+
+PerDollar
+    Model commissions by applying a fixed cost per dollar transacted.
+
+PerContract
+    Calculates a commission for a transaction based on a per contract cost with
+    an optional minimum cost per trade.
+
+PerFutureTrade
+    Calculates a commission for a transaction based on a per trade cost.
+"""
 from abc import abstractmethod
 from typing import Union
 from collections import defaultdict
@@ -25,6 +50,15 @@ from zipline.finance.shared import AllowedAssetMarker, FinancialModelMeta
 from zipline.utils.dummy import DummyMapping
 
 DEFAULT_PER_CONTRACT_COST = 0.85             # $0.85 per future contract
+
+__all__ = [
+    'CommissionModel',
+    'PerShare',
+    'PerTrade',
+    'PerDollar',
+    'PerContract',
+    'PerFutureTrade',
+]
 
 class CommissionModel(with_metaclass(FinancialModelMeta)):
     """Abstract base class for commission models.

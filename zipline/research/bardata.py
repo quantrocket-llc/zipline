@@ -31,7 +31,7 @@ def get_data(
     data_frequency: str = None
     ) -> BarData:
     """
-    Return a zipline.api.BarData object for the specified bundle (or default bundle)
+    Return a `zipline.api.BarData` object for the specified bundle (or default bundle)
     as of the specified datetime. This is the same object that is passed
     as the `data` parameter to `handle_data` and other backtest functions.
 

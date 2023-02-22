@@ -12,6 +12,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Slippage models for simulations.
+
+Classes
+-------
+SlippageModel
+    Abstract base class for slippage models.
+
+FixedSlippage
+    Simple model assuming a fixed-size spread for all assets.
+
+FixedBasisPointsSlippage
+    Model slippage as a fixed percentage difference from historical minutely
+    close price, limiting the size of fills to a fixed percentage of historical
+    minutely volume.
+
+NoSlippage
+    A slippage model where all orders fill immediately and completely at the
+    current close price.
+
+VolumeShareSlippage
+    Model slippage as a quadratic function of percentage of historical volume.
+
+VolatilityVolumeShare
+    Model slippage for futures contracts using a market impact model.
+"""
 from __future__ import division
 
 from typing import Union
@@ -42,6 +68,14 @@ SQRT_252 = math.sqrt(252)
 
 DEFAULT_FUTURE_VOLUME_SLIPPAGE_BAR_LIMIT = 0.05
 
+__all__ = [
+    'SlippageModel',
+    'FixedSlippage',
+    'FixedBasisPointsSlippage',
+    'NoSlippage',
+    'VolumeShareSlippage',
+    'VolatilityVolumeShare',
+]
 
 class LiquidityExceeded(Exception):
     pass

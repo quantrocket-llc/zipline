@@ -46,7 +46,7 @@ from .basic import (  # noqa reexport
 
 class RSI(SingleInputMixin, CustomFactor):
     """
-    Relative Strength Index
+    Factor that calculates Relative Strength Index.
 
     **Default Inputs**: :data:`zipline.pipeline.data.EquityPricing.close`
 
@@ -90,7 +90,7 @@ class RSI(SingleInputMixin, CustomFactor):
 
 class BollingerBands(CustomFactor):
     """
-    Bollinger Bands technical indicator.
+    Factor that calculates Bollinger Bands technical indicator.
     https://en.wikipedia.org/wiki/Bollinger_Bands
 
     **Default Inputs:** :data:`zipline.pipeline.data.EquityPricing.close`
@@ -135,7 +135,7 @@ class BollingerBands(CustomFactor):
 
 class Aroon(CustomFactor):
     """
-    Aroon technical indicator.
+    Factor that calculates Aroon technical indicator.
     https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/aroon-indicator
 
     **Defaults Inputs:** :data:`zipline.pipeline.data.EquityPricing.low`, \
@@ -182,7 +182,7 @@ class Aroon(CustomFactor):
 
 class FastStochasticOscillator(CustomFactor):
     """
-    Fast Stochastic Oscillator Indicator [%K, Momentum Indicator]
+    Factor that calculates Fast Stochastic Oscillator Indicator [%K, Momentum Indicator].
     https://wiki.timetotrade.eu/Stochastic
 
     This stochastic is considered volatile, and varies a lot when used in
@@ -235,7 +235,9 @@ class FastStochasticOscillator(CustomFactor):
 
 
 class IchimokuKinkoHyo(CustomFactor):
-    """Compute the various metrics for the Ichimoku Kinko Hyo (Ichimoku Cloud).
+    """
+    Factor that calculates the various metrics for the Ichimoku Kinko Hyo
+    (Ichimoku Cloud).
     http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:ichimoku_cloud
 
     **Default Inputs:** :data:`zipline.pipeline.data.EquityPricing.high`, \
@@ -326,9 +328,10 @@ class IchimokuKinkoHyo(CustomFactor):
 
 class RateOfChangePercentage(CustomFactor):
     """
-    Rate of change Percentage (ROC) measures the percentage change in
-    price from one period to the next. The ROC calculation compares the
-    current price with the price `n` periods ago.
+    Factor that calculates Rate of change Percentage (ROC), a technical
+    indicator that measures the percentage change in price from one period
+    to the next. The ROC calculation compares the current price with the
+    price `n` periods ago.
 
     Formula for calculation: ((price - prevPrice) / prevPrice) * 100
 
@@ -377,7 +380,7 @@ class RateOfChangePercentage(CustomFactor):
 
 class TrueRange(CustomFactor):
     """
-    True Range
+    Factor that calculates True Range.
 
     A technical indicator originally developed by J. Welles Wilder, Jr.
     Indicates the true degree of daily price change in an underlying.
@@ -424,8 +427,8 @@ class TrueRange(CustomFactor):
 
 class MACDSignal(CustomFactor):
     """
-    Moving Average Convergence/Divergence (MACD) Signal line
-    https://en.wikipedia.org/wiki/MACD
+    Factor that calculates Moving Average Convergence/Divergence (MACD)
+    Signal line. https://en.wikipedia.org/wiki/MACD
 
     A technical indicator originally developed by Gerald Appel in the late
     1970's. MACD shows the relationship between two moving averages and

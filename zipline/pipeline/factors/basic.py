@@ -41,7 +41,7 @@ from ..mixins import SingleInputMixin
 
 class Returns(CustomFactor):
     """
-    Calculates the percent change in close price over the given window_length.
+    Factor that calculates the percent change in close price over the given window_length.
 
     **Default Inputs**: EquityPricing.close
 
@@ -100,7 +100,7 @@ class Returns(CustomFactor):
 
 class PercentChange(SingleInputMixin, CustomFactor):
     """
-    Calculates the percent change over the given window_length.
+    Factor that calculates the percent change over the given window_length.
 
     **Default Inputs:** None
 
@@ -149,7 +149,7 @@ class PercentChange(SingleInputMixin, CustomFactor):
 
 class DailyReturns(Returns):
     """
-    Calculates daily percent change in close price.
+    Factor that calculates daily percent change in close price.
 
     **Default Inputs**: [EquityPricing.close]
 
@@ -176,7 +176,7 @@ class DailyReturns(Returns):
 
 class SimpleMovingAverage(SingleInputMixin, CustomFactor):
     """
-    Average Value of an arbitrary column
+    Factor that calculates average value of an arbitrary column.
 
     **Default Inputs**: None
 
@@ -226,7 +226,7 @@ class WeightedAverageValue(CustomFactor):
 
 class VWAP(WeightedAverageValue):
     """
-    Volume Weighted Average Price
+    Factor that calculates volume-weighted average price.
 
     **Default Inputs:** [EquityPricing.close, EquityPricing.volume]
 
@@ -254,7 +254,7 @@ class VWAP(WeightedAverageValue):
 
 class MaxDrawdown(SingleInputMixin, CustomFactor):
     """
-    Max Drawdown
+    Factor that calculates maximum drawdown.
 
     **Default Inputs:** None
 
@@ -296,7 +296,7 @@ class MaxDrawdown(SingleInputMixin, CustomFactor):
 
 class AverageDollarVolume(CustomFactor):
     """
-    Average Daily Dollar Volume
+    Factor that calculates average daily dollar volume.
 
     **Default Inputs:** [EquityPricing.close, EquityPricing.volume]
 
@@ -513,7 +513,7 @@ class _ExponentialWeightedFactor(SingleInputMixin, CustomFactor):
 
 class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
     """
-    Exponentially Weighted Moving Average
+    Factor that calculates exponentially-weighted moving average.
 
     **Default Inputs:** None
 
@@ -566,7 +566,7 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
 
 class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
     """
-    Exponentially Weighted Moving Standard Deviation
+    Factor that calculates exponentially-weighted moving standard deviation.
 
     **Default Inputs:** None
 
@@ -623,7 +623,7 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
 
 class LinearWeightedMovingAverage(SingleInputMixin, CustomFactor):
     """
-    Weighted Average Value of an arbitrary column
+    Factor that calculates weighted average value of an arbitrary column.
 
     **Default Inputs**: None
 
@@ -672,9 +672,9 @@ class LinearWeightedMovingAverage(SingleInputMixin, CustomFactor):
 
 class AnnualizedVolatility(CustomFactor):
     """
-    Volatility. The degree of variation of a series over time as measured by
-    the standard deviation of daily returns.
-    https://en.wikipedia.org/wiki/Volatility_(finance)
+    Factor that calculates annualized volatility, the degree of variation
+    of a series over time as measured by the standard deviation of daily
+    returns. https://en.wikipedia.org/wiki/Volatility_(finance)
 
     **Default Inputs:** [Returns(window_length=2)]
 
@@ -706,8 +706,9 @@ class AnnualizedVolatility(CustomFactor):
 
 class PeerCount(SingleInputMixin, CustomFactor):
     """
-    Peer Count of distinct categories in a given classifier.  This factor
-    is returned by the classifier instance method peer_count()
+    Factor that calculates peer count of distinct categories in a given
+    classifier.  This factor is returned by the classifier instance method
+    peer_count()
 
     **Default Inputs:** None
 
@@ -743,7 +744,7 @@ EWMSTD = ExponentialWeightedMovingStdDev
 
 class Clip(CustomFactor):
     """
-    Clip (limit) the values in a factor.
+    Factor that clips (limits) the values in a factor.
 
     Given an interval, values outside the interval are clipped to the interval
     edges. For example, if an interval of ``[0, 1]`` is specified, values
