@@ -162,6 +162,7 @@ from zipline.finance import (
     slippage,
     cancel_policy
 )
+from zipline.finance.cancel_policy import NeverCancel, EODCancel
 from zipline.finance.order import ORDER_STATUS
 from zipline.pipeline import Pipeline
 from zipline.protocol import Account, Portfolio

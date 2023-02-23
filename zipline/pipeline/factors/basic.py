@@ -97,6 +97,41 @@ class Returns(CustomFactor):
     def compute(self, today, assets, out, close, exclude_window_length):
         out[:] = (close[-1 - exclude_window_length] - close[0]) / close[0]
 
+class Shift(SingleInputMixin, CustomFactor):
+    """
+    Factor that returns the input shifted forward the specified number of periods.
+
+    **Default Inputs:** None
+
+    **Default Window Length:** None
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression to shift.
+
+    window_length : int >= 2
+        Length of the lookback window over which to shift. A window length of 2
+        means that the output will be the input shifted forward by 1 period.
+
+    See Also
+    --------
+    zipline.pipeline.Factor.shift
+    """
+    window_safe = True
+
+    def _validate(self):
+        super()._validate()
+        if self.window_length < 2:
+            raise ValueError(
+                "'Shift' expected a window length"
+                "of at least 2, but was given {window_length}. "
+                "To shift one period, use a window "
+                "length of 2.".format(window_length=self.window_length)
+            )
+
+    def compute(self, today, assets, out, values):
+        out[:] = values[0]
 
 class PercentChange(SingleInputMixin, CustomFactor):
     """

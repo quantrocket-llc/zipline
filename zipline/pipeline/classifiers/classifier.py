@@ -580,6 +580,28 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         """
         return super()._where(condition=condition, fill_value=fill_value)
 
+    @expect_types(mask=(Filter, type(None)),)
+    def shift(self, periods: int = 1, mask: Filter = None) -> 'Classifier':
+        """
+        Create a new Classifier that computes the value of this Classifier shifted
+        forward by `periods` rows.
+
+        Parameters
+        ----------
+        periods : int
+            Number of periods to shift forward. Defaults to 1.
+
+        mask : zipline.pipeline.Filter, optional
+            A Filter defining values to ignore when computing shift.
+
+        Returns
+        -------
+        shifted : zipline.pipeline.Classifier
+            A Classifier computing the value of this Classifier shifted forward by
+            `periods` rows.
+        """
+        return Shift(inputs=[self], window_length=periods + 1, mask=mask, dtype=self.dtype)
+
 class Everything(Classifier):
     """
     A trivial classifier that classifies everything the same.
@@ -722,6 +744,41 @@ class Latest(LatestMixin, CustomClassifier):
     """
     pass
 
+class Shift(CustomClassifier, SingleInputMixin):
+    """
+    Classifier that returns the input shifted forward the specified number of periods.
+
+    **Default Inputs:** None
+
+    **Default Window Length:** None
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression to shift.
+
+    window_length : int >= 2
+        Length of the lookback window over which to shift. A window length of 2
+        means that the output will be the input shifted forward by 1 period.
+
+    See Also
+    --------
+    zipline.pipeline.Classifier.shift
+    """
+    window_safe = True
+
+    def _validate(self):
+        super()._validate()
+        if self.window_length < 2:
+            raise ValueError(
+                "'Shift' expected a window length"
+                "of at least 2, but was given {window_length}. "
+                "To shift one period, use a window "
+                "length of 2.".format(window_length=self.window_length)
+            )
+
+    def compute(self, today, assets, out, values):
+        out[:] = values[0]
 
 class InvalidClassifierComparison(TypeError):
     def __init__(self, classifier, compval):

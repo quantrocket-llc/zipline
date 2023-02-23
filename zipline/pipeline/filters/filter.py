@@ -395,6 +395,33 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
             filter=self
         )
 
+    def shift(self, periods: int = 1) -> 'Filter':
+        """
+        Create a new Filter that computes the value of this Filter shifted
+        forward by `periods` rows.
+
+        Parameters
+        ----------
+        periods : int
+            Number of periods to shift forward. Defaults to 1.
+
+        Returns
+        -------
+        shifted : zipline.pipeline.Filter
+            A Filter computing the value of this Filter shifted forward by
+            `periods` rows.
+
+        Examples
+        --------
+        Create a Filter that computes True if the price was higher yesterday
+        than the day before:
+
+        >>> from zipline.pipeline import EquityPricing
+        >>> closed_up = EquityPricing.close.latest.pct_change() > 0
+        >>> closed_up_yesterday = closed_up.shift(1)
+        """
+        return Shift(inputs=[self], window_length=periods + 1)
+
     def all(self, window_length: int, mask: 'Filter' = None) -> 'Filter':
         """
         Create a new Filter that returns True for assets that
@@ -806,6 +833,42 @@ class ArrayPredicate(SingleInputMixin, Filter):
             self.params['op'].__name__,
         )
 
+
+class Shift(CustomFilter, SingleInputMixin, StandardOutputs):
+    """
+    Filter that returns the input shifted forward the specified number of periods.
+
+    **Default Inputs:** None
+
+    **Default Window Length:** None
+
+    Parameters
+    ----------
+    inputs : BoundColumn
+        The expression to shift.
+
+    window_length : int >= 2
+        Length of the lookback window over which to shift. A window length of 2
+        means that the output will be the input shifted forward by 1 period.
+
+    See Also
+    --------
+    zipline.pipeline.Filter.shift
+    """
+    window_safe = True
+
+    def _validate(self):
+        super()._validate()
+        if self.window_length < 2:
+            raise ValueError(
+                "'Shift' expected a window length"
+                "of at least 2, but was given {window_length}. "
+                "To shift one period, use a window "
+                "length of 2.".format(window_length=self.window_length)
+            )
+
+    def compute(self, today, assets, out, values):
+        out[:] = values[0]
 
 class Latest(LatestMixin, CustomFilter):
     """

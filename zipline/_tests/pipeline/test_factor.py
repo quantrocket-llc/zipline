@@ -641,6 +641,11 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
 
         check_allclose(expected, out)
 
+        # repeat using the pct_change method
+        pct_change = EquityPricing.close.latest.pct_change(window_length+1)
+        out = empty((8,), dtype=float)
+        pct_change.compute(today, assets, out, test_data)
+
         with self.assertRaises(ValueError):
             PercentChange(inputs=(), window_length=2)
 

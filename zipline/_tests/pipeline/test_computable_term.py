@@ -20,7 +20,7 @@ class Floats(Factor):
     inputs = ()
     window_length = 0
     dtype = float64_dtype
-
+    window_safe = True
 
 class AltFloats(Factor):
     inputs = ()
@@ -55,7 +55,7 @@ class Strs(Classifier):
     window_length = 0
     dtype = categorical_dtype
     missing_value = None
-
+    window_safe = True
 
 class AltStrs(Classifier):
     inputs = ()
@@ -455,6 +455,43 @@ class WhereTestCase(BaseUSEquityPipelineTestCase):
 
         message = str(cm.exception)
         self.assertEqual(message, "'Bools' object has no attribute 'where'")
+
+    def make_labelarray(self, strs):
+        return LabelArray(strs, missing_value=None)
+
+class ShiftTestCase(BaseUSEquityPipelineTestCase):
+
+    @parameter_space(periods=[1, 2, 3])
+    def test_shift(self, periods):
+        shape = (4, 4)
+        num_cells = shape[0] * shape[1]
+
+        floats = np.arange(num_cells, dtype=float).reshape(shape)
+        strs = np.arange(num_cells).astype(str).astype(object).reshape(shape)
+        bools = floats % 3 == 0
+
+        terms = {
+            'floats': Floats().shift(periods),
+            'strs': Strs().shift(periods),
+            'bools': Bools().shift(periods),
+        }
+
+        expected = {
+            'floats': floats[:-periods],
+            'strs': self.make_labelarray(strs[:-periods]),
+            'bools': bools[:-periods],
+        }
+
+        self.check_terms(
+            terms,
+            expected,
+            initial_workspace={
+                Floats(): floats,
+                Strs(): self.make_labelarray(strs),
+                Bools(): bools,
+            },
+            mask=self.build_mask(self.ones_mask(shape=(4, 4))),
+        )
 
     def make_labelarray(self, strs):
         return LabelArray(strs, missing_value=None)

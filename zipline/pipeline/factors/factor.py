@@ -907,6 +907,71 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(
         mask=(Filter, type(None)),
+    )
+    def shift(self, periods: int = 1, mask: Filter = None) -> 'Factor':
+        """
+        Create a new Factor that computes the value of this Factor shifted
+        forward by `periods` rows.
+
+        Parameters
+        ----------
+        periods : int
+            Number of periods to shift forward. Default is 1.
+
+        mask : zipline.pipeline.Filter, optional
+            A Filter defining values to ignore when computing shift.
+
+        Returns
+        -------
+        shifted : zipline.pipeline.Factor
+            A Factor computing the value of this Factor shifted forward by
+            `periods` rows.
+
+        Examples
+        --------
+        Create a Factor for the prior day's close price:
+
+        >>> from zipline.pipeline import EquityPricing
+        >>> prior_close = EquityPricing.close.latest.shift()
+        """
+        from .basic import Shift
+        return Shift(inputs=[self], window_length=periods + 1, mask=mask)
+
+    @expect_types(
+        mask=(Filter, type(None)),
+    )
+    @float64_only
+    def pct_change(self, periods: int = 1, mask: Filter = None) -> 'Factor':
+        """
+        Create a new Factor that calculates the percent change between the current and
+        prior periods.
+
+        Parameters
+        ----------
+        periods : int, optional
+            Number of periods to shift for forming percent change.
+
+        mask : zipline.pipeline.Filter, optional
+            A Filter defining values to ignore when computing pct_change.
+
+        Returns
+        -------
+        pct_change : zipline.pipeline.Factor
+            A Factor computing the percent change between the current and prior
+            periods.
+
+        Examples
+        --------
+        Create a Factor for the percent change in the closing price:
+
+        >>> from zipline.pipeline import EquityPricing
+        >>> pct_change = EquityPricing.close.latest.pct_change()
+        """
+        from .basic import PercentChange
+        return PercentChange(inputs=[self], window_length=periods + 1, mask=mask)
+
+    @expect_types(
+        mask=(Filter, type(None)),
         groupby=(Classifier, type(None)),
     )
     @float64_only
