@@ -162,7 +162,6 @@ from zipline.finance import (
     slippage,
     cancel_policy
 )
-from zipline.finance.cancel_policy import NeverCancel, EODCancel
 from zipline.finance.order import ORDER_STATUS
 from zipline.pipeline import Pipeline
 from zipline.protocol import Account, Portfolio
@@ -1281,7 +1280,7 @@ def set_cancel_policy(cancel_policy: cancel_policy.CancelPolicy) -> None:
     :class:`zipline.api.NeverCancel`
     """
 
-class EODCancel:
+class EODCancel(cancel_policy.CancelPolicy):
     """
     Order cancellation policy that cancels orders at the end of the day. This is
     the default policy and does not need to be explicitly set. In live trading,
@@ -1296,7 +1295,7 @@ class EODCancel:
     def __init__(self, warn_on_cancel: bool =True):
         ...
 
-class NeverCancel:
+class NeverCancel(cancel_policy.CancelPolicy):
     """
     Order cancellation policy that never cancels orders. In live trading, this
     cancel policy will cause orders to be submitted with a Tif (time-in-force) of GTC
