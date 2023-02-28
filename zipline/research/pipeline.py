@@ -223,7 +223,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     return engine.run_pipeline(pipeline, start_date, end_date)
 
 def get_forward_returns(
-    factor: 'pd.Series[Any]',
+    factor: Union['pd.Series[Any]', 'pd.DataFrame'],
     periods: Union[int, list[int]] = None,
     bundle: str = None
     ) -> pd.DataFrame:
@@ -234,9 +234,9 @@ def get_forward_returns(
 
     Parameters
     ----------
-    factor : pd.Series
-        The factor whose dates and assets to use. The Series should have a
-        MultiIndex of (date, asset), as returned by ``run_pipeline``.
+    factor : pd.Series or pd.DataFrame
+        The factor whose dates and assets to use. The Series or DataFrame
+        should have a MultiIndex of (date, asset), as returned by ``run_pipeline``.
 
     periods : int or list of int
         The period(s) over which to calculate the forward returns.
@@ -291,6 +291,10 @@ def get_forward_returns(
         freq=factor.index.levels[0].freq)
 
     end_date = index_cushion.max()
+
+    # factor might be a Series or a DataFrame, normalize to a DataFrame
+    if isinstance(factor, pd.Series):
+        factor = factor.to_frame()
 
     # a pipeline is allowed to have no columns, but we need a col
     # to unstack
