@@ -136,7 +136,7 @@ time_rules
 Constants
 ---------
 ORDER_STATUS
-    numeration of possible order statuses.
+    enumeration of possible order statuses.
 
 Modules
 -------
