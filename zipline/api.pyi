@@ -733,12 +733,10 @@ def order_target(
     Notes
     -----
     ``order_target`` does not take into account any open orders. For
-    example:
+    example::
 
-    .. code-block:: python
-
-       order_target(sid(0), 10)
-       order_target(sid(0), 10)
+        order_target(sid(0), 10)
+        order_target(sid(0), 10)
 
     This code will result in 20 shares of ``sid(0)`` because the first
     call to ``order_target`` will not have been filled when the second
@@ -796,12 +794,10 @@ def order_target_percent(
     Notes
     -----
     ``order_target_value`` does not take into account any open orders. For
-    example:
+    example::
 
-    .. code-block:: python
-
-       order_target_percent(sid(0), 10)
-       order_target_percent(sid(0), 10)
+        order_target_percent(sid(0), 10)
+        order_target_percent(sid(0), 10)
 
     This code will result in 20% of the portfolio being allocated to sid(0)
     because the first call to ``order_target_percent`` will not have been
@@ -859,12 +855,10 @@ def order_target_value(
     Notes
     -----
     ``order_target_value`` does not take into account any open orders. For
-    example:
+    example::
 
-    .. code-block:: python
-
-       order_target_value(sid(0), 10)
-       order_target_value(sid(0), 10)
+        order_target_value(sid(0), 10)
+        order_target_value(sid(0), 10)
 
     This code will result in 20 dollars of ``sid(0)`` because the first
     call to ``order_target_value`` will not have been filled when the

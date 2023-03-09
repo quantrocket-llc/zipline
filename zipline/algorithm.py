@@ -1717,12 +1717,10 @@ class TradingAlgorithm(object):
         Notes
         -----
         ``order_target`` does not take into account any open orders. For
-        example:
+        example::
 
-        .. code-block:: python
-
-           order_target(asset, 10)
-           order_target(asset, 10)
+            order_target(asset, 10)
+            order_target(asset, 10)
 
         This code will result in 20 shares of ``asset`` because the first
         call to ``order_target`` will not have been filled when the second
@@ -1797,12 +1795,10 @@ class TradingAlgorithm(object):
         Notes
         -----
         ``order_target_value`` does not take into account any open orders. For
-        example:
+        example::
 
-        .. code-block:: python
-
-           order_target_value(asset, 10)
-           order_target_value(asset, 10)
+            order_target_value(asset, 10)
+            order_target_value(asset, 10)
 
         This code will result in 20 dollars of ``asset`` because the first
         call to ``order_target_value`` will not have been filled when the
@@ -1871,12 +1867,10 @@ class TradingAlgorithm(object):
         Notes
         -----
         ``order_target_value`` does not take into account any open orders. For
-        example:
+        example::
 
-        .. code-block:: python
-
-           order_target_percent(asset, 10)
-           order_target_percent(asset, 10)
+            order_target_percent(asset, 10)
+            order_target_percent(asset, 10)
 
         This code will result in 20% of the portfolio being allocated to ``asset``
         because the first call to ``order_target_percent`` will not have been

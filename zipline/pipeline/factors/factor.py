@@ -1512,7 +1512,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
         Examples
         --------
-        .. code-block:: python
+        Given a pipeline with the following columns::
 
             price = USEquityPricing.close.latest
             columns={
@@ -1529,8 +1529,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
             }
 
-        Given a pipeline with columns, defined above, the result for a
-        given day could look like:
+        The result for a given day could look like:
 
         ::
 
@@ -1832,9 +1831,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         -----
         To only clip values on one side, ``-np.inf` and ``np.inf`` may be
         passed.  For example, to only clip the maximum value but not clip a
-        minimum value:
-
-        .. code-block:: python
+        minimum value::
 
            factor.clip(min_bound=-np.inf, max_bound=user_provided_max)
 
@@ -2129,9 +2126,7 @@ class CustomFactor(PositiveWindowLengthMixin, CustomTermMixin, Factor):
     Notes
     -----
     Users implementing their own Factors should subclass CustomFactor and
-    implement a method named `compute` with the following signature:
-
-    .. code-block:: python
+    implement a method named `compute` with the following signature::
 
         def compute(self, today, assets, out, *inputs):
            ...
@@ -2166,9 +2161,7 @@ class CustomFactor(PositiveWindowLengthMixin, CustomTermMixin, Factor):
     Examples
     --------
 
-    A CustomFactor with pre-declared defaults:
-
-    .. code-block:: python
+    A CustomFactor with pre-declared defaults::
 
         class TenDayRange(CustomFactor):
             """
@@ -2194,9 +2187,7 @@ class CustomFactor(PositiveWindowLengthMixin, CustomTermMixin, Factor):
         # pre-declared as defaults for the TenDayRange class.
         ten_day_range = TenDayRange()
 
-    A CustomFactor without defaults:
-
-    .. code-block:: python
+    A CustomFactor without defaults::
 
         class MedianValue(CustomFactor):
             """
@@ -2216,9 +2207,7 @@ class CustomFactor(PositiveWindowLengthMixin, CustomTermMixin, Factor):
         median_close10 = MedianValue([USEquityPricing.close], window_length=10)
         median_low15 = MedianValue([USEquityPricing.low], window_length=15)
 
-    A CustomFactor with multiple outputs:
-
-    .. code-block:: python
+    A CustomFactor with multiple outputs::
 
         class MultipleOutputs(CustomFactor):
             inputs = [USEquityPricing.close]

@@ -743,9 +743,7 @@ class CustomFilter(PositiveWindowLengthMixin, CustomTermMixin, Filter):
     Notes
     -----
     Users implementing their own Filters should subclass CustomFilter and
-    implement a method named ``compute`` with the following signature:
-
-    .. code-block:: python
+    implement a method named ``compute`` with the following signature::
 
         def compute(self, today, assets, out, *inputs):
            ...
