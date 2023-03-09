@@ -453,6 +453,13 @@ def continuous_future(
     -------
     continuous_future : ContinuousFuture
         The continuous future specifier.
+
+    Examples
+    --------
+    Create a continuous future for ES, rolling on volume::
+
+        import zipline.api as algo
+        algo.continuous_future("ES", roll="volume")
     """
 
 def future_symbol(symbol: str) -> Future:
@@ -548,11 +555,11 @@ def get_environment(field):
 
     Examples
     --------
-    Only perform a certain action in live trading:
+    Only perform a certain action in live trading::
 
-    >>> import zipline.api as algo
-    >>> if algo.get_environment("arena") == "trade":    # doctest: +SKIP
-    >>>     ...                                         # doctest: +SKIP
+        import zipline.api as algo
+        if algo.get_environment("arena") == "trade":
+            ...
     """
 
 @overload
@@ -993,9 +1000,9 @@ def set_realtime_db(
 
     Examples
     --------
-    Set the realtime database and map fields:
+    Set the realtime database and map fields::
 
-    >>> algo.set_realtime_db(                 # doctest: +SKIP
+        algo.set_realtime_db(
             "us-stk-tick-1min",
             fields={
                 "close": "LastPriceClose",
@@ -1035,10 +1042,10 @@ def schedule_function(
     Examples
     --------
     Schedule a function called rebalance to run every trading day 30 minutes
-    after the open:
+    after the open::
 
-    >>> import zipline.api as algo
-    >>> algo.schedule_function(                          # doctest: +SKIP
+        import zipline.api as algo
+        algo.schedule_function(
             rebalance,
             algo.date_rules.every_day(),
             algo.time_rules.market_open(minutes=30))
@@ -1248,11 +1255,11 @@ def set_benchmark(benchmark: Asset) -> None:
 
     Examples
     --------
-    Set the benchmark to SPY:
+    Set the benchmark to SPY::
 
-    >>> import zipline.api as algo
-    >>> spy = algo.sid("FIBBG000BDTBL9")    # doctest: +SKIP
-    >>> algo.set_benchmark(spy)             # doctest: +SKIP
+        import zipline.api as algo
+        spy = algo.sid("FIBBG000BDTBL9")
+        algo.set_benchmark(spy)
 
     Notes
     -----
@@ -1297,10 +1304,10 @@ class NeverCancel(cancel_policy.CancelPolicy):
 
     Examples
     --------
-    Set the cancel policy to NeverCancel:
+    Set the cancel policy to NeverCancel::
 
-    >>> from zipline.api import set_cancel_policy, cancel_policy    # doctest: +SKIP
-    >>> def initialize(context):                                    # doctest: +SKIP
+        from zipline.api import set_cancel_policy, cancel_policy
+        def initialize(context):
             set_cancel_policy(cancel_policy.NeverCancel())
     """
     ...
@@ -1325,10 +1332,10 @@ def set_commission(
 
     Examples
     --------
-    Set the equities commission to 0.001 per share:
+    Set the equities commission to 0.001 per share::
 
-    >>> import zipline.api as algo
-    >>> algo.set_commission(algo.commission.PerShare(cost=0.001))    # doctest: +SKIP
+        import zipline.api as algo
+        algo.set_commission(algo.commission.PerShare(cost=0.001))
 
     See Also
     --------
@@ -1446,10 +1453,10 @@ def set_slippage(
 
     Examples
     --------
-    Set the equities slippage to 5 basis points:
+    Set the equities slippage to 5 basis points::
 
-    >>> import zipline.api as algo
-    >>> algo.set_slippage(algo.slippage.FixedBasisPointsSlippage(basis_points=5.0))    # doctest: +SKIP
+        import zipline.api as algo
+        algo.set_slippage(algo.slippage.FixedBasisPointsSlippage(basis_points=5.0))
 
     Notes
     -----

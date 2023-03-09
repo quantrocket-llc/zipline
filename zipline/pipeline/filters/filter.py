@@ -895,9 +895,9 @@ class SingleAsset(Filter):
 
     Examples
     --------
-    Create a filter that computes to True only for Apple:
+    Create a filter that computes to True only for Apple::
 
-    >>> aapl_filter = SingleAsset(sid('FIBBG000B9XRY4'))                # doctest: +SKIP
+        aapl_filter = SingleAsset(sid('FIBBG000B9XRY4'))
     """
     inputs = []
     window_length = 1
@@ -946,9 +946,9 @@ class StaticAssets(Filter):
 
     Examples
     --------
-    Create a filter that computes True for Apple and SPY:
+    Create a filter that computes True for Apple and SPY::
 
-    >>> screen = StaticAssets([sid('FIBBG000B9XRY4'), sid('FIBBG000BDTBL9')])          # doctest: +SKIP
+        screen = StaticAssets([sid('FIBBG000B9XRY4'), sid('FIBBG000BDTBL9')])
     """
     inputs = ()
     window_length = 0
@@ -973,10 +973,10 @@ class StaticSids(Filter):
 
     Examples
     --------
-    Limit to AAPL and AMZN:
+    Limit to AAPL and AMZN::
 
-    >>> from zipline.pipeline.filters import StaticSids
-    >>> pipe = Pipeline(screen=StaticSids(["FIBBG000B9XRY4", "FIBBG000BVPV84"]))              # doctest: +SKIP
+        from zipline.pipeline.filters import StaticSids
+        pipe = Pipeline(screen=StaticSids(["FIBBG000B9XRY4", "FIBBG000BVPV84"]))
     """
     inputs = None
     window_length = 1
@@ -1006,10 +1006,10 @@ class StaticUniverse(StaticSids):
 
     Examples
     --------
-    Limit to a universe of energy stocks:
+    Limit to a universe of energy stocks::
 
-    >>> from zipline.pipeline.filters import StaticUniverse
-    >>> pipe = Pipeline(screen=StaticUniverse("energy-stk"))              # doctest: +SKIP
+        from zipline.pipeline.filters import StaticUniverse
+        pipe = Pipeline(screen=StaticUniverse("energy-stk"))
     """
 
     def __new__(cls, code: str) -> Filter:

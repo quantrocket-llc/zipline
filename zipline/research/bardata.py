@@ -57,13 +57,13 @@ def get_data(
     Examples
     --------
     Get the data object for July 7, 2020 at 11 AM for the usstock minute
-    bundle:
+    bundle::
 
-    >>> data = get_data('2020-07-07 11:00:00', bundle="usstock-1min")    # doctest: +SKIP
+        data = get_data('2020-07-07 11:00:00', bundle="usstock-1min")
 
-    Get the data object for July 7, 2020 for a daily bundle:
+    Get the data object for July 7, 2020 for a daily bundle::
 
-    >>> data = get_data('2020-07-07', bundle="xjpx-1d-bundle")           # doctest: +SKIP
+        data = get_data('2020-07-07', bundle="xjpx-1d-bundle")
     """
     if not bundle:
         bundle = get_default_bundle()

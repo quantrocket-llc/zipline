@@ -101,10 +101,10 @@ class MarketOrder(ExecutionStyle):
     Examples
     --------
     Place a SMART-routed market order using the Adaptive algorithm (Interactive
-    Brokers):
+    Brokers)::
 
-    >>> style = MarketOrder(exchange="SMART", order_params={"AlgoStrategy": "Adaptive"})
-    >>> algo.order(asset, 100, style=style)                                                # doctest: +SKIP
+        style = MarketOrder(exchange="SMART", order_params={"AlgoStrategy": "Adaptive"})
+        algo.order(asset, 100, style=style)
     """
 
     def __init__(

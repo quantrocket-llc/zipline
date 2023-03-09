@@ -73,14 +73,14 @@ def run_pipeline(
 
     Examples
     --------
-    Get a pipeline of 1-year returns:
+    Get a pipeline of 1-year returns::
 
-    >>> from zipline.pipeline.factors import Returns
-    >>> pipeline = Pipeline(                                                                  # doctest: +SKIP
+        from zipline.pipeline.factors import Returns
+        pipeline = Pipeline(
             columns={
                 '1Y': Returns(window_length=252),
             })
-    >>> factor = run_pipeline(pipeline, '2018-01-01', '2019-02-01', bundle="usstock-1min")    # doctest: +SKIP
+        factor = run_pipeline(pipeline, '2018-01-01', '2019-02-01', bundle="usstock-1min")
     """
     return _run_pipeline(
         pipeline,
@@ -253,10 +253,10 @@ def get_forward_returns(
 
     Examples
     --------
-    Run a pipeline, then get forward returns for the factor:
+    Run a pipeline, then get forward returns for the factor::
 
-    >>> factor = run_pipeline(pipeline, '2018-01-01', '2019-02-01', bundle="usstock-1min")    # doctest: +SKIP
-    >>> forward_returns = get_forward_returns(factor, bundle="usstock-1min")                  # doctest: +SKIP
+        factor = run_pipeline(pipeline, '2018-01-01', '2019-02-01', bundle="usstock-1min")
+        forward_returns = get_forward_returns(factor, bundle="usstock-1min")
     """
 
     if not bundle:

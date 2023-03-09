@@ -430,9 +430,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
 
         Then ``c.peer_count()`` will count, for each row, the total number
         of assets in each classifier category produced by ``c``.  Missing
-        data will be evaluated to NaN.
-
-        ::
+        data will be evaluated to NaN::
 
                          AAPL   MSFT    MCD     BK   AMZN     FB
             2015-05-05    3.0    3.0    NaN    1.0    3.0    NaN

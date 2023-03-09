@@ -48,9 +48,9 @@ def sid(sid: str, bundle: str = None) -> Asset:
 
     Examples
     --------
-    Get the asset object for AAPL:
+    Get the asset object for AAPL::
 
-    >>> aapl = sid("FIBBG000B9XRY4", bundle="usstock-1min")    # doctest: +SKIP
+        aapl = sid("FIBBG000B9XRY4", bundle="usstock-1min")
     """
     if not bundle:
         bundle = get_default_bundle()

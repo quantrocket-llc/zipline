@@ -29,8 +29,9 @@ class ETB(DataSet):
 
     Examples
     --------
+    Create a Filter that computes True for easy-to-borrow securities::
 
-    >>> are_etb = alpaca.ETB.etb.latest    # doctest: +SKIP
+        are_etb = alpaca.ETB.etb.latest
     """
     domain: Domain = US_EQUITIES
     etb: BoundBooleanColumn = Column(bool_dtype)

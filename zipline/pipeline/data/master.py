@@ -542,19 +542,19 @@ class SecuritiesMaster(DataSet):
 
     Examples
     --------
-    Filter ETFs:
+    Filter ETFs::
 
-    >>> are_etfs = SecuritiesMaster.Etf.latest                                                  # doctest: +SKIP
+        are_etfs = SecuritiesMaster.Etf.latest
 
-    Filter NYSE stocks:
+    Filter NYSE stocks::
 
-    >>> are_nyse_stocks = SecuritiesMaster.Exchange.latest.eq("XNYS")                           # doctest: +SKIP
+        are_nyse_stocks = SecuritiesMaster.Exchange.latest.eq("XNYS")
 
     Filter to primary shares, which can be identified by a null
     usstock_PrimaryShareSid field (i.e. they have no pointer to another
-    primary share):
+    primary share)::
 
-    >>> are_primary_shares = master.SecuritiesMaster.usstock_PrimaryShareSid.latest.isnull()    # doctest: +SKIP
+        are_primary_shares = master.SecuritiesMaster.usstock_PrimaryShareSid.latest.isnull()
     """
     Sid: BoundObjectColumn = Column(object_dtype)
     """security identifier"""

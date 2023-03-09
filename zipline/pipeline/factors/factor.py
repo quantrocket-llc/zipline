@@ -426,9 +426,9 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     Factors. For example, constructing a Factor that computes the average of
     two other Factors is simply::
 
-        >>> f1 = SomeFactor(...)  # doctest: +SKIP
-        >>> f2 = SomeOtherFactor(...)  # doctest: +SKIP
-        >>> average = (f1 + f2) / 2.0  # doctest: +SKIP
+        f1 = SomeFactor(...)
+        f2 = SomeOtherFactor(...)
+        average = (f1 + f2) / 2.0
 
     Factors can also be converted into :class:`zipline.pipeline.Filter` objects
     via comparison operators: (``<``, ``<=``, ``!=``, ``eq``, ``>``, ``>=``).
@@ -1025,9 +1025,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             2017-03-16   True   True   True  False
 
         Then ``f.demean()`` will subtract the mean from each row produced by
-        ``f``.
-
-        ::
+        ``f``::
 
                          AAPL   MSFT    MCD     BK
             2017-03-13 -1.500 -0.500  0.500  1.500
@@ -1038,9 +1036,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         ``f.demean(mask=m)`` will subtract the mean from each row, but means
         will be calculated ignoring values on the diagonal, and NaNs will
         written to the diagonal in the output. Diagonal values are ignored
-        because they are the locations where the mask ``m`` produced False.
-
-        ::
+        because they are the locations where the mask ``m`` produced False::
 
                          AAPL   MSFT    MCD     BK
             2017-03-13    NaN -1.000  0.000  1.000
@@ -1052,9 +1048,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         MCD/BK from their respective entries.  The AAPL/MSFT are grouped
         together because both assets always produce 1 in the output of the
         classifier ``c``.  Similarly, MCD/BK are grouped together because they
-        always produce 2.
-
-        ::
+        always produce 2::
 
                          AAPL   MSFT    MCD     BK
             2017-03-13 -0.500  0.500 -0.500  0.500
@@ -1064,9 +1058,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
         ``f.demean(mask=m, groupby=c)`` will also subtract the group-mean of
         AAPL/MSFT and MCD/BK, but means will be calculated ignoring values on
-        the diagonal , and NaNs will be written to the diagonal in the output.
-
-        ::
+        the diagonal , and NaNs will be written to the diagonal in the output::
 
                          AAPL   MSFT    MCD     BK
             2017-03-13    NaN  0.000 -0.500  0.500
@@ -1081,10 +1073,10 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         to use the ``mask`` parameter to discard values at the extremes of the
         distribution::
 
-            >>> base = MyFactor(...)  # doctest: +SKIP
-            >>> normalized = base.demean(
-            ...     mask=base.percentile_between(1, 99),
-            ... )  # doctest: +SKIP
+            base = MyFactor(...)
+            normalized = base.demean(
+                mask=base.percentile_between(1, 99),
+            )
 
         ``demean()`` is only supported on Factors of dtype float64.
 
@@ -1147,10 +1139,10 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         outliers, it is often useful to use the ``mask`` parameter to discard
         values at the extremes of the distribution::
 
-            >>> base = MyFactor(...)  # doctest: +SKIP
-            >>> normalized = base.zscore(
-            ...    mask=base.percentile_between(1, 99),
-            ... )  # doctest: +SKIP
+            base = MyFactor(...)
+            normalized = base.zscore(
+               mask=base.percentile_between(1, 99),
+            )
 
         ``zscore()`` is only supported on Factors of dtype float64.
 
@@ -1529,9 +1521,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
             }
 
-        The result for a given day could look like:
-
-        ::
+        The result for a given day could look like::
 
                     'PRICE' 'WINSOR_1' 'WINSOR_2' 'WINSOR_3'
             Asset_1    1        2          4          3

@@ -501,9 +501,9 @@ class SimpleBeta(CustomFactor, StandardOutputs):
 
     Examples
     --------
-    Calculate 1-year simple betas for each stock against SPY:
+    Calculate 1-year simple betas for each stock against SPY::
 
-    >>> beta = SimpleBeta(target=sid('FIBBG000BDTBL9'), regression_length=252)          # doctest: +SKIP
+        beta = SimpleBeta(target=sid('FIBBG000BDTBL9'), regression_length=252)
     """
     window_safe = True
     dtype = float64_dtype

@@ -870,11 +870,11 @@ class TradingAlgorithm(object):
 
         Examples
         --------
-        Only perform a certain action in live trading:
+        Only perform a certain action in live trading::
 
-        >>> import zipline.api as algo
-        >>> if algo.get_environment("arena") == "trade":    # doctest: +SKIP
-        >>>     ...                                         # doctest: +SKIP
+            import zipline.api as algo
+            if algo.get_environment("arena") == "trade":
+                ...
         """
         env = {
             'arena': self.sim_params.arena,
@@ -939,10 +939,10 @@ class TradingAlgorithm(object):
         Examples
         --------
         Schedule a function called rebalance to run every trading day 30 minutes
-        after the open:
+        after the open::
 
-        >>> import zipline.api as algo
-        >>> algo.schedule_function(                          # doctest: +SKIP
+            import zipline.api as algo
+            algo.schedule_function(
                 rebalance,
                 algo.date_rules.every_day(),
                 algo.time_rules.market_open(minutes=30))
@@ -1014,11 +1014,11 @@ class TradingAlgorithm(object):
 
         Examples
         --------
-        Set the benchmark to SPY:
+        Set the benchmark to SPY::
 
-        >>> import zipline.api as algo
-        >>> spy = algo.sid("FIBBG000BDTBL9")    # doctest: +SKIP
-        >>> algo.set_benchmark(spy)             # doctest: +SKIP
+            import zipline.api as algo
+            spy = algo.sid("FIBBG000BDTBL9")
+            algo.set_benchmark(spy)
 
         Notes
         -----
@@ -1072,10 +1072,10 @@ class TradingAlgorithm(object):
 
         Examples
         --------
-        Create a continuous future for ES, rolling on volume:
+        Create a continuous future for ES, rolling on volume::
 
-        >>> import zipline.api as algo
-        >>> algo.continuous_future("ES", roll="volume")    # doctest: +SKIP
+            import zipline.api as algo
+            algo.continuous_future("ES", roll="volume")
         """
         return self.asset_finder.create_continuous_future(
             root_symbol_str,
@@ -1494,11 +1494,11 @@ class TradingAlgorithm(object):
 
         Examples
         --------
-        Set the equities slippage to 5 basis points:
+        Set the equities slippage to 5 basis points::
 
-        >>> import zipline.api as algo
-        >>> from zipline.finance import slippage
-        >>> algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))    # doctest: +SKIP
+            import zipline.api as algo
+            from zipline.finance import slippage
+            algo.set_slippage(slippage.FixedBasisPointsSlippage(basis_points=5.0))
 
         Notes
         -----
@@ -1552,11 +1552,11 @@ class TradingAlgorithm(object):
 
         Examples
         --------
-        Set the equities commission to 0.001 per share:
+        Set the equities commission to 0.001 per share::
 
-        >>> import zipline.api as algo
-        >>> from zipline.finance import commission
-        >>> algo.set_commission(commission.PerShare(cost=0.001))    # doctest: +SKIP
+            import zipline.api as algo
+            from zipline.finance import commission
+            algo.set_commission(commission.PerShare(cost=0.001))
 
         See Also
         --------
@@ -2392,9 +2392,9 @@ class TradingAlgorithm(object):
 
         Examples
         --------
-        Set the realtime database and map fields:
+        Set the realtime database and map fields::
 
-        >>> algo.set_realtime_db(                 # doctest: +SKIP
+            algo.set_realtime_db(
                 "us-stk-tick-1min",
                 fields={
                     "close": "LastPriceClose",

@@ -40,8 +40,10 @@ class SP500(DataSet):
 
     Examples
     --------
+    Create a filter that computes True for securities that are in the S&P 500
+    on the given date::
 
-    >>> in_sp500 = sharadar.SP500.in_sp500.latest    # doctest: +SKIP
+        in_sp500 = sharadar.SP500.in_sp500.latest
     """
     domain: Domain = US_EQUITIES
     in_sp500: BoundBooleanColumn = Column(bool_dtype)
@@ -651,21 +653,21 @@ class Fundamentals(DataSetFamily):
 
     Examples
     --------
-    Select stocks with low enterprise multiples using quarterly fundamentals:
+    Select stocks with low enterprise multiples using quarterly fundamentals::
 
-    >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(                   # doctest: +SKIP
-        'ARQ').EVEBITDA.latest.percentile_between(0, 20)                               # doctest: +SKIP
+        have_low_enterprise_multiples = sharadar.Fundamentals.slice(
+        'ARQ').EVEBITDA.latest.percentile_between(0, 20)
 
     Create a boolean filter indicating whether assets increased in the current
-    year relative to the prior year:
+    year relative to the prior year::
 
-    >>> current_year_fundamentals = sharadar.Fundamentals.slice('ARY')                 # doctest: +SKIP
-    >>> previous_year_fundamentals = sharadar.Fundamentals.slice(                      # doctest: +SKIP
-            'ARY',                                                                     # doctest: +SKIP
-            period_offset=-1)                                                          # doctest: +SKIP
-    >>> total_assets = current_year_fundamentals.ASSETS.latest                         # doctest: +SKIP
-    >>> previous_total_assets = previous_year_fundamentals.ASSETS.latest               # doctest: +SKIP
-    >>> assets_increased = total_assets > previous_total_assets                        # doctest: +SKIP
+        current_year_fundamentals = sharadar.Fundamentals.slice('ARY')
+        previous_year_fundamentals = sharadar.Fundamentals.slice(
+            'ARY',
+            period_offset=-1)
+        total_assets = current_year_fundamentals.ASSETS.latest
+        previous_total_assets = previous_year_fundamentals.ASSETS.latest
+        assets_increased = total_assets > previous_total_assets
     """
     extra_dims = [
         ('dimension', {'ARQ', 'ART', 'ARY', 'MRQ', 'MRT', 'MRY'}),
@@ -921,21 +923,21 @@ class Fundamentals(DataSetFamily):
 
         Examples
         --------
-        Select stocks with low enterprise multiples using quarterly fundamentals:
+        Select stocks with low enterprise multiples using quarterly fundamentals::
 
-        >>> have_low_enterprise_multiples = sharadar.Fundamentals.slice(                   # doctest: +SKIP
-            'ARQ').EVEBITDA.latest.percentile_between(0, 20)                               # doctest: +SKIP
+            have_low_enterprise_multiples = sharadar.Fundamentals.slice(
+            'ARQ').EVEBITDA.latest.percentile_between(0, 20)
 
         Create a boolean filter indicating whether assets increased in the current
-        year relative to the prior year:
+        year relative to the prior year::
 
-        >>> current_year_fundamentals = sharadar.Fundamentals.slice('ARY')                 # doctest: +SKIP
-        >>> previous_year_fundamentals = sharadar.Fundamentals.slice(                      # doctest: +SKIP
-                'ARY',                                                                     # doctest: +SKIP
-                period_offset=-1)                                                          # doctest: +SKIP
-        >>> total_assets = current_year_fundamentals.ASSETS.latest                         # doctest: +SKIP
-        >>> previous_total_assets = previous_year_fundamentals.ASSETS.latest               # doctest: +SKIP
-        >>> assets_increased = total_assets > previous_total_assets                        # doctest: +SKIP
+            current_year_fundamentals = sharadar.Fundamentals.slice('ARY')
+            previous_year_fundamentals = sharadar.Fundamentals.slice(
+                'ARY',
+                period_offset=-1)
+            total_assets = current_year_fundamentals.ASSETS.latest
+            previous_total_assets = previous_year_fundamentals.ASSETS.latest
+            assets_increased = total_assets > previous_total_assets
         """
         return super().slice(dimension=dimension, period_offset=period_offset)
 
@@ -1059,9 +1061,9 @@ class Institutions(DataSetFamily):
 
     Examples
     --------
-    Select stocks with large institutional ownership:
+    Select stocks with large institutional ownership::
 
-    >>> have_inst_own = sharadar.Institutions.slice(period_offset=0).TOTALVALUE.latest.percentile_between(80, 100)    # doctest: +SKIP
+        have_inst_own = sharadar.Institutions.slice(period_offset=0).TOTALVALUE.latest.percentile_between(80, 100)
     """
     extra_dims = [
         ('period_offset', {0}, 0),
@@ -1144,9 +1146,9 @@ class Institutions(DataSetFamily):
 
         Examples
         --------
-        Select stocks with large institutional ownership:
+        Select stocks with large institutional ownership::
 
-        >>> have_inst_own = sharadar.Institutions.slice(period_offset=0).TOTALVALUE.latest.percentile_between(80, 100)    # doctest: +SKIP
+            have_inst_own = sharadar.Institutions.slice(period_offset=0).TOTALVALUE.latest.percentile_between(80, 100)
         """
         return super().slice(period_offset=period_offset)
 

@@ -36,9 +36,9 @@ class ShortableShares(DataSet):
 
     Examples
     --------
-    Get the number of shortable shares for the previous day:
+    Get the number of shortable shares for the previous day::
 
-    >>> shares = ibkr.ShortableShares.LastQuantity.latest    # doctest: +SKIP
+        shares = ibkr.ShortableShares.LastQuantity.latest
     """
     MinQuantity: BoundFloatColumn = Column(float64_dtype)
     """minimum quantity of shortable shares for the day"""
@@ -61,9 +61,9 @@ class BorrowFees(DataSet):
 
     Examples
     --------
-    Get the previous day's borrow fees:
+    Get the previous day's borrow fees::
 
-    >>> fees = ibkr.BorrowFee.FeeRate.latest    # doctest: +SKIP
+        fees = ibkr.BorrowFee.FeeRate.latest
     """
     FeeRate: BoundFloatColumn = Column(float64_dtype)
     """The annualized interest rate on short positions. For example, 1.0198
