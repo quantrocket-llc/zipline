@@ -7,6 +7,7 @@ from __future__ import division
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from zipline.pipeline.data.dataset import BoundColumn
+    from zipline.pipeline.filters import Filter
 
 from numpy import (
     abs,
@@ -60,6 +61,11 @@ class RSI(SingleInputMixin, CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute the indicator.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate a 15-day RSI:
@@ -73,7 +79,8 @@ class RSI(SingleInputMixin, CustomFactor):
     if TYPE_CHECKING:
         def __init__(self,
                      inputs: 'BoundColumn' = EquityPricing.close,
-                     window_length: int = 15):
+                     window_length: int = 15,
+                     mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, closes):
@@ -108,6 +115,11 @@ class BollingerBands(CustomFactor):
         The number of standard deviations to add or subtract to create the
         upper and lower bands.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate 14-day Bolling Bands at 2 standard deviations:
@@ -123,7 +135,8 @@ class BollingerBands(CustomFactor):
             self,
             inputs: 'BoundColumn' = EquityPricing.close,
             window_length: int = None,
-            k: float = None):
+            k: float = None,
+            mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, close, k):
@@ -146,6 +159,11 @@ class Aroon(CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute the Aroon
         indicator.
+
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
     """
 
     inputs = (EquityPricing.low, EquityPricing.high)
@@ -155,7 +173,8 @@ class Aroon(CustomFactor):
         def __init__(
             self,
             inputs: list[BoundColumn] = [EquityPricing.low, EquityPricing.high],
-            window_length: int = None):
+            window_length: int = None,
+            mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, lows, highs):
@@ -195,6 +214,16 @@ class FastStochasticOscillator(CustomFactor):
 
     **Default Window Length:** 14
 
+    Parameters
+    ----------
+    window_length : int > 0
+        Length of the lookback window over which to compute the indicator.
+
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Returns
     -------
     out: %K oscillator
@@ -213,7 +242,8 @@ class FastStochasticOscillator(CustomFactor):
         def __init__(
             self,
             inputs: list[BoundColumn] = [EquityPricing.close, EquityPricing.low, EquityPricing.high],
-            window_length: int = 14):
+            window_length: int = 14,
+            mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, closes, lows, highs):
@@ -260,6 +290,11 @@ class IchimokuKinkoHyo(CustomFactor):
     chikou_span_length : int >= 0, <= window_length
         The lag for the chikou span.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Compute the Ichimoku Kinko Hyo with default parameters:
@@ -289,7 +324,8 @@ class IchimokuKinkoHyo(CustomFactor):
             window_length: int = 52,
             tenkan_sen_length: int = 9,
             kijun_sen_length: int = 26,
-            chikou_span_length: int = 26):
+            chikou_span_length: int = 26,
+            mask: 'Filter' = None):
             pass
 
     def _validate(self):
@@ -350,6 +386,11 @@ class RateOfChangePercentage(CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute the indicator.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate 30-day rate of change:
@@ -362,7 +403,8 @@ class RateOfChangePercentage(CustomFactor):
     if TYPE_CHECKING:
         def __init__(self,
                     inputs: BoundColumn = EquityPricing.close,
-                     window_length: int = None):
+                     window_length: int = None,
+                     mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, close):
@@ -391,6 +433,13 @@ class TrueRange(CustomFactor):
 
     **Default Window Length:** 2
 
+    Parameters
+    ----------
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate true range:
@@ -408,7 +457,8 @@ class TrueRange(CustomFactor):
         def __init__(
             self,
             inputs: list[BoundColumn, BoundColumn, BoundColumn] = [EquityPricing.high, EquityPricing.low, EquityPricing.close],
-            window_length: int = 2):
+            window_length: int = 2,
+            mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, highs, lows, closes):
@@ -448,6 +498,11 @@ class MACDSignal(CustomFactor):
     signal_period : int > 0, < fast_period, optional
         The window length for the signal line. Default is 9.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Construct a 12/26/9 MACD Signal factor:
@@ -472,7 +527,8 @@ class MACDSignal(CustomFactor):
             inputs: BoundColumn = EquityPricing.close,
             fast_period: int = 12,
             slow_period: int = 26,
-            signal_period: int = 9):
+            signal_period: int = 9,
+            mask: 'Filter' = None):
             pass
 
     @expect_bounded(

@@ -491,13 +491,20 @@ class SimpleBeta(CustomFactor, StandardOutputs):
     ----------
     target : zipline.Asset
         Asset against which other assets should be regressed.
+
     regression_length : int
         Number of days of daily returns to use for the regression.
+
     allowed_missing_percentage : float, optional
         Percentage of returns observations (between 0 and 1) that are allowed
         to be missing when calculating betas. Assets with more than this
         percentage of returns observations missing will produce values of
         NaN. Default behavior is that 25% of inputs can be missing.
+
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
 
     Examples
     --------
@@ -514,7 +521,8 @@ class SimpleBeta(CustomFactor, StandardOutputs):
             self,
             target: Asset,
             regression_length: int,
-            allowed_missing_percentage: float = 0.25):
+            allowed_missing_percentage: float = 0.25,
+            mask: Filter = None):
             pass
 
     @expect_types(

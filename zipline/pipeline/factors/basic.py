@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from zipline.pipeline.data.dataset import BoundColumn
+    from zipline.pipeline.filters import Filter
 
 from numbers import Number
 from numpy import (
@@ -58,6 +59,12 @@ class Returns(CustomFactor):
         returns calculation. Default is 0, meaning don't exclude any
         observations.
 
+
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate returns over the past year, excluding the most recent month:
@@ -74,7 +81,8 @@ class Returns(CustomFactor):
             self,
             inputs: 'BoundColumn' = EquityPricing.close,
             window_length: int = None,
-            exclude_window_length: int=0):
+            exclude_window_length: int=0,
+            mask: 'Filter' = None):
             pass
 
     def _validate(self):
@@ -114,11 +122,24 @@ class Shift(SingleInputMixin, CustomFactor):
         Length of the lookback window over which to shift. A window length of 2
         means that the output will be the input shifted forward by 1 period.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     See Also
     --------
     zipline.pipeline.Factor.shift
     """
     window_safe = True
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            inputs: 'BoundColumn',
+            window_length: int,
+            mask: 'Filter' = None):
+            pass
 
     def _validate(self):
         super()._validate()
@@ -149,6 +170,11 @@ class PercentChange(SingleInputMixin, CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute percent change.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate 5-day percent change of opening price:
@@ -165,7 +191,8 @@ class PercentChange(SingleInputMixin, CustomFactor):
         def __init__(
             self,
             inputs: 'BoundColumn',
-            window_length: int):
+            window_length: int,
+            mask: 'Filter' = None):
             pass
 
     def _validate(self):
@@ -194,6 +221,11 @@ class DailyReturns(Returns):
         The expression for which to compute daily returns.
         Default is EquityPricing.close.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate daily returns:
@@ -205,7 +237,10 @@ class DailyReturns(Returns):
     window_length = 2
 
     if TYPE_CHECKING:
-        def __init__(self, inputs: 'BoundColumn' = EquityPricing.close):
+        def __init__(
+                self,
+                inputs: 'BoundColumn' = EquityPricing.close,
+                mask: 'Filter' = None):
             pass
 
 
@@ -225,6 +260,11 @@ class SimpleMovingAverage(SingleInputMixin, CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute the moving average.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate a 200-day simple moving average of daily close price:
@@ -235,7 +275,8 @@ class SimpleMovingAverage(SingleInputMixin, CustomFactor):
         def __init__(
             self,
             inputs: 'BoundColumn',
-            window_length: int):
+            window_length: int,
+            mask: 'Filter' = None):
             pass
 
     # numpy's nan functions throw warnings when passed an array containing only
@@ -272,6 +313,11 @@ class VWAP(WeightedAverageValue):
     window_length : int > 0
         Length of the lookback window over which to compute VWAP.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate a 5-day VWAP:
@@ -281,7 +327,8 @@ class VWAP(WeightedAverageValue):
     if TYPE_CHECKING:
         def __init__(
             self,
-            window_length: int):
+            window_length: int,
+            mask: 'Filter' = None):
             pass
 
     inputs = (EquityPricing.close, EquityPricing.volume)
@@ -303,6 +350,11 @@ class MaxDrawdown(SingleInputMixin, CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute max drawdown.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate max drawdown over a rolling 200-day lookback window:
@@ -315,7 +367,8 @@ class MaxDrawdown(SingleInputMixin, CustomFactor):
         def __init__(
             self,
             inputs: 'BoundColumn',
-            window_length: int):
+            window_length: int,
+            mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, data):
@@ -342,6 +395,11 @@ class AverageDollarVolume(CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute average dollar volume.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate 30-day average dollar volume:
@@ -351,7 +409,7 @@ class AverageDollarVolume(CustomFactor):
     inputs = [EquityPricing.close, EquityPricing.volume]
 
     if TYPE_CHECKING:
-        def __init__(self, window_length: int):
+        def __init__(self, window_length: int, mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, close, volume):
@@ -570,6 +628,11 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
 
             decay_rate, decay_rate ** 2, decay_rate ** 3, ...
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate the 30-day EWMA of `EquityPricing.close` with a decay rate of 0.08.
@@ -588,7 +651,8 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
         def __init__(self,
                      inputs: BoundColumn,
                      window_length: int,
-                     decay_rate: float):
+                     decay_rate: float,
+                     mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, data, decay_rate):
@@ -623,6 +687,11 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
 
             decay_rate, decay_rate ** 2, decay_rate ** 3, ...
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     --------
     Calculate the 30-day EWMSTD of `EquityPricing.close` with a decay rate of 0.08.
 
@@ -640,7 +709,8 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
         def __init__(self,
                      inputs: BoundColumn,
                      window_length: int,
-                     decay_rate: float):
+                     decay_rate: float,
+                     mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, data, decay_rate):
@@ -672,6 +742,11 @@ class LinearWeightedMovingAverage(SingleInputMixin, CustomFactor):
     window_length : int > 0
         Length of the lookback window over which to compute the average.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
     Calculate a 60-day linearly weighted moving average of `EquityPricing.close`:
@@ -686,7 +761,8 @@ class LinearWeightedMovingAverage(SingleInputMixin, CustomFactor):
     if TYPE_CHECKING:
         def __init__(self,
                      inputs: BoundColumn,
-                     window_length: int):
+                     window_length: int,
+                     mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, data):
@@ -719,6 +795,11 @@ class AnnualizedVolatility(CustomFactor):
         The number of time units per year. Defaults is 252, the number of NYSE
         trading days in a normal year.
 
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
     Examples
     --------
 
@@ -732,7 +813,8 @@ class AnnualizedVolatility(CustomFactor):
 
     if TYPE_CHECKING:
         def __init__(self,
-                     annualization_factor: float = 252):
+                     annualization_factor: float = 252,
+                     mask: 'Filter' = None):
             pass
 
     def compute(self, today, assets, out, returns, annualization_factor):
