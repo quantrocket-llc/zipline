@@ -38,6 +38,7 @@ from zipline.utils.events import (
     time_rules
 )
 from zipline.protocol import BarData
+from zipline.assets import Asset
 
 # The user interacts with zipline.algorithm.TradingAlgorithm via zipline.api
 # functions and via the context object, which provides access to the account
@@ -83,6 +84,7 @@ __all__ = [
     'time_rules',
     'Context',
     'BarData',
+    'Asset',
     'attach_pipeline',
     'batch_market_order',
     'cancel_order',

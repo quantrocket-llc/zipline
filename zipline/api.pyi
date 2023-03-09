@@ -111,6 +111,9 @@ sid
 
 Classes
 -------
+Asset
+    Base class for all assets.
+
 BarData
     The data object passed to handle_data(), before_trading_start(), and
     scheduled functions. Provides methods for accessing minutely and daily
@@ -177,6 +180,7 @@ __all__ = [
     'slippage',
     'date_rules',
     'time_rules',
+    'Asset',
     'Context',
     'BarData',
     'attach_pipeline',
