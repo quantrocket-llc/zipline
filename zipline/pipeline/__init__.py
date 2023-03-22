@@ -13,6 +13,10 @@ filters
 classifiers
     Pipeline terms that compute categorical output.
 
+periodic
+    Pipeline terms for working with periodic data (such as quarterly
+    fundamentals).
+
 sharadar
     Pipeline datasets for Sharadar US Fundamentals, Institutional Holdings,
     and S&P 500 constituents.
@@ -62,6 +66,7 @@ from . import alpaca
 from . import db
 from . import ibkr
 from . import master
+from . import periodic
 from . import sharadar
 from .data import EquityPricing
 
@@ -76,6 +81,6 @@ __all__ = (
     'db',
     'ibkr',
     'master',
-    'Term',
+    'periodic',
     'sharadar',
 )
