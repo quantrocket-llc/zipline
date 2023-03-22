@@ -11,7 +11,25 @@ Institutions
 
 SP500
     Dataset representing membership in the S&P 500.
+
+PiotroskiFScore
+    Return a Factor that computes the Piotroski F-Score using Sharadar fundamentals.
+    The Piotroski F-Score evaluates a firm's financial health.
+
+AltmanZScore
+    Return a Factor that computes the Altman Z-Score using Sharadar fundamentals.
+    The Altman Z-Score measures the likelihood of future bankruptcy.
+
+InterestCoverageRatio
+    Return a Factor that computes the Interest Coverage Ratio (ICR) using Sharadar
+    fundamentals. The Interest Coverage Ratio measures a company's ability to service
+    its debt.
 """
+from .factors.sharadar import(
+    PiotroskiFScore,
+    AltmanZScore,
+    InterestCoverageRatio
+)
 from .data.sharadar import (
     Fundamentals,
     Institutions,
@@ -19,6 +37,9 @@ from .data.sharadar import (
 )
 
 __all__ = [
+    'PiotroskiFScore',
+    'AltmanZScore',
+    'InterestCoverageRatio',
     'Fundamentals',
     'Institutions',
     'SP500',
