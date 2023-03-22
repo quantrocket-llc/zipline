@@ -30,23 +30,23 @@ def PiotroskiFScore(
     of 0-9, with 9 being the best. The score is calculated being awarding
     one point for each of the following nine criteria that are met:
 
-    * Profitability Criteria:
+    Profitability Criteria:
 
-        * Positive return on assets (ROA) in the current year
-        * Positive operating cash flow in the current year
-        * Higher ROA in the current period than in the previous year
-        * Cash flow from operations is higher than ROA (quality of earnings)
+    * Positive return on assets (ROA) in the current year
+    * Positive operating cash flow in the current year
+    * Higher ROA in the current period than in the previous year
+    * Cash flow from operations is higher than ROA (quality of earnings)
 
-    * Funding Criteria:
+    Funding Criteria:
 
-        * Lower long term debt in the current period than in the previous year (decreased leverage)
-        * Higher current ratio in the current period than in the previous year (more liquidity)
-        * No new shares issued in the last year (lack of dilution)
+    * Lower long term debt in the current period than in the previous year (decreased leverage)
+    * Higher current ratio in the current period than in the previous year (more liquidity)
+    * No new shares issued in the last year (lack of dilution)
 
-    * Operating Efficiency Criteria:
+    Operating Efficiency Criteria:
 
-        * Higher gross margin in the current period than in the previous year
-        * Higher asset turnover ratio in the current period than in the previous year
+    * Higher gross margin in the current period than in the previous year
+    * Higher asset turnover ratio in the current period than in the previous year
 
     Parameters
     ----------
@@ -79,6 +79,14 @@ def PiotroskiFScore(
     -------
     zipline.pipeline.Factor
         a Factor that computes the Piotroski F-Score when executed
+
+    Examples
+    --------
+    Compute the Piotroski F-Score for the most recent fiscal period, using
+    trailing-twelve-month financials:
+
+    >>> from zipline.pipeline.sharadar import PiotroskiFScore
+    >>> f_score = PiotroskiFScore()
     """
 
     # F Score
@@ -165,6 +173,13 @@ def AltmanZScore(
     -------
     zipline.pipeline.Factor
         a Factor that computes the Altman Z-Score when executed
+
+    Examples
+    --------
+    Compute the Altman Z-Score using trailing-twelve-month financials:
+
+    >>> from zipline.pipeline.sharadar import AltmanZScore
+    >>> altman_zscore = AltmanZScore()
     """
 
     fundamentals = sharadar.Fundamentals.slice(
@@ -235,6 +250,13 @@ def InterestCoverageRatio(
     -------
     zipline.pipeline.Factor
         a Factor that computes the ICR when executed
+
+    Examples
+    --------
+    Compute the interest coverage ratio:
+
+    >>> from zipline.pipeline.sharadar import InterestCoverageRatio
+    >>> icr = InterestCoverageRatio()
     """
     fundamentals = sharadar.Fundamentals.slice(
         dimension=dimension, period_offset=period_offset)

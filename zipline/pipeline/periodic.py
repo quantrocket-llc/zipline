@@ -177,6 +177,17 @@ def PeriodicAverage(
     -------
     zipline.pipeline.Factor
         a Factor that computes the average
+
+    Examples
+    --------
+    Create a Factor that computes the average dividend per share over the last
+    4 years, using annual financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import PeriodicAverage
+
+        dps = Fundamentals.slice('ARY').DPS
+        avg_dps = PeriodicAverage(dps, window_length=4)
     """
 
     is_column, period_offset, extra_coords = _unpack_column_or_callable(
@@ -240,6 +251,17 @@ def PeriodicHigh(
     -------
     zipline.pipeline.Factor
         a Factor that computes the high
+
+    Examples
+    --------
+    Create a Factor that computes the highest EPS over the last 4 quarters, using
+    trailing-twelve-month financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import PeriodicHigh
+
+        eps = Fundamentals.slice('ART').EPS
+        highest_eps = PeriodicHigh(eps, window_length=4)
     """
     return _high_or_low(
         column_or_callable, window_length=window_length, step=step,
@@ -282,6 +304,17 @@ def PeriodicLow(
     -------
     zipline.pipeline.Factor
         a Factor that computes the low
+
+    Examples
+    --------
+    Create a Factor that computes the lowest EPS over the last 4 quarters, using
+    trailing-twelve-month financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import PeriodicLow
+
+        eps = Fundamentals.slice('ART').EPS
+        lowest_eps = PeriodicLow(eps, window_length=4)
     """
     return _high_or_low(
         column_or_callable, window_length=window_length, step=step,
@@ -388,6 +421,17 @@ def PeriodicPercentChange(
     -------
     zipline.pipeline.Factor
         a Factor that computes the percent change
+
+    Examples
+    --------
+    Create a Factor that computes the percent change in dividend yield over the
+    last 16 quarters, using trailing-twelve-month financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import PeriodicPercentChange
+
+        divyield = Fundamentals.slice('ART').DIVYIELD
+        divyield_pct_change = PeriodicPercentChange(divyield, window_length=16)
     """
 
     is_column, period_offset, extra_coords = _unpack_column_or_callable(
@@ -447,6 +491,18 @@ def PeriodicCAGR(
     -------
     zipline.pipeline.Factor
         a Factor that computes the CAGR
+
+    Examples
+    --------
+    Create a Factor that computes the compound annual growth rate (CAGR) in
+    dividend per share over the last 16 quarters, using trailing-twelve-month
+    financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import PeriodicCAGR
+
+        dps = Fundamentals.slice('ART').DPS
+        dps_growth = PeriodicCAGR(dps, window_length=16)
     """
 
     is_column, period_offset, extra_coords = _unpack_column_or_callable(
@@ -535,6 +591,17 @@ def AllPeriodsIncreasing(
     -------
     zipline.pipeline.Filter
         a Filter indicating whether the input factor increases over time
+
+    Examples
+    --------
+    Create a Filter that returns True if revenue increased versus the prior
+    year for each of the last 4 years, using annual financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import AllPeriodsIncreasing
+
+        revenue = Fundamentals.slice('ARY').REVENUE
+        has_consistent_sales_growth = AllPeriodsIncreasing(revenue, window_length=4)
     """
     return _increasing_or_decreasing(
         column_or_callable, window_length=window_length, step=step,
@@ -584,6 +651,17 @@ def AllPeriodsDecreasing(
     -------
     zipline.pipeline.Filter
         a Filter indicating whether the input factor decreases over time
+
+    Examples
+    --------
+    Create a Filter that returns True if debt decreased versus the prior
+    year for each of the last 4 years, using annual financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import AllPeriodsDecreasing
+
+        debt = Fundamentals.slice('ARY').DEBT
+        has_less_debt = AllPeriodsDecreasing(debt, window_length=4)
     """
     return _increasing_or_decreasing(
         column_or_callable, window_length=window_length, step=step,
@@ -673,6 +751,17 @@ def CountPeriodsAbove(
     zipline.pipeline.Factor
         a Factor counting how many times the input factor is above the value over
         the window_length
+
+    Examples
+    --------
+    Create a Factor that computes the number of quarters with positive EBIT out
+    of the last 8 quarters, using trailing-twelve-month financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import CountPeriodsAbove
+
+        ebit = Fundamentals.slice('ART').EBIT
+        positive_ebit_count = CountPeriodsAbove(ebit, 0, window_length=8)
     """
     return _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,
@@ -726,6 +815,17 @@ def CountPeriodsBelow(
     zipline.pipeline.Factor
         a Factor counting how many times the input factor is below the value over
         the window_length
+
+    Examples
+    --------
+    Create a Factor that computes the number of quarters with negative EBIT out
+    of the last 8 quarters, using trailing-twelve-month financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import CountPeriodsBelow
+
+        ebit = Fundamentals.slice('ART').EBIT
+        negative_ebit_count = CountPeriodsBelow(ebit, 0, window_length=8)
     """
     return _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,
@@ -779,6 +879,17 @@ def AllPeriodsAbove(
     zipline.pipeline.Filter
         a Filter indicating whether the input factor is above the value over
         the full window_length
+
+    Examples
+    --------
+    Create a Filter that returns True if dividend per share was positive for
+    each of the last 5 years, using annual financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import AllPeriodsAbove
+
+        dps = Fundamentals.slice('ARY').DPS
+        consistently_has_dividends = AllPeriodsAbove(dps, 0, window_length=5)
     """
     count = _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,
@@ -833,6 +944,17 @@ def AllPeriodsBelow(
     zipline.pipeline.Filter
         a Filter indicating whether the input factor is below the value over
         the full window_length
+
+    Examples
+    --------
+    Create a Filter that returns True if return on assets was below 5% for
+    each of the last 5 years, using annual financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import AllPeriodsBelow
+
+        roa = Fundamentals.slice('ARY').ROA
+        roa_below_5 = AllPeriodsBelow(roa, 0.05, window_length=5)
     """
     count = _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,
@@ -921,6 +1043,17 @@ def AllPeriodsPresent(
     zipline.pipeline.Filter
         a Filter indicating whether the input factor is present over the
         full window_length
+
+    Examples
+    --------
+    Create a Filter that returns True if the MARKETCAP field is populated
+    for each of the last 5 years, using annual financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import AllPeriodsPresent
+
+        marketcap = Fundamentals.slice('ARY').MARKETCAP
+        has_5y_history = AllPeriodsPresent(marketcap, window_length=5)
     """
     is_column, period_offset, extra_coords = _unpack_column_or_callable(
         column_or_callable, **kwargs)
