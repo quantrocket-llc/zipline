@@ -308,11 +308,20 @@ BUILT_IN_DOMAINS = [
     ZA_EQUITIES,
 ]
 
+_BUILT_IN_DOMAINS_BY_COUNTRY_CODE_AND_CALENDAR_NAME = {
+    (domain.country_code, domain.calendar_name): domain
+    for domain in BUILT_IN_DOMAINS
+}
+
 def get_domain_from_calendar(calendar):
     """
     Returns a Domain from a trading calendar.
     """
-    return EquityCalendarDomain(calendar.country_code, calendar.name)
+    # try to get the domain from the built-in domains
+    return _BUILT_IN_DOMAINS_BY_COUNTRY_CODE_AND_CALENDAR_NAME.get(
+        (calendar.country_code, calendar.name),
+        EquityCalendarDomain(calendar.country_code, calendar.name)
+    )
 
 def infer_domain(terms):
     """
