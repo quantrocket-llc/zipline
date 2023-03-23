@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pipeline terms for working with periodic data (such as quarterly
-fundamentals).
+Pipeline factors and filters for working with periodic data, defined as data
+that doesn't change daily but changes at less frequent intervals, such as quarterly
+or annual fundamentals. Specifically, these factors and filters are compatible
+with any Pipeline DataSet that has a `period_offset` coordinate.
 
 Functions
 ---------
@@ -188,6 +190,24 @@ def PeriodicAverage(
 
         dps = Fundamentals.slice('ARY').DPS
         avg_dps = PeriodicAverage(dps, window_length=4)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to compute the average of a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ARY", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `PeriodicAverage`::
+
+        avg_op_margin = PeriodicAverage(operating_margin, window_length=4)
     """
 
     is_column, period_offset, extra_coords = _unpack_column_or_callable(
@@ -262,6 +282,24 @@ def PeriodicHigh(
 
         eps = Fundamentals.slice('ART').EPS
         highest_eps = PeriodicHigh(eps, window_length=4)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to compute the high of a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ART", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `PeriodicHigh`::
+
+        highest_op_margin = PeriodicHigh(operating_margin, window_length=4)
     """
     return _high_or_low(
         column_or_callable, window_length=window_length, step=step,
@@ -315,6 +353,24 @@ def PeriodicLow(
 
         eps = Fundamentals.slice('ART').EPS
         lowest_eps = PeriodicLow(eps, window_length=4)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to compute the low of a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ART", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `PeriodicLow`::
+
+        lowest_op_margin = PeriodicLow(operating_margin, window_length=4)
     """
     return _high_or_low(
         column_or_callable, window_length=window_length, step=step,
@@ -432,6 +488,24 @@ def PeriodicPercentChange(
 
         divyield = Fundamentals.slice('ART').DIVYIELD
         divyield_pct_change = PeriodicPercentChange(divyield, window_length=16)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to compute the percent change of a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ART", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `PeriodicPercentChange`::
+
+        op_margin_pct_change = PeriodicPercentChange(operating_margin, window_length=16)
     """
 
     is_column, period_offset, extra_coords = _unpack_column_or_callable(
@@ -503,6 +577,24 @@ def PeriodicCAGR(
 
         dps = Fundamentals.slice('ART').DPS
         dps_growth = PeriodicCAGR(dps, window_length=16)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to compute the CAGR of a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ART", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `PeriodicCAGR`::
+
+        op_margin_growth = PeriodicCAGR(operating_margin, window_length=16)
     """
 
     is_column, period_offset, extra_coords = _unpack_column_or_callable(
@@ -602,6 +694,24 @@ def AllPeriodsIncreasing(
 
         revenue = Fundamentals.slice('ARY').REVENUE
         has_consistent_sales_growth = AllPeriodsIncreasing(revenue, window_length=4)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to apply the filter to a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ARY", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `AllPeriodsIncreasing`::
+
+        has_consistent_op_margin_growth = AllPeriodsIncreasing(operating_margin, window_length=4)
     """
     return _increasing_or_decreasing(
         column_or_callable, window_length=window_length, step=step,
@@ -661,7 +771,25 @@ def AllPeriodsDecreasing(
         from zipline.pipeline.periodic import AllPeriodsDecreasing
 
         debt = Fundamentals.slice('ARY').DEBT
-        has_less_debt = AllPeriodsDecreasing(debt, window_length=4)
+        has_declining_debt = AllPeriodsDecreasing(debt, window_length=4)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to apply the filter to a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ARY", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `AllPeriodsDecreasing`::
+
+        has_declining_op_margin = AllPeriodsDecreasing(operating_margin, window_length=4)
     """
     return _increasing_or_decreasing(
         column_or_callable, window_length=window_length, step=step,
@@ -762,6 +890,25 @@ def CountPeriodsAbove(
 
         ebit = Fundamentals.slice('ART').EBIT
         positive_ebit_count = CountPeriodsAbove(ebit, 0, window_length=8)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to apply the count to a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ART", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `CountPeriodsAbove`. Here, we count periods with
+    operating margin greater than 15%::
+
+        good_op_margin_count = CountPeriodsAbove(operating_margin, 0.15, window_length=8)
     """
     return _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,
@@ -826,6 +973,25 @@ def CountPeriodsBelow(
 
         ebit = Fundamentals.slice('ART').EBIT
         negative_ebit_count = CountPeriodsBelow(ebit, 0, window_length=8)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to apply the count to a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ART", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `CountPeriodsBelow`. Here, we count periods with
+    operating margin lower than 5%::
+
+        low_op_margin_count = CountPeriodsBelow(operating_margin, 0.05, window_length=8)
     """
     return _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,
@@ -890,6 +1056,25 @@ def AllPeriodsAbove(
 
         dps = Fundamentals.slice('ARY').DPS
         consistently_has_dividends = AllPeriodsAbove(dps, 0, window_length=5)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to apply the filter to a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ARY", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `AllPeriodsAbove`. Here, we look for companies with
+    operating margin consistently above 15%::
+
+        consistent_high_op_margin = AllPeriodsAbove(operating_margin, 0.15, window_length=5)
     """
     count = _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,
@@ -955,6 +1140,25 @@ def AllPeriodsBelow(
 
         roa = Fundamentals.slice('ARY').ROA
         roa_below_5 = AllPeriodsBelow(roa, 0.05, window_length=5)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to apply the filter to a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ARY", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `AllPeriodsBelow`. Here, we look for companies with
+    operating margin consistently below 5%::
+
+        consistent_low_op_margin = AllPeriodsBelow(operating_margin, 0.05, window_length=5)
     """
     count = _count_above_or_below_or_equal(
         column_or_callable, window_length=window_length, step=step, value=value,

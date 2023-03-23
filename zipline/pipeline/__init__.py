@@ -14,8 +14,11 @@ classifiers
     Pipeline terms that compute categorical output.
 
 periodic
-    Pipeline terms for working with periodic data (such as quarterly
-    fundamentals).
+    Pipeline factors and filters for working with periodic data, defined as data
+    that doesn't change daily but changes at less frequent intervals, such as quarterly
+    or annual fundamentals. Specifically, these factors and filters are compatible
+    with any Pipeline DataSet that has a `period_offset` coordinate.
+
 
 sharadar
     Pipeline datasets for Sharadar US Fundamentals, Institutional Holdings,
