@@ -145,6 +145,17 @@ class Portfolio(object):
 
     returns : float
         The portfolio's returns for the period being recorded.
+
+    Examples
+    --------
+    Check the current portfolio value::
+
+        portfolio_value = context.portfolio.portfolio_value
+
+    Print the current positions::
+
+        for asset, position in context.portfolio.positions.items():
+            print(asset, position.amount)
     """
 
     def __init__(
@@ -309,7 +320,7 @@ class Account(object):
 
 class Position(object):
     """
-    A position held by an algorithm.
+    A position held by an algorithm. Accessible via `context.portfolio.positions`.
 
     Attributes
     ----------
@@ -328,6 +339,13 @@ class Position(object):
 
     last_sale_date : pd.Timestamp
         Datetime at which ``last_sale_price`` was last updated.
+
+    Examples
+    --------
+    Print the current positions in the portfolio::
+
+        for asset, position in context.portfolio.positions.items():
+            print(asset, position.amount)
     """
     __slots__ = ('_underlying_position',)
 

@@ -247,9 +247,21 @@ class Context:
 
     Examples
     --------
-    >>> import zipline.api as algo
-    >>> def initialize(context: algo.Context):
-    ...     context.my_var = 1
+    Save a variable to the context object::
+
+        import zipline.api as algo
+
+        def initialize(context: algo.Context):
+            context.my_var = 1
+
+    Print the current portfolio value and the current positions::
+
+        def handle_data(context: algo.Context, data: algo.BarData):
+
+            print(context.portfolio.portfolio_value)
+
+            for asset, position in context.portfolio.positions.items():
+                print(asset, position.amount)
     """
 
     # This will make pyright allow assignment to context.x
