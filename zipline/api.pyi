@@ -154,6 +154,12 @@ execution
 
 slippage
     Slippage models for simulations.
+
+Notes
+-----
+Usage Guide:
+
+* Algorithm API: https://qrok.it/dl/z/zipline-algo
 """
 from typing import Union, Callable, Literal, overload, Any, TypeVar
 import pandas as pd
@@ -244,6 +250,13 @@ class Context:
     recorded_vars : dict
         A copy of the variables that have been recorded using
         zipline.api.record().
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Initialize: https://qrok.it/dl/z/zipline-init
+    * Context object type hints: https://qrok.it/dl/z/zipline-context-type-hints
 
     Examples
     --------
@@ -406,6 +419,12 @@ def attach_pipeline(
     pipeline : Pipeline
         Returns the pipeline that was attached unchanged.
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Attach pipelines: https://qrok.it/dl/z/zipline-attach-pipelines
+
     See Also
     --------
     :func:`zipline.api.pipeline_output`
@@ -423,6 +442,12 @@ def batch_market_order(share_counts: 'pd.Series[int]') -> pd.Index:
     -------
     order_ids : pd.Index[str]
         Index of ids for newly-created orders.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def cancel_order(order_param: Union[str, Order]) -> None:
@@ -432,6 +457,12 @@ def cancel_order(order_param: Union[str, Order]) -> None:
     ----------
     order_param : str or Order
         The order_id or order object to cancel.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def continuous_future(
@@ -469,6 +500,12 @@ def continuous_future(
     -------
     continuous_future : ContinuousFuture
         The continuous future specifier.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Continuous Futures: https://qrok.it/dl/z/zipline-contfut
 
     Examples
     --------
@@ -604,6 +641,12 @@ def get_open_orders(asset):
         to a list containing all the open orders for the asset.
         If an asset is passed then this will return a list of the open
         orders for this asset.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def get_order(order_id: str) -> Order:
@@ -619,6 +662,12 @@ def get_order(order_id: str) -> Order:
     -------
     order : Order
         The order object.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def order(
@@ -651,16 +700,6 @@ def order(
         The unique identifier for this order, or None if no order was
         placed.
 
-    Notes
-    -----
-    The ``limit_price`` and ``stop_price`` arguments provide shorthands for
-    passing common execution styles. Passing ``limit_price=N`` is
-    equivalent to ``style=LimitOrder(N)``. Similarly, passing
-    ``stop_price=M`` is equivalent to ``style=StopOrder(M)``, and passing
-    ``limit_price=N`` and ``stop_price=M`` is equivalent to
-    ``style=StopLimitOrder(N, M)``. It is an error to pass both a ``style``
-    and ``limit_price`` or ``stop_price``.
-
     See Also
     --------
     :class:`zipline.api.execution.MarketOrder`
@@ -672,6 +711,20 @@ def order(
     :func:`zipline.api.order_target`
     :func:`zipline.api.order_target_value`
     :func:`zipline.api.order_target_percent`
+
+    Notes
+    -----
+    The ``limit_price`` and ``stop_price`` arguments provide shorthands for
+    passing common execution styles. Passing ``limit_price=N`` is
+    equivalent to ``style=LimitOrder(N)``. Similarly, passing
+    ``stop_price=M`` is equivalent to ``style=StopOrder(M)``, and passing
+    ``limit_price=N`` and ``stop_price=M`` is equivalent to
+    ``style=StopLimitOrder(N, M)``. It is an error to pass both a ``style``
+    and ``limit_price`` or ``stop_price``.
+
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def order_percent(
@@ -703,11 +756,6 @@ def order_percent(
     order_id : str
         The unique identifier for this order.
 
-    Notes
-    -----
-    See :func:`zipline.api.order` for more information about
-    ``limit_price``, ``stop_price``, and ``style``
-
     See Also
     --------
     :class:`zipline.api.execution.MarketOrder`
@@ -719,6 +767,15 @@ def order_percent(
     :func:`zipline.api.order_target`
     :func:`zipline.api.order_target_value`
     :func:`zipline.api.order_target_percent`
+
+    Notes
+    -----
+    See :func:`zipline.api.order` for more information about
+    ``limit_price``, ``stop_price``, and ``style``
+
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def order_target(
@@ -752,6 +809,17 @@ def order_target(
     order_id : str
         The unique identifier for this order.
 
+    See Also
+    --------
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
+    :func:`zipline.api.order_value`
+    :func:`zipline.api.order`
+    :func:`zipline.api.order_percent`
+    :func:`zipline.api.order_target_value`
+    :func:`zipline.api.order_target_percent`
 
     Notes
     -----
@@ -768,17 +836,9 @@ def order_target(
     See :func:`zipline.api.order` for more information about
     ``limit_price``, ``stop_price``, and ``style``
 
-    See Also
-    --------
-    :class:`zipline.api.execution.MarketOrder`
-    :class:`zipline.api.execution.LimitOrder`
-    :class:`zipline.api.execution.StopOrder`
-    :class:`zipline.api.execution.StopLimitOrder`
-    :func:`zipline.api.order_value`
-    :func:`zipline.api.order`
-    :func:`zipline.api.order_percent`
-    :func:`zipline.api.order_target_value`
-    :func:`zipline.api.order_target_percent`
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def order_target_percent(
@@ -814,6 +874,18 @@ def order_target_percent(
     order_id : str
         The unique identifier for this order.
 
+    See Also
+    --------
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
+    :func:`zipline.api.order_value`
+    :func:`zipline.api.order`
+    :func:`zipline.api.order_percent`
+    :func:`zipline.api.order_target`
+    :func:`zipline.api.order_target_value`
+
     Notes
     -----
     ``order_target_value`` does not take into account any open orders. For
@@ -829,17 +901,9 @@ def order_target_percent(
     See :func:`zipline.api.order` for more information about
     ``limit_price``, ``stop_price``, and ``style``
 
-    See Also
-    --------
-    :class:`zipline.api.execution.MarketOrder`
-    :class:`zipline.api.execution.LimitOrder`
-    :class:`zipline.api.execution.StopOrder`
-    :class:`zipline.api.execution.StopLimitOrder`
-    :func:`zipline.api.order_value`
-    :func:`zipline.api.order`
-    :func:`zipline.api.order_percent`
-    :func:`zipline.api.order_target`
-    :func:`zipline.api.order_target_value`
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def order_target_value(
@@ -875,6 +939,18 @@ def order_target_value(
     order_id : str
         The unique identifier for this order.
 
+    See Also
+    --------
+    :class:`zipline.api.execution.MarketOrder`
+    :class:`zipline.api.execution.LimitOrder`
+    :class:`zipline.api.execution.StopOrder`
+    :class:`zipline.api.execution.StopLimitOrder`
+    :func:`zipline.api.order_value`
+    :func:`zipline.api.order`
+    :func:`zipline.api.order_percent`
+    :func:`zipline.api.order_target`
+    :func:`zipline.api.order_target_percent`
+
     Notes
     -----
     ``order_target_value`` does not take into account any open orders. For
@@ -890,17 +966,9 @@ def order_target_value(
     See :func:`zipline.api.order` for more information about
     ``limit_price``, ``stop_price``, and ``style``
 
-    See Also
-    --------
-    :class:`zipline.api.execution.MarketOrder`
-    :class:`zipline.api.execution.LimitOrder`
-    :class:`zipline.api.execution.StopOrder`
-    :class:`zipline.api.execution.StopLimitOrder`
-    :func:`zipline.api.order_value`
-    :func:`zipline.api.order`
-    :func:`zipline.api.order_percent`
-    :func:`zipline.api.order_target`
-    :func:`zipline.api.order_target_percent`
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def order_value(
@@ -936,11 +1004,6 @@ def order_value(
     order_id : str
         The unique identifier for this order.
 
-    Notes
-    -----
-    See :func:`zipline.api.order` for more information about
-    ``limit_price``, ``stop_price``, and ``style``
-
     See Also
     --------
     :class:`zipline.api.execution.MarketOrder`
@@ -952,6 +1015,15 @@ def order_value(
     :func:`zipline.api.order_target`
     :func:`zipline.api.order_target_value`
     :func:`zipline.api.order_target_percent`
+
+    Notes
+    -----
+    See :func:`zipline.api.order` for more information about
+    ``limit_price``, ``stop_price``, and ``style``
+
+    Usage Guide:
+
+    * Placing orders: https://qrok.it/dl/z/zipline-orders
     """
 
 def pipeline_output(name: str) -> pd.DataFrame:
@@ -977,6 +1049,12 @@ def pipeline_output(name: str) -> pd.DataFrame:
     See Also
     --------
     :func:`zipline.api.attach_pipeline`
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Pipeline output: https://qrok.it/dl/z/zipline-pipeline-output
     """
 
 def record(**kwargs: Any) -> None:
@@ -1013,6 +1091,12 @@ def set_realtime_db(
     Returns
     -------
     None
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Real-time data configuration: https://qrok.it/dl/z/zipline-realtime
 
     Examples
     --------
@@ -1070,6 +1154,12 @@ def schedule_function(
     --------
     :class:`zipline.api.date_rules`
     :class:`zipline.api.time_rules`
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Scheduled functions: https://qrok.it/dl/z/zipline-schedule
     """
 
 class date_rules:
@@ -1079,6 +1169,12 @@ class date_rules:
     See Also
     --------
     :func:`~zipline.api.schedule_function`
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Scheduled functions: https://qrok.it/dl/z/zipline-schedule
     """
 
     @staticmethod
@@ -1162,6 +1258,12 @@ class time_rules:
     See Also
     --------
     :func:`~zipline.api.schedule_function`
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Scheduled functions: https://qrok.it/dl/z/zipline-schedule
     """
 
     @staticmethod
@@ -1281,6 +1383,10 @@ def set_benchmark(benchmark: Asset) -> None:
     -----
     Any dividends payed out for that new benchmark asset will be
     automatically reinvested.
+
+    Usage Guide:
+
+    * Benchmarks: https://qrok.it/dl/z/zipline-benchmark
     """
 
 def set_cancel_policy(cancel_policy: cancel_policy.CancelPolicy) -> None:
@@ -1295,6 +1401,10 @@ def set_cancel_policy(cancel_policy: cancel_policy.CancelPolicy) -> None:
     --------
     :class:`zipline.api.EODCancel`
     :class:`zipline.api.NeverCancel`
+
+    Usage Guide:
+
+    * Time-in-force: https://qrok.it/dl/z/zipline-tif
     """
 
 class EODCancel(cancel_policy.CancelPolicy):
@@ -1341,10 +1451,20 @@ def set_commission(
     us_futures : zipline.api.commission.FutureCommissionModel
         The commission model to use for trading US futures.
 
+    See Also
+    --------
+    :class:`zipline.api.commission.PerShare`
+    :class:`zipline.api.commission.PerTrade`
+    :class:`zipline.api.commission.PerDollar`
+
     Notes
     -----
     This function can only be called during
     :func:`~zipline.api.initialize`.
+
+    Usage Guide:
+
+    * Commissions and slippage: https://qrok.it/dl/z/zipline-commissions-slippage
 
     Examples
     --------
@@ -1352,12 +1472,6 @@ def set_commission(
 
         import zipline.api as algo
         algo.set_commission(algo.commission.PerShare(cost=0.001))
-
-    See Also
-    --------
-    :class:`zipline.api.commission.PerShare`
-    :class:`zipline.api.commission.PerTrade`
-    :class:`zipline.api.commission.PerDollar`
     """
 
 def set_long_only(on_error: Literal['fail', 'log'] ='fail') -> None:
@@ -1474,14 +1588,18 @@ def set_slippage(
         import zipline.api as algo
         algo.set_slippage(algo.slippage.FixedBasisPointsSlippage(basis_points=5.0))
 
+    See Also
+    --------
+    :class:`zipline.api.slippage.SlippageModel`
+
     Notes
     -----
     This function can only be called during
     :func:`~zipline.api.initialize`.
 
-    See Also
-    --------
-    :class:`zipline.api.slippage.SlippageModel`
+    Usage Guide:
+
+    * Commissions and slippage: https://qrok.it/dl/z/zipline-commissions-slippage
     """
 
 def sid(sid: str) -> Asset:

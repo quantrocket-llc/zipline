@@ -22,6 +22,12 @@ sid
 
 continuous_future
     Return a `zipline.assets.ContinuousFuture` object for a specified root symbol.
+
+Notes
+-----
+Usage Guide:
+
+* Research API: https://qrok.it/dl/z/zipline-research
 """
 from zipline.research.pipeline import run_pipeline, get_forward_returns
 from zipline.research.bardata import get_data

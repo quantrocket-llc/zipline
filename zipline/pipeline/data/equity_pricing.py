@@ -29,6 +29,12 @@ class EquityPricing(DataSet):
     volume : float64
         The volume of shares traded for the asset for the day.
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Pipeline data concepts: https://qrok.it/dl/z/pipeline-data-concepts
+
     Examples
     --------
     Get a Pipeline factor that returns the closing price:

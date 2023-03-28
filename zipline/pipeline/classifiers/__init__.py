@@ -11,6 +11,12 @@ Classifier
 
 CustomClassifier
     Base class for user-defined Classifiers.
+
+Notes
+-----
+Usage Guide:
+
+* Pipeline computations: https://qrok.it/dl/z/pipeline-computations
 """
 from .classifier import (
     Classifier,

@@ -89,6 +89,12 @@ TrueRange
 
 VWAP
     Factor that calculates volume-weighted average price.
+
+Notes
+-----
+Usage Guide:
+
+* Pipeline computations: https://qrok.it/dl/z/pipeline-computations
 """
 from .factor import (
     CustomFactor,

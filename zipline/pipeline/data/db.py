@@ -19,6 +19,12 @@ Column = _Column # re-export and customize docstring
 """
 A Pipeline column representing a single field of a database queryable with
 `quantrocket.get_prices`.
+
+Notes
+-----
+Usage Guide:
+
+* Pipeline databases: https://qrok.it/dl/z/pipeline-db
 """
 
 class Database(DataSet):
@@ -79,6 +85,17 @@ class Database(DataSet):
         This parameter only needs to be set to request daily data from a minute bundle.
         Possible choices: daily, minute (or aliases d, m).
 
+    Notes
+    -----
+    Because numpy has no native support for integers with missing values, users
+    are strongly encouraged to use floats for any data that's semantically
+    numeric. Doing so enables the use of `NaN` as a natural missing value,
+    which has useful propagation semantics.
+
+    Usage Guide:
+
+    * Pipeline databases: https://qrok.it/dl/z/pipeline-db
+
     Examples
     --------
     Define a Pipeline dataset that points to a database of custom fundamentals::
@@ -110,13 +127,6 @@ class Database(DataSet):
     bool-dtype columns is False::
 
         IsEtf = Column(bool)
-
-    Notes
-    -----
-    Because numpy has no native support for integers with missing values, users
-    are strongly encouraged to use floats for any data that's semantically
-    numeric. Doing so enables the use of `NaN` as a natural missing value,
-    which has useful propagation semantics.
     """
     CODE: str = None
     SHIFT: int = 1

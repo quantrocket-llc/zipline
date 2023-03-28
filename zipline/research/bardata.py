@@ -54,6 +54,12 @@ def get_data(
     -------
     data : zipline.api.BarData
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Data Object: https://qrok.it/dl/z/zipline-research-data
+
     Examples
     --------
     Get the data object for July 7, 2020 at 11 AM for the usstock minute

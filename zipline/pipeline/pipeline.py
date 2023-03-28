@@ -37,6 +37,12 @@ class Pipeline(object):
         Initial columns.
     screen : zipline.pipeline.Filter, optional
         Initial screen.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Pipeline API: https://qrok.it/dl/z/pipeline
     """
     __slots__ = ('_columns', '_screen', '_domain', '__weakref__')
 

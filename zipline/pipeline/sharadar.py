@@ -24,6 +24,14 @@ InterestCoverageRatio
     Return a Factor that computes the Interest Coverage Ratio (ICR) using Sharadar
     fundamentals. The Interest Coverage Ratio measures a company's ability to service
     its debt.
+
+Notes
+-----
+Usage Guide:
+
+* Sharadar fundamentals: https://qrok.it/dl/z/pipeline-sharadar-fundamentals
+* Sharadar institutions: https://qrok.it/dl/z/pipeline-sharadar-institutions
+* Sharadar S&P 500: https://qrok.it/dl/z/pipeline-sharadar-sp500
 """
 from .factors.sharadar import(
     PiotroskiFScore,

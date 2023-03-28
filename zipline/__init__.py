@@ -26,6 +26,15 @@ zipline.pipeline
 
 zipline.research
     The public API for working with Zipline in Jupyter notebooks.
+
+Notes
+-----
+Usage Guide:
+
+* Zipline: https://qrok.it/dl/z/zipline
+* Algorithm API: https://qrok.it/dl/z/zipline-algo
+* Pipeline API: https://qrok.it/dl/z/pipeline
+* Research API: https://qrok.it/dl/z/zipline-research
 """
 import os
 import numpy as np

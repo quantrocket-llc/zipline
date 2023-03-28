@@ -37,6 +37,12 @@ VolumeShareSlippage
 
 VolatilityVolumeShare
     Model slippage for futures contracts using a market impact model.
+
+Notes
+-----
+Usage Guide:
+
+* Commissions and slippage: https://qrok.it/dl/z/zipline-commissions-slippage
 """
 from __future__ import division
 

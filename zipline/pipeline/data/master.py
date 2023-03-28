@@ -540,6 +540,12 @@ class SecuritiesMaster(DataSet):
     figi_IsComposite : bool
         whether the Figi column contains a composite FIGI
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Securities master: https://qrok.it/dl/z/pipeline-securities-master
+
     Examples
     --------
     Filter ETFs::

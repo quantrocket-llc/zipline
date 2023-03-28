@@ -27,6 +27,12 @@ class ETB(DataSet):
     etb : bool
         whether the security is easy-to-borrow
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Alpaca ETB: https://qrok.it/dl/z/pipeline-alpaca-etb
+
     Examples
     --------
     Create a Filter that computes True for easy-to-borrow securities::

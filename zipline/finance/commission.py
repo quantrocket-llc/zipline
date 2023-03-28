@@ -36,6 +36,12 @@ PerContract
 
 PerFutureTrade
     Calculates a commission for a transaction based on a per trade cost.
+
+Notes
+-----
+Usage Guide:
+
+* Commissions and slippage: https://qrok.it/dl/z/zipline-commissions-slippage
 """
 from abc import abstractmethod
 from typing import Union

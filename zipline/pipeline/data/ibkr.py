@@ -34,6 +34,12 @@ class ShortableShares(DataSet):
     LastQuantity : float
         last quantity of shortable shares for the day
 
+    Notes
+    -----
+    Usage Guide:
+
+    * IBKR shortable shares: https://qrok.it/dl/z/pipeline-shortshares
+
     Examples
     --------
     Get the number of shortable shares for the previous day::
@@ -58,6 +64,12 @@ class BorrowFees(DataSet):
     FeeRate : float
         The annualized interest rate on short positions. For example, 1.0198
         indicates an annualized interest rate of 1.0198%.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * IBKR borrow fees: https://qrok.it/dl/z/pipeline-borrowfees
 
     Examples
     --------

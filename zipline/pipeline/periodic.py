@@ -66,6 +66,12 @@ AllPeriodsBelow
 AllPeriodsPresent
     Return a Filter that computes whether a column or factor is present in the
     data over each of a specified number of periods.
+
+Notes
+-----
+Usage Guide:
+
+* Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
 """
 from typing import Union, Callable
 import inspect
@@ -180,6 +186,12 @@ def PeriodicAverage(
     zipline.pipeline.Factor
         a Factor that computes the average
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
+
     Examples
     --------
     Create a Factor that computes the average dividend per share over the last
@@ -272,6 +284,12 @@ def PeriodicHigh(
     zipline.pipeline.Factor
         a Factor that computes the high
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
+
     Examples
     --------
     Create a Factor that computes the highest EPS over the last 4 quarters, using
@@ -342,6 +360,12 @@ def PeriodicLow(
     -------
     zipline.pipeline.Factor
         a Factor that computes the low
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
 
     Examples
     --------
@@ -478,6 +502,12 @@ def PeriodicPercentChange(
     zipline.pipeline.Factor
         a Factor that computes the percent change
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
+
     Examples
     --------
     Create a Factor that computes the percent change in dividend yield over the
@@ -565,6 +595,12 @@ def PeriodicCAGR(
     -------
     zipline.pipeline.Factor
         a Factor that computes the CAGR
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
 
     Examples
     --------
@@ -684,6 +720,12 @@ def AllPeriodsIncreasing(
     zipline.pipeline.Filter
         a Filter indicating whether the input factor increases over time
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
+
     Examples
     --------
     Create a Filter that returns True if revenue increased versus the prior
@@ -761,6 +803,12 @@ def AllPeriodsDecreasing(
     -------
     zipline.pipeline.Filter
         a Filter indicating whether the input factor decreases over time
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
 
     Examples
     --------
@@ -880,6 +928,12 @@ def CountPeriodsAbove(
         a Factor counting how many times the input factor is above the value over
         the window_length
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
+
     Examples
     --------
     Create a Factor that computes the number of quarters with positive EBIT out
@@ -962,6 +1016,12 @@ def CountPeriodsBelow(
     zipline.pipeline.Factor
         a Factor counting how many times the input factor is below the value over
         the window_length
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
 
     Examples
     --------
@@ -1046,6 +1106,12 @@ def AllPeriodsAbove(
         a Filter indicating whether the input factor is above the value over
         the full window_length
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
+
     Examples
     --------
     Create a Filter that returns True if dividend per share was positive for
@@ -1129,6 +1195,12 @@ def AllPeriodsBelow(
     zipline.pipeline.Filter
         a Filter indicating whether the input factor is below the value over
         the full window_length
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
 
     Examples
     --------
@@ -1247,6 +1319,12 @@ def AllPeriodsPresent(
     zipline.pipeline.Filter
         a Filter indicating whether the input factor is present over the
         full window_length
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
 
     Examples
     --------

@@ -626,6 +626,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Returns
         -------
         result : zipline.pipeline.Factor
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Row-wise computations: https://qrok.it/dl/z/pipeline-rowwise
         """
         return DailySummary(
             summary_funcs.mean,
@@ -650,6 +656,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Returns
         -------
         result : zipline.pipeline.Factor
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Row-wise computations: https://qrok.it/dl/z/pipeline-rowwise
         """
         return DailySummary(
             summary_funcs.stddev,
@@ -673,6 +685,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Returns
         -------
         result : zipline.pipeline.Factor
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Row-wise computations: https://qrok.it/dl/z/pipeline-rowwise
         """
         return DailySummary(
             summary_funcs.max,
@@ -696,6 +714,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Returns
         -------
         result : zipline.pipeline.Factor
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Row-wise computations: https://qrok.it/dl/z/pipeline-rowwise
         """
         return DailySummary(
             summary_funcs.min,
@@ -719,6 +743,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Returns
         -------
         result : zipline.pipeline.Factor
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Row-wise computations: https://qrok.it/dl/z/pipeline-rowwise
         """
         return DailySummary(
             summary_funcs.median,
@@ -742,6 +772,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Returns
         -------
         result : zipline.pipeline.Factor
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Row-wise computations: https://qrok.it/dl/z/pipeline-rowwise
         """
         return DailySummary(
             summary_funcs.sum,
@@ -766,6 +802,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Returns
         -------
         result : zipline.pipeline.Factor
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Row-wise computations: https://qrok.it/dl/z/pipeline-rowwise
         """
         return DailySummary(
             summary_funcs.notnull_count,
@@ -856,6 +898,12 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
 
             If a scalar (e.g. a number) is passed, the scalar will be used as a
             fill value.
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Masking: https://qrok.it/dl/z/pipeline-mask
 
         Examples
         --------
@@ -2147,6 +2195,10 @@ class CustomFactor(PositiveWindowLengthMixin, CustomTermMixin, Factor):
     asset A started trading on Monday June 2nd, 2014, then on Tuesday, June
     3rd, 2014, the column of input data for asset A will have 9 leading NaNs
     for the preceding days on which data was not yet available.
+
+    Usage Guide:
+
+    * Custom Factors: https://qrok.it/dl/z/pipeline-custom-factors
 
     Examples
     --------

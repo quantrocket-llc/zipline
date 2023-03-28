@@ -11,6 +11,12 @@ Database
 Column
     A Pipeline column representing a single field of a database
     queryable with `quantrocket.get_prices`.
+
+Notes
+-----
+Usage Guide:
+
+* Pipeline databases: https://qrok.it/dl/z/pipeline-db
 """
 from .data.db import Database, Column
 

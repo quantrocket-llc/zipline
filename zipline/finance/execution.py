@@ -34,6 +34,12 @@ StopOrder
 StopLimitOrder
     Execution style representing a limit order to be placed if market price
     reaches a threshold.
+
+Notes
+-----
+Usage Guide:
+
+* Placing orders: https://qrok.it/dl/z/zipline-orders
 """
 import abc
 from typing import Union

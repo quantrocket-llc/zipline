@@ -372,6 +372,12 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
         factor : Factor
             Factor returning 1s for True and 0s for False.
 
+        Notes
+        -----
+        Usage Guide:
+
+        * Scores from Filters: https://qrok.it/dl/z/pipeline-scores
+
         Examples
         --------
         A common use for `as_factor` is to combine multiple boolean conditions

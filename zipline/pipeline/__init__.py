@@ -19,7 +19,6 @@ periodic
     or annual fundamentals. Specifically, these factors and filters are compatible
     with any Pipeline DataSet that has a `period_offset` coordinate.
 
-
 sharadar
     Pipeline datasets for Sharadar US Fundamentals, Institutional Holdings,
     and S&P 500 constituents.
@@ -50,6 +49,12 @@ EquityPricing
 
 Constant
     Pipeline term that returns a constant value.
+
+Notes
+-----
+Usage Guide:
+
+* Pipeline API: https://qrok.it/dl/z/pipeline
 """
 from __future__ import print_function
 

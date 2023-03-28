@@ -38,6 +38,12 @@ class SP500(DataSet):
     in_sp500 : bool
         whether the security is a member of the S&P 500
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Sharadar S&P 500: https://qrok.it/dl/z/pipeline-sharadar-sp500
+
     Examples
     --------
     Create a filter that computes True for securities that are in the S&P 500
@@ -651,6 +657,13 @@ class Fundamentals(DataSetFamily):
         Working Capital - [Metrics] Working capital measures the difference
         between [AssetsC] and [LiabilitiesC].
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Sharadar fundamentals: https://qrok.it/dl/z/pipeline-sharadar-fundamentals
+    * Pipeline data concepts: https://qrok.it/dl/z/pipeline-data-concepts
+
     Examples
     --------
     Select stocks with low enterprise multiples using quarterly fundamentals::
@@ -921,6 +934,13 @@ class Fundamentals(DataSetFamily):
         DataSet
             Fundamentals DataSet with the specified dimension and period_offset.
 
+        Notes
+        -----
+        Usage Guide:
+
+        * Sharadar fundamentals: https://qrok.it/dl/z/pipeline-sharadar-fundamentals
+        * Pipeline data concepts: https://qrok.it/dl/z/pipeline-data-concepts
+
         Examples
         --------
         Select stocks with low enterprise multiples using quarterly fundamentals::
@@ -1059,6 +1079,13 @@ class Institutions(DataSetFamily):
         Value of Warrant units held (institutional) - The total value of
         warrant units held.
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Sharadar institutions: https://qrok.it/dl/z/pipeline-sharadar-institutions
+    * Pipeline data concepts: https://qrok.it/dl/z/pipeline-data-concepts
+
     Examples
     --------
     Select stocks with large institutional ownership::
@@ -1143,6 +1170,13 @@ class Institutions(DataSetFamily):
         -------
         DataSet
             Institutions DataSet with the specified period_offset.
+
+        Notes
+        -----
+        Usage Guide:
+
+        * Sharadar institutions: https://qrok.it/dl/z/pipeline-sharadar-institutions
+        * Pipeline data concepts: https://qrok.it/dl/z/pipeline-data-concepts
 
         Examples
         --------

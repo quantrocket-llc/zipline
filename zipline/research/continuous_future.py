@@ -64,6 +64,12 @@ def continuous_future(
     -------
     asset : zipline.assets.ContinuousFuture
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Continuous Futures: https://qrok.it/dl/z/zipline-contfut
+
     Examples
     --------
     Get the continuous future object for ES and get the current chain as of

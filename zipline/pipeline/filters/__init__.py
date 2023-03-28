@@ -24,6 +24,12 @@ Filter
 
 CustomFilter
     Base class for user-defined Filters.
+
+Notes
+-----
+Usage Guide:
+
+* Pipeline computations: https://qrok.it/dl/z/pipeline-computations
 """
 from .filter import (
     AllPresent,

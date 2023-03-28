@@ -71,6 +71,12 @@ def run_pipeline(
         of None indicates that a row should be returned for each asset that existed each
         day.
 
+    Notes
+    -----
+    Usage Guide:
+
+    * Pipeline in Research: https://qrok.it/dl/z/pipeline-research
+
     Examples
     --------
     Get a pipeline of 1-year returns::

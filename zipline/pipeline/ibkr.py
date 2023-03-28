@@ -9,6 +9,13 @@ ShortableShares
 
 BorrowFees
     DataSet representing the previous day's borrow fees.
+
+Notes
+-----
+Usage Guide:
+
+* IBKR shortable shares: https://qrok.it/dl/z/pipeline-shortshares
+* IBKR borrow fees: https://qrok.it/dl/z/pipeline-borrowfees
 """
 from .data.ibkr import (
     ShortableShares,

@@ -51,6 +51,12 @@ class BarData:
         Returns the current futures chain as of the simulation date.
 
     See the individual methods for more details.
+
+    Notes
+    -----
+    Usage Guide:
+
+    * BarData: https://qrok.it/dl/z/zipline-bardata
     """
     ...
 
