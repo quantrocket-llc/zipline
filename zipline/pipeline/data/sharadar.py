@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
 from zipline.utils.numpy_utils import (
     bool_dtype,
     float64_dtype,
@@ -907,7 +908,7 @@ class Fundamentals(DataSetFamily):
     @classmethod
     def slice(
         cls,
-        dimension: str,
+        dimension: Literal['ARQ', 'ARY', 'ART', 'MRQ', 'MRY', 'MRT'],
         period_offset: int = 0
         ) -> 'Fundamentals':
         """

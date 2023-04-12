@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
 from zipline.pipeline.data import sharadar
 from zipline.pipeline.factors import Latest, Factor
 from zipline.pipeline.filters import Filter
 
 def PiotroskiFScore(
-    dimension: str = "ART",
+    dimension: Literal['ARQ', 'ARY', 'ART', 'MRQ', 'MRY', 'MRT'] = "ART",
     period_offset: int = 0,
     previous_period_offset: int = None,
     mask: Filter = None
@@ -129,7 +130,7 @@ def PiotroskiFScore(
     return f_scores
 
 def AltmanZScore(
-    dimension: str = "ART",
+    dimension: Literal['ARQ', 'ARY', 'ART', 'MRQ', 'MRY', 'MRT'] = "ART",
     period_offset: int = 0,
     mask: Filter = None
     ) -> Factor:
@@ -210,7 +211,7 @@ def AltmanZScore(
     return z_scores
 
 def InterestCoverageRatio(
-    dimension: str = "ART",
+    dimension: Literal['ARQ', 'ARY', 'ART', 'MRQ', 'MRY', 'MRT'] = "ART",
     period_offset: int = 0,
     mask: Filter = None
     ) -> Factor:
