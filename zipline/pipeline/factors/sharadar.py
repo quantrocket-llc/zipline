@@ -151,6 +151,15 @@ def AltmanZScore(
     - D = market value of equity / total liabilities
     - E = sales / total assets
 
+    Altman Z-Scores are often interpreted as follows:
+
+    - Z-Score >= 3: "Safe" Zone
+    - 1.8 < Z-Score < 3: "Grey" Zone
+    - Z-Score < 1.8: "Distress" Zone
+
+    However, in recent years the author of the Altman Z-Score has
+    suggested that the Distress Zone should be updated to Z-Score < 0.
+
     Parameters
     ----------
     dimension : str, optional
@@ -222,7 +231,10 @@ def InterestCoverageRatio(
 
     Interest coverage ratio is calculated as EBIT (earnings before interest,
     and taxes) divided by interest expense. The ratio shows how many times
-    a company could cover its interest expense using current earnings.
+    a company could cover its interest expense using current earnings. An
+    interest coverage ratio of 1 or lower indicates that a company is not
+    generating sufficient revenues to satisfy interest expenses. Generally,
+    investors prefer companies with interest coverage ratios of at least 2.
 
     Interest coverage ratio is only computed for companies with positive
     earnings and interest expense. For companies with negative earnings

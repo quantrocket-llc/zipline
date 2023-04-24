@@ -1668,7 +1668,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         Construct a Classifier computing quintile labels on ``self``.
 
         Every non-NaN data point the output is labelled with a value of either
-        0, 1, 2, or 3, 4, corresonding to quintiles over each row.  NaN data
+        0, 1, 2, 3, or 4, corresponding to quintiles over each row.  NaN data
         points are labelled with -1.
 
         If ``mask`` is supplied, ignore data points in locations for which
