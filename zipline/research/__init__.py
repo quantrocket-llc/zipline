@@ -18,7 +18,10 @@ get_data
     Return a `zipline.api.BarData` object for a specified bundle and datetime.
 
 sid
-    Return a `zipline.assets.Asset` object for a specified sid.
+    Lookup an Asset by its unique sid.
+
+symbol
+    Lookup an Equity by its ticker symbol.
 
 continuous_future
     Return a `zipline.assets.ContinuousFuture` object for a specified root symbol.
@@ -31,7 +34,7 @@ Usage Guide:
 """
 from zipline.research.pipeline import run_pipeline, get_forward_returns
 from zipline.research.bardata import get_data
-from zipline.research.sid import sid
+from zipline.research.sid import sid, symbol
 from zipline.research.continuous_future import continuous_future
 
 __all__ = [
@@ -39,5 +42,6 @@ __all__ = [
     'get_forward_returns',
     'get_data',
     'sid',
+    'symbol',
     'continuous_future',
 ]

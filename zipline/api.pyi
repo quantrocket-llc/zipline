@@ -109,6 +109,9 @@ set_slippage
 sid
     Lookup an Asset by its unique asset identifier.
 
+symbol
+    Lookup an Equity by its ticker symbol.
+
 Classes
 -------
 Asset
@@ -222,6 +225,7 @@ __all__ = [
     'set_min_leverage',
     'set_slippage',
     'sid',
+    'symbol',
     'ORDER_STATUS',
 ]
 
@@ -1619,4 +1623,31 @@ def sid(sid: str) -> Asset:
     ------
     SidsNotFound
         When a requested ``sid`` does not map to any asset.
+    """
+
+
+def symbol(symbol: str) -> Asset:
+    """
+    Lookup an Equity by its ticker symbol.
+
+    Ticker symbols can change over time, and this function will raise an
+    error if the ticker symbol has been associated with more than one equity.
+    For a more robust way to retrieve an equity, use `sid()`.
+
+    Parameters
+    ----------
+    symbol : str
+        The ticker symbol for the equity.
+
+    Returns
+    -------
+    equity : zipline.assets.Equity
+        The equity with the ticker symbol.
+
+    Raises
+    ------
+    SymbolNotFound
+        Raised when the symbol was not held by any equity.
+    MultipleSymbolsFound
+        Raised when the symbol was held by more than one equity.
     """

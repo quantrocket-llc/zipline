@@ -46,6 +46,7 @@ from zipline.errors import (
     RegisterTradingControlPostInit,
     SetCancelPolicyPostInit,
     SymbolNotFound,
+    MultipleSymbolsFound,
     TradingControlViolation,
     UnsupportedCancelPolicy,
     UnsupportedDatetimeFormat,
@@ -80,6 +81,7 @@ from zipline._testing.test_algorithms import (
     api_algo,
     api_get_environment_algo,
     api_sid_algo,
+    api_symbol_algo,
     handle_data_api,
     handle_data_noop,
     initialize_api,
@@ -189,6 +191,12 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                      'end_date': '2006-01-01',
                      'exchange': 'TEST',
                      'real_sid': '4',
+                     'currency': 'USD'},
+                 9: {'symbol': 'UNIQ',
+                     'start_date': '2002-01-01',
+                     'end_date': '2006-01-01',
+                     'exchange': 'TEST',
+                     'real_sid': '9',
                      'currency': 'USD'}},
                 orient='index',
             ),
@@ -622,6 +630,37 @@ def log_nyse_close(context, data):
             self.assertEqual(second.second.cal, algo.trading_calendar)
 
         self.assertIs(composer, ComposedRule.lazy_and)
+
+    def test_asset_lookup(self):
+        algo = self.make_algo()
+
+        with self.assertRaises(MultipleSymbolsFound):
+            algo.symbol('PLAY')
+        with self.assertRaises(SymbolNotFound):
+            algo.symbol('NA')
+
+        self.assertEqual(9, algo.symbol('UNIQ'))
+
+        # Test lookup SID
+        self.assertIsInstance(algo.sid(3), Equity)
+        self.assertIsInstance(algo.sid(4), Equity)
+
+        # Supplying a non-string argument to symbol()
+        # should result in a TypeError.
+        with self.assertRaises(TypeError):
+            algo.symbol(1)
+
+        with self.assertRaises(TypeError):
+            algo.symbol((1,))
+
+        with self.assertRaises(TypeError):
+            algo.symbol({1})
+
+        with self.assertRaises(TypeError):
+            algo.symbol([1])
+
+        with self.assertRaises(TypeError):
+            algo.symbol({'foo': 'bar'})
 
     def test_future_symbol(self):
         """ Tests the future_symbol API function.
@@ -1387,6 +1426,9 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     def test_api_sid(self):
         self.run_algorithm(script=api_sid_algo)
+
+    def test_api_symbol(self):
+        self.run_algorithm(script=api_symbol_algo)
 
     def test_fixed_slippage(self):
         # verify order -> transaction -> portfolio position.

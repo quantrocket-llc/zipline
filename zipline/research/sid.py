@@ -18,14 +18,16 @@ import pandas as pd
 from zipline.data import bundles
 from zipline.assets import Asset
 from zipline.utils.extensions import load_extensions
+from zipline.utils.input_validation import ensure_upper_case
+from zipline.utils.preprocess import preprocess
 from zipline.research.exceptions import ValidationError
 from zipline.research._asset import asset_finder_cache
 from quantrocket.zipline import get_default_bundle
 
 def sid(sid: str, bundle: str = None) -> Asset:
     """
-    Return a `zipline.assets.Asset` object for the specified sid in the specified bundle
-    (or default bundle).
+    Lookup an Asset by its unique sid in the specified bundle (or default
+    bundle).
 
     Parameters
     ----------
@@ -91,5 +93,69 @@ def sid(sid: str, bundle: str = None) -> Asset:
             f"No such sid {sid} in {bundle} bundle")
 
     asset = asset_finder.retrieve_asset(zipline_sid)
+
+    return asset
+
+@preprocess(symbol=ensure_upper_case)
+def symbol(symbol: str, bundle: str = None) -> Asset:
+    """
+    Lookup an Equity by its ticker symbol in the specified bundle
+    (or default bundle).
+
+    Ticker symbols can change over time, and this function will raise an
+    error if the ticker symbol has been associated with more than one equity.
+    For a more robust way to retrieve an equity, use `sid()`.
+
+    Parameters
+    ----------
+    symbol : str, required
+        The ticker symbol for the equity.
+
+    bundle : str, optional
+        the bundle code. If omitted, the default bundle will be used (and must be set).
+
+    Returns
+    -------
+    equity : zipline.assets.Equity
+        The equity with the ticker symbol.
+
+    Raises
+    ------
+    SymbolNotFound
+        Raised when the symbol was not held by any equity.
+    MultipleSymbolsFound
+        Raised when the symbol was held by more than one equity.
+
+    Notes
+    -----
+    Each asset is specific to the bundle from which it came. An
+    Asset object for AAPL from bundle A cannot be used to retrieve
+    AAPL data from bundle B, even if AAPL data is present in bundle
+    B.
+
+    Examples
+    --------
+    Get the asset object for AAPL::
+
+        aapl = symbol("AAPL", bundle="usstock-1min")
+    """
+    if not bundle:
+        bundle = get_default_bundle()
+        if not bundle:
+            raise ValidationError("you must specify a bundle or set a default bundle")
+        bundle = bundle["default_bundle"]
+
+    load_extensions(code=bundle)
+
+    bundle_data = bundles.load(
+        bundle,
+        os.environ,
+        pd.Timestamp.utcnow(),
+    )
+
+    asset_finder = asset_finder_cache.get(bundle, bundle_data.asset_finder)
+    asset_finder_cache[bundle] = asset_finder
+
+    asset = asset_finder.lookup_symbol(symbol)
 
     return asset

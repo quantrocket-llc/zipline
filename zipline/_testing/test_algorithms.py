@@ -380,6 +380,17 @@ def handle_data(context, data):
     pass
 """
 
+api_symbol_algo = """
+from zipline.api import (order,
+                         symbol)
+
+def initialize(context):
+    pass
+
+def handle_data(context, data):
+    order(symbol('TEST'), 1)
+"""
+
 api_sid_algo = """
 from zipline.api import (order,
                          sid)

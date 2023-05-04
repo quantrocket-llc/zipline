@@ -291,6 +291,19 @@ class OrderInBeforeTradingStart(ZiplineError):
     """
     msg = "Cannot place orders inside before_trading_start."
 
+
+class MultipleSymbolsFound(ZiplineError):
+    """
+    Raised when a symbol() call contains a symbol that changed over
+    time and is thus not resolvable via symbol().
+    """
+    msg = """
+Multiple symbols with the name '{symbol}' found. Use the sid() function to
+lookup the asset you want.
+
+Possible options: {options}
+    """.strip()
+
 class SymbolNotFound(ZiplineError):
     """
     Raised when a symbol() call contains a non-existant symbol.

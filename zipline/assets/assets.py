@@ -41,6 +41,7 @@ from toolz import (
 from zipline.errors import (
     EquitiesNotFound,
     FutureContractsNotFound,
+    MultipleSymbolsFound,
     SidsNotFound,
     SymbolNotFound,
 )
@@ -696,13 +697,64 @@ class AssetFinder(object):
                 raise FutureContractsNotFound(sids=misses)
         return hits
 
-    def _choose_symbol_ownership_map(self, country_code):
-        if country_code is None:
-            return self.symbol_ownership_map
+    def lookup_symbol(self, symbol):
+        """Lookup an equity by symbol. This method can only resolve the equity
+        if exactly one equity has ever owned the ticker.
 
-        return self.symbol_ownership_maps_by_country_code.get(country_code)
+        Parameters
+        ----------
+        symbol : str
+            The ticker symbol to resolve.
 
+        Returns
+        -------
+        equity : Equity
+            The  equity identified by ``symbol``.
 
+        Raises
+        ------
+        SymbolNotFound
+            Raised when no equity has ever held the given symbol.
+        MultipleSymbolsFound
+            Raised when more than one equity has held ``symbol`` or when
+            the symbol is ambiguous across multiple countries.
+
+        Notes
+        -----
+        The resolution algorithm is as follows:
+
+        - Split the symbol into the company and share class component.
+        - Do a dictionary lookup of the
+          ``(company_symbol, share_class_symbol)`` in the provided ownership
+          map.
+        - If there is no entry in the dictionary, we don't know about this
+          symbol so raise a ``SymbolNotFound`` error.
+        - If more there is more than one owner, raise ``MultipleSymbolsFound``
+        - Otherwise, because the list mapped to a symbol cannot be empty,
+            return the single asset.
+        """
+        if symbol is None:
+            raise TypeError("Cannot lookup asset for symbol of None")
+
+        # split the symbol into the components, if there are no
+        # company/share class parts then share_class_symbol will be empty
+        company_symbol, share_class_symbol = split_delimited_symbol(symbol)
+        try:
+            owners = self.symbol_ownership_map[company_symbol, share_class_symbol]
+            assert owners, 'empty owners list for %r' % symbol
+        except KeyError:
+            # no equity has ever held this symbol
+            raise SymbolNotFound(symbol=symbol)
+
+        # exactly one equity has ever held this symbol
+        if len(owners) == 1:
+            return self.retrieve_asset(owners[0].sid)
+
+        options = {self.retrieve_asset(owner.sid) for owner in owners}
+
+        # more than one equity has held this ticker, this
+        # is ambiguous
+        raise MultipleSymbolsFound(symbol=symbol, options=options)
 
     def lookup_future_symbol(self, symbol):
         """Lookup a future contract by symbol.

@@ -63,6 +63,7 @@ from zipline.assets.asset_db_schema import ASSET_DB_VERSION
 from zipline.errors import (
     EquitiesNotFound,
     FutureContractsNotFound,
+    MultipleSymbolsFound,
     AssetDBVersionError,
     SidsNotFound,
     SymbolNotFound,
@@ -347,6 +348,98 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         self.write_assets(equities=frame)
         assets = self.asset_finder.retrieve_equities(sids)
         assert_equal(viewkeys(assets), set(sids))
+
+    def test_lookup_symbol_delimited(self):
+        as_of = pd.Timestamp('2013-01-01', tz='UTC')
+        frame = pd.DataFrame.from_records(
+            [
+                {
+                    'sid': i,
+                    'real_sid': str(i),
+                    'currency': 'USD',
+                    'symbol':  'TEST.%d' % i,
+                    'company_name': "company%d" % i,
+                    'start_date': as_of.value,
+                    'end_date': as_of.value,
+                    'exchange': uuid.uuid4().hex
+                }
+                for i in range(3)
+            ]
+        )
+        self.write_assets(equities=frame)
+        finder = self.asset_finder
+        asset_0, asset_1, asset_2 = (
+            finder.retrieve_asset(i) for i in range(3)
+        )
+
+        # we do it twice to catch caching bugs
+        for i in range(2):
+            with self.assertRaises(SymbolNotFound):
+                finder.lookup_symbol('TEST')
+            with self.assertRaises(SymbolNotFound):
+                finder.lookup_symbol('TEST1')
+            # '@' is not a supported delimiter
+            with self.assertRaises(SymbolNotFound):
+                finder.lookup_symbol('TEST@1')
+
+            # Adding an unnecessary fuzzy shouldn't matter.
+            for fuzzy_char in ['-', '/', '_', '.']:
+                self.assertEqual(
+                    asset_1,
+                    finder.lookup_symbol('TEST%s1' % fuzzy_char)
+                )
+
+    def test_lookup_symbol(self):
+
+        df = pd.DataFrame.from_records(
+            [
+                {
+                    'sid': 0,
+                    'real_sid': '0',
+                    'currency': 'USD',
+                    'symbol':  'DUP',
+                    'start_date': pd.Timestamp('2012-01-01'),
+                    'end_date': pd.Timestamp('2013-01-01'),
+                    'exchange': 'NYSE',
+                },
+                 {
+                    'sid': 1,
+                    'real_sid': '1',
+                    'currency': 'USD',
+                    'symbol':  'DUP',
+                    'start_date': pd.Timestamp('2013-01-01'),
+                    'end_date': pd.Timestamp('2014-01-01'),
+                    'exchange': 'NYSE',
+                },
+                 {
+                    'sid': 2,
+                    'real_sid': '2',
+                    'currency': 'USD',
+                    'symbol':  'UNIQ',
+                    'start_date': pd.Timestamp('2012-01-01'),
+                    'end_date': pd.Timestamp('2014-01-01'),
+                    'exchange': 'NYSE',
+                },
+
+            ]
+        )
+        self.write_assets(equities=df)
+        finder = self.asset_finder
+        for _ in range(2):  # Run checks twice to test for caching bugs.
+            with self.assertRaises(SymbolNotFound):
+                finder.lookup_symbol('NON_EXISTING')
+
+            with self.assertRaises(MultipleSymbolsFound):
+                finder.lookup_symbol('DUP')
+
+            result = finder.lookup_symbol('UNIQ')
+            self.assertEqual(result.symbol, 'UNIQ')
+            self.assertEqual(result.sid, 2)
+
+    def test_lookup_none_raises(self):
+
+        with self.assertRaises(TypeError):
+            self.asset_finder.lookup_symbol(None)
 
     def test_compute_lifetimes(self):
         assets_per_exchange = 4
@@ -673,22 +766,6 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                 "No {plural} found for sids: [1, 2].".format(plural=plural)
             )
 
-
-class AssetFinderMultipleCountries(WithTradingCalendars, ZiplineTestCase):
-    def write_assets(self, **kwargs):
-        self._asset_writer.write(**kwargs)
-
-    def init_instance_fixtures(self):
-        super(AssetFinderMultipleCountries, self).init_instance_fixtures()
-
-        conn = self.enter_instance_context(empty_assets_db())
-        self._asset_writer = AssetDBWriter(conn)
-        self.asset_finder = AssetFinder(conn)
-
-    @staticmethod
-    def country_code(n):
-        return 'A' + chr(ord('A') + n)
-
 class TestAssetDBVersioning(ZiplineTestCase):
 
     def init_instance_fixtures(self):
@@ -759,34 +836,6 @@ class TestAssetDBVersioning(ZiplineTestCase):
 
         # Now that the versions match, this Finder should succeed
         AssetFinder(engine=self.engine)
-
-class TestVectorizedSymbolLookup(WithAssetFinder, ZiplineTestCase):
-
-    @classmethod
-    def make_equity_info(cls):
-        T = partial(pd.Timestamp, tz='UTC')
-
-        def asset(sid, symbol, start_date, end_date):
-            return dict(
-                sid=sid,
-                real_sid=str(sid),
-                currency='USD',
-                symbol=symbol,
-                start_date=T(start_date),
-                end_date=T(end_date),
-                exchange='NYSE',
-            )
-
-        records = [
-            asset(1, 'A', '2014-01-02', '2014-01-31'),
-            asset(2, 'A', '2014-02-03', '2015-01-02'),
-            asset(3, 'B', '2014-01-02', '2014-01-15'),
-            asset(4, 'B', '2014-01-17', '2015-01-02'),
-            asset(5, 'C', '2001-01-02', '2015-01-02'),
-            asset(6, 'D', '2001-01-02', '2015-01-02'),
-            asset(7, 'FUZZY', '2001-01-02', '2015-01-02'),
-        ]
-        return pd.DataFrame.from_records(records)
 
 class TestAssetFinderPreprocessors(WithTmpDir, ZiplineTestCase):
 

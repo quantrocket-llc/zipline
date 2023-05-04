@@ -56,7 +56,6 @@ from zipline.errors import (
     SetCommissionPostInit,
     SetSlippagePostInit,
     UnsupportedCancelPolicy,
-    UnsupportedDatetimeFormat,
     UnsupportedOrderParameters,
     ZeroCapitalError,
     CannotStoreAssetInInitialize,
@@ -1083,6 +1082,34 @@ class TradingAlgorithm(object):
             roll,
             adjustment,
         )
+
+    @api_method # document in zipline.api.pyi
+    @preprocess(symbol=ensure_upper_case)
+    def symbol(self, symbol: str) -> Asset:
+        """Lookup an Equity by its ticker symbol.
+
+        Ticker symbols can change over time, and this function will raise an
+        error if the ticker symbol has been associated with more than one equity.
+        For a more robust way to retrieve an equity, use `sid()`.
+
+        Parameters
+        ----------
+        symbol : str
+            The ticker symbol for the equity.
+
+        Returns
+        -------
+        equity : zipline.assets.Equity
+            The equity with the ticker symbol.
+
+        Raises
+        ------
+        SymbolNotFound
+            Raised when the symbol was not held by any equity.
+        MultipleSymbolsFound
+            Raised when the symbol was held by more than one equity.
+        """
+        return self.asset_finder.lookup_symbol(symbol)
 
     @api_method # document in zipline.api.pyi
     def sid(self, sid: Union[str, int]) -> Asset:
