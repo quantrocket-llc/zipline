@@ -313,9 +313,11 @@ def get_forward_returns(
 
         end_date = index_cushion.max()
 
+        dt_index_plus_cushion = mask.index.union(index_cushion)
+
         mask_for_window_length = pd.DataFrame(
             True,
-            index=mask.index.union(index_cushion),
+            index=dt_index_plus_cushion,
             columns=mask.columns)
 
         # we need to run the pipeline until window_length days after the
@@ -343,7 +345,7 @@ def get_forward_returns(
             raise e
 
         colname = f"{window_length}D"
-        returns_data = returns_data[colname].unstack().shift(-window_length).stack(dropna=False)
+        returns_data = returns_data[colname].unstack().reindex(index=dt_index_plus_cushion).shift(-window_length).stack(dropna=False)
         returns_data = returns_data.reindex(index=factor.index)
 
         all_returns_data[colname] = returns_data
