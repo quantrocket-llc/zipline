@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from typing import Literal
-from zipline.pipeline.data import sharadar
+from zipline.pipeline.data import sharadar, master
 from zipline.pipeline.factors import Latest, Factor
 from zipline.pipeline.filters import Filter
 
@@ -154,11 +154,11 @@ def AltmanZScore(
     Altman Z-Scores are often interpreted as follows:
 
     - Z-Score >= 3: "Safe" Zone
-    - 1.8 < Z-Score < 3: "Grey" Zone
-    - Z-Score < 1.8: "Distress" Zone
+    - 0 < Z-Score < 3: "Grey" Zone
+    - Z-Score < 0: "Distress" Zone
 
-    However, in recent years the author of the Altman Z-Score has
-    suggested that the Distress Zone should be updated to Z-Score < 0.
+    The Altman Z-Score is designed for manufacturing firms and is
+    not computed for the financial and real estate sectors.
 
     Parameters
     ----------
@@ -191,6 +191,18 @@ def AltmanZScore(
     >>> from zipline.pipeline.sharadar import AltmanZScore
     >>> altman_zscore = AltmanZScore()
     """
+
+    sector = master.SecuritiesMaster.sharadar_Sector.latest
+
+    manufacturers = ~sector.isin([
+        "Financial Services",
+        "Real Estate",
+    ])
+
+    if mask is not None:
+        mask = mask & manufacturers
+    else:
+        mask = manufacturers
 
     fundamentals = sharadar.Fundamentals.slice(
         dimension=dimension, period_offset=period_offset)

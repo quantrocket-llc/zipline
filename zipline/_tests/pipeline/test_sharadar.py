@@ -192,9 +192,15 @@ class SharadarFactorsTestCase(unittest.TestCase):
 
         for latestinput in term.bindings.values():
             if use_mask:
-                self.assertEqual(repr(latestinput.mask), "StaticSids([SecuritiesMaster.Sid], 1)")
+                self.assertEqual(repr(latestinput.mask), "NumExprFilter(expr='(~x_0) & (x_1)', bindings={'x_0': ArrayPredicate([Latest(...)], 0), 'x_1': StaticSids([SecuritiesMaster.Sid], 1)})")
+                self.assertEqual(repr(latestinput.mask.bindings['x_1']), "StaticSids([SecuritiesMaster.Sid], 1)")
             else:
-                self.assertEqual(repr(latestinput.mask), "AssetExists()")
+                self.assertEqual(repr(latestinput.mask), "NumExprFilter(expr='~x_0', bindings={'x_0': ArrayPredicate([Latest(...)], 0)})")
+
+            self.assertEqual(repr(latestinput.mask.bindings['x_0']), "ArrayPredicate([Latest(...)], 0)")
+            self.assertEqual(repr(latestinput.mask.bindings['x_0'].inputs), "(Latest([SecuritiesMaster.sharadar_Sector], 1),)")
+            self.assertEqual(latestinput.mask.bindings['x_0'].params["op"].__name__, "isin")
+            self.assertEqual(sorted(latestinput.mask.bindings['x_0'].params["opargs"][0]), ['Financial Services', 'Real Estate'])
 
     @parameterized.expand([
         (None, None, None),
