@@ -281,23 +281,6 @@ def get_forward_returns(
     if not isinstance(periods, (list, tuple)):
         periods = [periods]
 
-    columns = {}
-    for window_length in periods:
-        columns[f"{window_length}D"] = Returns(window_length=window_length+1)
-
-    pipeline = Pipeline(columns=columns)
-
-    start_date = factor.index.get_level_values("date").min()
-    orig_end_date = factor.index.get_level_values("date").max()
-
-    # For end_date, request enough cushion to calculate forward returns
-    index_cushion = pd.date_range(
-        start=factor.index.levels[0].max(),
-        periods=max(periods) + 5,
-        freq=factor.index.levels[0].freq)
-
-    end_date = index_cushion.max()
-
     # factor might be a Series or a DataFrame, normalize to a DataFrame
     if isinstance(factor, pd.Series):
         factor = factor.to_frame()
@@ -309,33 +292,63 @@ def get_forward_returns(
         factor["col"] = 1
 
     mask = factor.iloc[:, 0].unstack()
-    mask = pd.DataFrame(
-        True,
-        index=mask.index.union(index_cushion),
-        columns=mask.columns)
 
-    try:
-        returns_data = _run_pipeline(
-            pipeline,
-            start_date,
-            end_date,
-            bundle=bundle,
-            mask=mask)
-    except RequestedEndDateAfterBundleEndDate as e:
-        # Improve the error message, since the error may have been caused
-        # by having to extend the index to compute forward returns
-        e.args = (e.args[0] + (
-            f" The end_date {end_date.date()} resulted from extending "
-            f"the requested pipeline end date of {orig_end_date.date()} to compute "
-            f"{max(periods)}D forward returns. You may need to end the pipeline "
-            f"earlier or shorten the forward returns computation."),)
-        raise e
+    all_returns_data = {}
 
+    # we run the pipeline separately for each period, so that we can
+    # adjust the start date individually for each period
     for window_length in periods:
-        colname = f"{window_length}D"
-        returns_data[colname] = returns_data[colname].unstack().shift(-window_length).stack(dropna=False)
 
-    returns_data = returns_data.reindex(index=factor.index)
+        columns = {f"{window_length}D": Returns(window_length=window_length+1)}
+
+        pipeline = Pipeline(columns=columns)
+
+        orig_end_date = factor.index.get_level_values("date").max()
+
+        # For end_date, request enough cushion to calculate forward returns
+        index_cushion = pd.date_range(
+            start=factor.index.levels[0].max(),
+            periods=window_length + 5,
+            freq=factor.index.levels[0].freq)
+
+        end_date = index_cushion.max()
+
+        mask_for_window_length = pd.DataFrame(
+            True,
+            index=mask.index.union(index_cushion),
+            columns=mask.columns)
+
+        # we need to run the pipeline until window_length days after the
+        # factor start_date
+        start_date = pd.date_range(
+            start=factor.index.levels[0].min(),
+            periods=window_length + 1,
+            freq=factor.index.levels[0].freq).max()
+
+        try:
+            returns_data = _run_pipeline(
+                pipeline,
+                start_date,
+                end_date,
+                bundle=bundle,
+                mask=mask_for_window_length)
+        except RequestedEndDateAfterBundleEndDate as e:
+            # Improve the error message, since the error may have been caused
+            # by having to extend the index to compute forward returns
+            e.args = (e.args[0] + (
+                f" The end_date {end_date.date()} resulted from extending "
+                f"the requested pipeline end date of {orig_end_date.date()} to compute "
+                f"{max(periods)}D forward returns. You may need to end the pipeline "
+                f"earlier or shorten the forward returns computation."),)
+            raise e
+
+        colname = f"{window_length}D"
+        returns_data = returns_data[colname].unstack().shift(-window_length).stack(dropna=False)
+        returns_data = returns_data.reindex(index=factor.index)
+
+        all_returns_data[colname] = returns_data
+
+    returns_data = pd.concat(all_returns_data, axis=1)
     returns_data.index.set_names(["date", "asset"], inplace=True)
 
     return returns_data
