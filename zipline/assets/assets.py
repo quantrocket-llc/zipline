@@ -158,28 +158,6 @@ def build_ownership_map(table, key_from_row, value_from_row):
     )
 
 
-def build_grouped_ownership_map(table,
-                                key_from_row,
-                                value_from_row,
-                                group_key):
-    """
-    Builds a dict mapping group keys to maps of keys to to lists of
-    OwnershipPeriods, from a db table.
-    """
-    grouped_rows = groupby(
-        group_key,
-        sa.select(table.c).execute().fetchall(),
-    )
-    return {
-        key: _build_ownership_map_from_rows(
-            rows,
-            key_from_row,
-            value_from_row,
-        )
-        for key, rows in grouped_rows.items()
-    }
-
-
 @curry
 def _filter_kwargs(names, dict_):
     """Filter out kwargs from a dictionary.
@@ -329,36 +307,19 @@ class AssetFinder(object):
 
     @lazyval
     def symbol_ownership_map(self):
-        out = {}
-        for mappings in self.symbol_ownership_maps_by_country_code.values():
-            for key, ownership_periods in mappings.items():
-                out.setdefault(key, []).extend(ownership_periods)
-
-        return out
-
-    @lazyval
-    def symbol_ownership_maps_by_country_code(self):
-        sid_to_country_code = dict(
-            sa.select((
-                self.equities.c.sid,
-                self.exchanges.c.country_code,
-            )).where(
-                self.equities.c.exchange == self.exchanges.c.exchange
-            ).execute().fetchall(),
-        )
-
-        return build_grouped_ownership_map(
+        return build_ownership_map(
             table=self.equity_symbol_mappings,
             key_from_row=(
                 lambda row: (row.company_symbol, row.share_class_symbol)
             ),
             value_from_row=lambda row: row.symbol,
-            group_key=lambda row: sid_to_country_code[row.sid],
         )
 
     @lazyval
     def country_codes(self):
-        return tuple(self.symbol_ownership_maps_by_country_code)
+        return tuple([c for (c,) in sa.select(
+            sa.distinct(self.exchanges.c.country_code,
+        )).execute().fetchall()])
 
     def lookup_asset_types(self, sids):
         """
@@ -736,11 +697,13 @@ class AssetFinder(object):
         if symbol is None:
             raise TypeError("Cannot lookup asset for symbol of None")
 
+        mapping = self.symbol_ownership_map
+
         # split the symbol into the components, if there are no
         # company/share class parts then share_class_symbol will be empty
         company_symbol, share_class_symbol = split_delimited_symbol(symbol)
         try:
-            owners = self.symbol_ownership_map[company_symbol, share_class_symbol]
+            owners = mapping[company_symbol, share_class_symbol]
             assert owners, 'empty owners list for %r' % symbol
         except KeyError:
             # no equity has ever held this symbol
