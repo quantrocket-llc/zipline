@@ -143,9 +143,11 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
         end_date = end_date.tz_localize("UTC")
 
     first_session = max(bundles.bundles[bundle].start_session, trading_calendar.first_session)
-    if start_date < first_session:
+    second_session = trading_calendar.next_session_label(first_session)
+    if start_date < second_session:
         raise ValidationError(
-            f"start_date cannot be earlier than {first_session.date().isoformat()} for this bundle")
+            f"start_date cannot be earlier than {second_session.date().isoformat()} "
+            f"for this bundle (one session after the bundle start date of {first_session.date().isoformat()})")
 
     # Roll-forward start_date to valid session
     for i in range(100):
