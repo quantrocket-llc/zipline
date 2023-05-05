@@ -63,6 +63,7 @@ from numpy import array, arange
 from pandas import DataFrame, MultiIndex
 from toolz import groupby
 
+from zipline.data.bar_reader import NoDataOnDate
 from zipline.lib.adjusted_array import ensure_adjusted_array, ensure_ndarray
 from zipline.errors import NoFurtherDataError
 from zipline.utils.input_validation import expect_types
@@ -688,9 +689,22 @@ class SimplePipelineEngine(PipelineEngine):
                 )
                 self._ensure_can_load(loader, to_load)
                 with hooks.loading_terms(to_load):
-                    loaded = loader.load_adjusted_array(
-                        domain, to_load, mask_dates, sids, mask,
-                    )
+                    try:
+                        loaded = loader.load_adjusted_array(
+                            domain, to_load, mask_dates, sids, mask,
+                        )
+                    except NoDataOnDate as e:
+                        extra_rows = graph.extra_rows[term]
+                        msg = (
+                            f"the pipeline definition requires {term} data on {str(e)} but no bundle data is "
+                            "available on that date; the cause of this issue is that another pipeline term needs "
+                            f"{term} and has a window_length of {extra_rows + 1}, which necessitates loading "
+                            f"{extra_rows} extra rows of {term}; try setting a later start date so that the maximum "
+                            "window_length of any term doesn't extend further back than the bundle start date. "
+                            f"Review the pipeline dependencies below to help determine which terms are causing "
+                            f"the problem:\n\n{repr(graph)}"
+                        )
+                        raise NoDataOnDate(msg)
                 assert set(loaded) == set(to_load), (
                     'loader did not return an AdjustedArray for each column\n'
                     'expected: %r\n'

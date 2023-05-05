@@ -2,6 +2,7 @@
 Dependency-Graph representation of Pipeline API terms.
 """
 import uuid
+from pprint import pformat
 
 import networkx as nx
 from six import itervalues
@@ -159,6 +160,22 @@ class TermGraph(object):
 
     def _repr_png_(self):
         return self.png.data
+
+    def __repr__(self):
+        attrs = dict(
+            source='term',
+            target='used_by',
+            name='needed_for',
+            key='key', link='dependencies')
+        data = nx.readwrite.json_graph.node_link.node_link_data(self.graph, attrs=attrs)
+        # remove AssetExists mask from graph representation
+        data["dependencies"] = [d for d in data["dependencies"] if "AssetExists" not in str(d["term"])]
+        data["nodes"] = [d for d in data["nodes"] if "AssetExists" not in str(d["needed_for"])]
+        # remove extra_rows = 0
+        data["nodes"] = [d for d in data["nodes"] if d["extra_rows"] > 0]
+        # only keep dependencies and nodes keys
+        data = {k: v for k, v in data.items() if k in ["dependencies", "nodes"]}
+        return pformat(data)
 
     def initial_refcounts(self, initial_terms):
         """
