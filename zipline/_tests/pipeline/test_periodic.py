@@ -673,6 +673,41 @@ class PeriodicTermsTestCase(unittest.TestCase):
 
     @parameterized.expand([
         ('ART', 4, None,
+         ("NumExprFactor(expr='x_0 - x_1', "
+          "bindings={'x_0': Latest([Fundamentals.slice(dimension='ART', period_offset=0)<US>.REVENUE], 1), "
+          "'x_1': Latest([Fundamentals.slice(dimension='ART', period_offset=-3)<US>.REVENUE], 1)})")
+         ),
+        ('ARQ', 16, True,
+         ("NumExprFactor(expr='x_0 - x_1', "
+          "bindings={'x_0': Latest([Fundamentals.slice(dimension='ARQ', period_offset=0)<US>.REVENUE], 1), "
+          "'x_1': Latest([Fundamentals.slice(dimension='ARQ', period_offset=-15)<US>.REVENUE], 1)})")
+         ),
+    ])
+    def test_periodic_change(
+        self,
+        dimension,
+        window_length,
+        use_mask,
+        expected):
+
+        kwargs = dict(
+            window_length=window_length)
+        if use_mask:
+            kwargs["mask"] = filters.StaticSids(["A", "B"])
+
+        term = periodic.PeriodicChange(
+            sharadar.Fundamentals.slice(dimension).REVENUE, **kwargs)
+
+        self.assertEqual(repr(term), expected)
+
+        for input in term.inputs:
+            if use_mask:
+                self.assertEqual(repr(input.mask), "StaticSids([SecuritiesMaster.Sid], 1)")
+            else:
+                self.assertEqual(repr(input.mask), "AssetExists()")
+
+    @parameterized.expand([
+        ('ART', 4, None,
          ("NumExprFactor(expr='(x_0 - x_1) / (abs(x_1))', "
           "bindings={'x_0': Latest([Fundamentals.slice(dimension='ART', period_offset=0)<US>.REVENUE], 1), "
           "'x_1': Latest([Fundamentals.slice(dimension='ART', period_offset=-3)<US>.REVENUE], 1)})")

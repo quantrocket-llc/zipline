@@ -31,6 +31,10 @@ PeriodicLow
     Return a Factor that computes the low of a column or factor over a
     specified number of periods.
 
+PeriodicChange
+    Return a Factor that computes the change of a column or factor over a
+    specified number of periods.
+
 PeriodicPercentChange
     Return a Factor that computes the percent change of a column or factor over a
     specified number of periods.
@@ -86,6 +90,7 @@ __all__ = [
     "PeriodicAverage",
     "PeriodicHigh",
     "PeriodicLow",
+    "PeriodicChange",
     "PeriodicPercentChange",
     "PeriodicCAGR",
     "AllPeriodsIncreasing",
@@ -469,6 +474,94 @@ def _high_or_low(
             expr += _expr
 
     return expr
+
+def PeriodicChange(
+    column_or_callable: ColumnOrCallable,
+    window_length: int,
+    mask: Filter = None,
+    **kwargs
+    ) -> Factor:
+    """
+    Return a Factor that computes the change of a column or factor over a
+    specified number of periods.
+
+    Parameters
+    ----------
+    column_or_callable : BoundColumn or callable, required
+        the dataset column to compute the change for. The column must
+        belong to a Dataset that includes a period_offset coordinate.
+        Alternatively, can be a function or other callable that accepts a
+        period_offset and mask argument and returns a Factor.
+
+    window_length : int, required
+        the number of periods to use to calculate the change. Must be >=2.
+
+    mask : zipline.pipeline.Filter, optional
+        optional Filter to limit the computation to a subset of stocks.
+
+    **kwargs
+        optional kwargs to pass to column_or_callable if it is a callable
+
+    Returns
+    -------
+    zipline.pipeline.Factor
+        a Factor that computes the change
+
+    Notes
+    -----
+    Usage Guide:
+
+    * Periodic factors and filters: https://qrok.it/dl/z/pipeline-periodic
+
+    Examples
+    --------
+    Create a Factor that computes the change in dividend yield over the
+    last 16 quarters, using trailing-twelve-month financials::
+
+        from zipline.pipeline.sharadar import Fundamentals
+        from zipline.pipeline.periodic import PeriodicChange
+
+        divyield = Fundamentals.slice('ART').DIVYIELD
+        divyield_change = PeriodicChange(divyield, window_length=16)
+
+    Instead of passing a BoundColumn, we can also pass a function that returns
+    a Factor. This is useful if we want to compute the change of a Factor that
+    is not a column in a Dataset. For example, the Sharadar data does not include
+    a column for operating margin, but it can easily be calculated by dividing
+    operating income (`OPINC`) by revenue (`REVENUE`). First, create a function to
+    calculate operating margin. The function should accept a `period_offset` and
+    `mask` argument::
+
+        from zipline.pipeline.factors import Latest
+
+        def operating_margin(period_offset=0, mask=None):
+            fundamentals = Fundamentals.slice("ART", period_offset)
+            return Latest(fundamentals.OPINC, mask=mask) / Latest(fundamentals.REVENUE, mask=mask)
+
+    Then, pass the function to `PeriodicChange`::
+
+        op_margin_change = PeriodicChange(operating_margin, window_length=16)
+    """
+
+    is_column, period_offset, extra_coords = _unpack_column_or_callable(
+        column_or_callable, **kwargs)
+
+    previous_period_offset = period_offset - (window_length - 1)
+
+    if is_column:
+        current = Latest(column_or_callable, mask=mask)
+        previous_dataset = column_or_callable.dataset.dataset_family.slice(
+            period_offset=previous_period_offset,
+                **extra_coords)
+        previous = getattr(previous_dataset, column_or_callable.name)
+        previous = Latest(previous, mask=mask)
+    else:
+        current = column_or_callable(
+            period_offset=0, mask=mask, **kwargs)
+        previous = column_or_callable(
+            period_offset=previous_period_offset, mask=mask, **kwargs)
+
+    return current - previous
 
 def PeriodicPercentChange(
     column_or_callable: ColumnOrCallable,
