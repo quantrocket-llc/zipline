@@ -228,7 +228,11 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
         calendar_domain,
         **kwargs)
 
-    return engine.run_pipeline(pipeline, start_date, end_date)
+    results = engine.run_pipeline(pipeline, start_date, end_date)
+    # add bundle and source to DataFrame metadata
+    results._qr_bundle = bundle
+    results._qr_src = "pipeline"
+    return results
 
 def get_forward_returns(
     factor: Union['pd.Series[Any]', 'pd.DataFrame'],

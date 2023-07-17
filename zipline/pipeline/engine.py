@@ -83,6 +83,13 @@ from .term import AssetExists, InputDates, LoadableTerm
 from zipline.utils.date_utils import compute_date_range_chunks
 from zipline.utils.pandas_utils import categorical_df_concat
 
+class DataFrameWithMetadata(DataFrame):
+
+    _metadata = ["_qr_bundle", "_qr_src"]
+
+    @property
+    def _constructor(self):
+        return DataFrameWithMetadata
 
 class PipelineEngine(with_metaclass(ABCMeta)):
 
@@ -786,7 +793,7 @@ class SimplePipelineEngine(PipelineEngine):
             # Slicing `dates` here to preserve pandas metadata.
             empty_dates = dates[:0]
             empty_assets = array([], dtype=object)
-            return DataFrame(
+            return DataFrameWithMetadata(
                 data={
                     name: array([], dtype=arr.dtype)
                     for name, arr in iteritems(data)
@@ -808,7 +815,7 @@ class SimplePipelineEngine(PipelineEngine):
         resolved_assets = array(self._finder.retrieve_all(assets))
         index = _pipeline_output_index(dates, resolved_assets, mask)
 
-        return DataFrame(data=final_columns, index=index)
+        return DataFrameWithMetadata(data=final_columns, index=index)
 
     def _validate_compute_chunk_params(self,
                                        graph,
