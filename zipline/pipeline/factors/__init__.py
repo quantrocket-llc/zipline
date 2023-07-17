@@ -37,6 +37,9 @@ IchimokuKinkoHyo
     Factor that calculates the various metrics for the Ichimoku Kinko Hyo
     (Ichimoku Cloud).
 
+IntradayReturns
+    Factor that calculates intraday (open-to-close) returns.
+
 Latest
     Factor producing the most recently-known value of the input term on each
     day.
@@ -50,6 +53,9 @@ MaxDrawdown
 MovingAverageConvergenceDivergenceSignal
     Factor that calculates Moving Average Convergence/Divergence (MACD)
     Signal line.
+
+OvernightReturns
+    Factor that calculates overnight (close-to-open) returns.
 
 PercentChange
      Factor that calculates the percent change over a given window_length.
@@ -110,8 +116,10 @@ from .basic import (
     ExponentialWeightedMovingAverage,
     ExponentialWeightedMovingStdDev,
     EWMSTD,
+    IntradayReturns,
     LinearWeightedMovingAverage,
     MaxDrawdown,
+    OvernightReturns,
     PeerCount,
     PercentChange,
     Returns,
@@ -153,11 +161,13 @@ __all__ = [
     'Factor',
     'FastStochasticOscillator',
     'IchimokuKinkoHyo',
+    'IntradayReturns',
     'Latest',
     'LinearWeightedMovingAverage',
     'MACDSignal',
     'MaxDrawdown',
     'MovingAverageConvergenceDivergenceSignal',
+    'OvernightReturns',
     'PercentChange',
     'RateOfChangePercentage',
     'Returns',

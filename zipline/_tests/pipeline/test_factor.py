@@ -37,6 +37,8 @@ from zipline.pipeline.factors import (
     CustomFactor,
     DailyReturns,
     Returns,
+    OvernightReturns,
+    IntradayReturns,
     PercentChange,
 )
 from zipline.pipeline.factors.factor import (
@@ -612,6 +614,48 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
 
         check_allclose(expected, out)
 
+    def test_overnight_returns(self):
+
+        overnight_returns = OvernightReturns()
+
+        today = datetime64(1, 'ns')
+        assets = arange(3)
+
+        seed(100)  # Seed so we get deterministic results.
+        test_close_data = abs(randn(2, 3))
+
+        seed(101)
+        test_open_data = abs(randn(2, 3))
+
+        # Calculate the expected returns
+        expected = (test_open_data[-1] - test_close_data[0]) / test_close_data[0]
+
+        out = empty((3,), dtype=float)
+        overnight_returns.compute(today, assets, out, test_close_data, test_open_data)
+
+        check_allclose(expected, out)
+
+    def test_intraday_returns(self):
+
+        intraday_returns = IntradayReturns()
+
+        today = datetime64(1, 'ns')
+        assets = arange(3)
+
+        seed(100)  # Seed so we get deterministic results.
+        test_close_data = abs(randn(1, 3))
+
+        seed(101)
+        test_open_data = abs(randn(1, 3))
+
+        # Calculate the expected returns
+        expected = (test_close_data[0] - test_open_data[0]) / test_open_data[0]
+
+        out = empty((3,), dtype=float)
+        intraday_returns.compute(today, assets, out, test_open_data, test_close_data)
+
+        check_allclose(expected, out)
+
     @parameterized.expand([
         (100, 15),
         (101, 4),
@@ -645,6 +689,8 @@ class FactorTestCase(BaseUSEquityPipelineTestCase):
         pct_change = EquityPricing.close.latest.pct_change(window_length+1)
         out = empty((8,), dtype=float)
         pct_change.compute(today, assets, out, test_data)
+
+        check_allclose(expected, out)
 
         with self.assertRaises(ValueError):
             PercentChange(inputs=(), window_length=2)

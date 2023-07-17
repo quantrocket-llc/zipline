@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import os
-from typing import Union, Any
+from typing import Union, Any, Literal
 import pandas as pd
 from zipline.data import bundles
 import zipline.pipeline.domain as domain
@@ -22,7 +22,7 @@ from zipline.pipeline import Pipeline
 from zipline.utils.extensions import load_extensions
 from zipline.pipeline.loaders import EquityPricingLoader
 from zipline.pipeline.data import EquityPricing
-from zipline.pipeline.factors import Returns
+from zipline.pipeline.factors import Returns, OvernightReturns, IntradayReturns
 from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.research.exceptions import ValidationError, RequestedEndDateAfterBundleEndDate
@@ -232,8 +232,8 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
 
 def get_forward_returns(
     factor: Union['pd.Series[Any]', 'pd.DataFrame'],
-    periods: Union[int, list[int]] = None,
-    bundle: str = None
+    periods: Union[Union[int, Literal['oc', 'co']], list[Union[int, Literal['oc', 'co']]]] = None,
+    bundle: str = None,
     ) -> pd.DataFrame:
     """
     Get forward returns for the dates and assets in the input ``factor``
@@ -246,9 +246,12 @@ def get_forward_returns(
         The factor whose dates and assets to use. The Series or DataFrame
         should have a MultiIndex of (date, asset), as returned by ``run_pipeline``.
 
-    periods : int or list of int
-        The period(s) over which to calculate the forward returns.
-        Example: [1, 5, 21]. Defaults to [1].
+    periods : int or str or list of int or str
+        The period(s) over which to calculate the forward returns. Can either
+        be an integer number of days or one of the strings "co" or "oc" to
+        indicate overnight (close-to-open) or intraday (open-to-close) returns,
+        respectively. If a list is provided, forward returns will be computed for
+        each period. If omitted, defaults to [1]. Example: [1, 5, 21].
 
     bundle : str, optional
         the bundle code. If omitted, the default bundle will be used (and must be set).
@@ -277,6 +280,16 @@ def get_forward_returns(
         raise ValidationError(
             "cannot compute forward returns because the factor you provided is empty")
 
+    load_extensions(code=bundle)
+
+    try:
+        calendar_name = bundles.bundles[bundle].calendar_name
+    except KeyError:
+        raise ValidationError(f"bundle {bundle} not found")
+
+    trading_calendar = get_calendar(calendar_name)
+    freq = trading_calendar.day
+
     if not periods:
         periods = [1]
 
@@ -299,9 +312,20 @@ def get_forward_returns(
 
     # we run the pipeline separately for each period, so that we can
     # adjust the start date individually for each period
-    for window_length in periods:
+    for period in periods:
 
-        columns = {f"{window_length}D": Returns(window_length=window_length+1)}
+        if period == "oc":
+            colname = "Intraday"
+            columns = {colname: IntradayReturns()}
+            window_length = 1
+        elif period == "co":
+            colname = "Overnight"
+            columns = {colname: OvernightReturns()}
+            window_length = 1
+        else:
+            colname = f"{period}D"
+            columns = {colname: Returns(window_length=period+1)}
+            window_length = period
 
         pipeline = Pipeline(columns=columns)
 
@@ -311,7 +335,7 @@ def get_forward_returns(
         index_cushion = pd.date_range(
             start=factor.index.levels[0].max(),
             periods=window_length + 5,
-            freq=factor.index.levels[0].freq)
+            freq=freq)
 
         end_date = index_cushion.max()
 
@@ -327,7 +351,7 @@ def get_forward_returns(
         start_date = pd.date_range(
             start=factor.index.levels[0].min(),
             periods=window_length + 1,
-            freq=factor.index.levels[0].freq).max()
+            freq=freq).max()
 
         try:
             returns_data = _run_pipeline(
@@ -342,11 +366,10 @@ def get_forward_returns(
             e.args = (e.args[0] + (
                 f" The end_date {end_date.date()} resulted from extending "
                 f"the requested pipeline end date of {orig_end_date.date()} to compute "
-                f"{max(periods)}D forward returns. You may need to end the pipeline "
+                f"{colname} forward returns. You may need to end the pipeline "
                 f"earlier or shorten the forward returns computation."),)
             raise e
 
-        colname = f"{window_length}D"
         returns_data = returns_data[colname].unstack().reindex(index=dt_index_plus_cushion).shift(-window_length).stack(dropna=False)
         returns_data = returns_data.reindex(index=factor.index)
 

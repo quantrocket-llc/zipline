@@ -243,6 +243,66 @@ class DailyReturns(Returns):
                 mask: 'Filter' = None):
             pass
 
+class OvernightReturns(CustomFactor):
+    """
+    Factor that calculates percent change from the previous close price
+    to the open price.
+
+    Parameters
+    ----------
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
+    Examples
+    --------
+    Calculate overnight returns:
+
+    >>> overnight_returns = OvernightReturns()
+    """
+    inputs = [EquityPricing.close, EquityPricing.open]
+    window_safe = True
+    window_length = 2
+
+    if TYPE_CHECKING:
+        def __init__(
+                self,
+                mask: 'Filter' = None):
+            pass
+
+    def compute(self, today, assets, out, close, open):
+        out[:] = (open[-1] - close[0]) / close[0]
+
+class IntradayReturns(CustomFactor):
+    """
+    Factor that calculates percent change from the open price to the close price.
+
+    Parameters
+    ----------
+    mask : zipline.pipeline.Filter, optional
+        A Filter representing assets to consider when computing results.
+        If supplied, we ignore asset/date pairs where ``mask`` produces
+        ``False``.
+
+    Examples
+    --------
+    Calculate intraday (open-to-close) returns:
+
+    >>> intraday_returns = IntradayReturns()
+    """
+    inputs = [EquityPricing.open, EquityPricing.close]
+    window_safe = True
+    window_length = 1
+
+    if TYPE_CHECKING:
+        def __init__(
+                self,
+                mask: 'Filter' = None):
+            pass
+
+    def compute(self, today, assets, out, open, close):
+        out[:] = (close[-1] - open[-1]) / open[-1]
 
 class SimpleMovingAverage(SingleInputMixin, CustomFactor):
     """
