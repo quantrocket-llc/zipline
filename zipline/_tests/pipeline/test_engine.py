@@ -52,7 +52,7 @@ from zipline.pipeline.domain import (
     JP_EQUITIES,
     US_EQUITIES,
 )
-from zipline.pipeline.engine import SimplePipelineEngine
+from zipline.pipeline.engine import SimplePipelineEngine, DataFrameWithMetadata
 from zipline.pipeline.factors import (
     AverageDollarVolume,
     EWMA,
@@ -1395,7 +1395,7 @@ class WindowSafetyPropagationTestCase(zf.WithSeededRandomPipelineEngine,
         )
         results = self.run_pipeline(pipe, start_date, end_date).unstack()
 
-        expected_ranks = DataFrame(
+        expected_ranks = DataFrameWithMetadata(
             self.raw_expected_values(
                 col,
                 dates[-19],
@@ -1418,7 +1418,7 @@ class WindowSafetyPropagationTestCase(zf.WithSeededRandomPipelineEngine,
         expected_result.columns.set_names("asset", inplace=True)
 
         for colname in results.columns.levels[0]:
-            assert_equal(expected_result, results[colname])
+            assert_frame_equal(expected_result, results[colname])
 
 
 class PopulateInitialWorkspaceTestCase(WithConstantInputs,
