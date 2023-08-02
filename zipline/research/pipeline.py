@@ -194,7 +194,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     asset_finder_cache[bundle] = asset_finder
 
     pipeline_loader = QuantRocketPipelineLoaderRouter(
-        asset_db_conn=asset_finder.engine,
+        sids_to_real_sids=asset_finder.sids_to_real_sids,
         calendar=trading_calendar,
         default_loader=default_pipeline_loader,
         default_loader_columns=EquityPricing.columns

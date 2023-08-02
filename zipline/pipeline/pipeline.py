@@ -11,9 +11,198 @@ from zipline.utils.input_validation import (
 
 from .domain import Domain, GENERIC, infer_domain
 from .graph import ExecutionPlan, TermGraph, SCREEN_NAME
-from .filters import Filter
+from .filters import (
+    Filter,
+    SingleAsset,
+    StaticAssets,
+    StaticSids,
+    StaticUniverse,
+    ArrayPredicate,
+    NumExprFilter,
+    Latest as LatestFilter,
+    NullFilter,
+    NotNullFilter
+)
+from .classifiers import Latest as LatestClassifier
+from .factors import Latest as LatestFactor
 from .term import AssetExists, ComputableTerm, Term
 
+def _term_to_prescreen_fielddef(term):
+    """
+    Tries to convert a term to a prescreen field definition,
+    that is, the "fields" key of the prescreen dict.
+
+    Parameters
+    ----------
+    term : zipline.pipeline.Term
+
+    Returns
+    -------
+    fielddef : dict or None
+    """
+    # check if the term is an ArrayPredicate of a SecuritiesMaster column,
+    # e.g. SecuritiesMaster.SecType.latest.eq('STK')
+    if (isinstance(term, ArrayPredicate)
+        and len(term.inputs) == 1
+        and isinstance(term.inputs[0], LatestClassifier)
+        and len(term.inputs[0].inputs) == 1
+        and hasattr(term.inputs[0].inputs[0], "dataset")
+        and term.inputs[0].inputs[0].dataset.qualname == "SecuritiesMaster"
+        and term.params['op'].__name__ in (
+            "eq",
+            "isin",
+            "ne",
+            "has_substring",
+            "startswith",
+            "endswith",
+            "matches",
+            )):
+        field = term.inputs[0].inputs[0].name
+        if term.params['op'].__name__ == "eq":
+            op = "eq"
+            negate = False
+            values = [term.params['opargs'][0]]
+        elif term.params['op'].__name__ == "isin":
+            op = "eq"
+            negate = False
+            values = list(term.params['opargs'][0])
+        elif term.params['op'].__name__ == "ne":
+            op = "eq"
+            negate = True
+            values = [term.params['opargs'][0]]
+        elif term.params['op'].__name__ == "has_substring":
+            op = "contains"
+            negate = False
+            values = term.params['opargs'][0]
+        elif term.params['op'].__name__ == "startswith":
+            op = "startswith"
+            negate = False
+            values = term.params['opargs'][0]
+        elif term.params['op'].__name__ == "endswith":
+            op = "endswith"
+            negate = False
+            values = term.params['opargs'][0]
+        elif term.params['op'].__name__ == "matches":
+            op = "match"
+            negate = False
+            values = term.params['opargs'][0]
+
+        return {"field": field, "op": op, "negate": negate, "values": values}
+
+    # check if the term is a boolean SecuritiesMaster column, e.g.
+    # SecuritiesMaster.Etf.latest
+    if (isinstance(term, LatestFilter)
+        and hasattr(term.inputs[0], "dataset")
+        and term.inputs[0].dataset.qualname == "SecuritiesMaster"
+        ):
+        field = term.inputs[0].name
+        op = "eq"
+        negate = False
+        values = [True]
+        return {"field": field, "op": op, "negate": negate, "values": values}
+
+    # check if the term is a NullFilter or NotNullFilter of a SecuritiesMaster
+    # column, e.g. SecuritiesMaster.alpaca_AssetId.latest.isnull()
+    if (isinstance(term, (NullFilter, NotNullFilter))
+        and isinstance(term.inputs[0], (LatestClassifier, LatestFactor))
+        and hasattr(term.inputs[0].inputs[0], "dataset")
+        and term.inputs[0].inputs[0].dataset.qualname == "SecuritiesMaster"):
+        field = term.inputs[0].inputs[0].name
+        op = "isnull"
+        negate = True if isinstance(term, NotNullFilter) else False
+        values = [True]
+        return {"field": field, "op": op, "negate": negate, "values": values}
+
+    # isnull() on float columns are handled with a NumExprFilter
+    if (isinstance(term, NumExprFilter)
+        and term._expr == 'x_0 != x_0'
+        and isinstance(term.bindings["x_0"], LatestFactor)
+        and len(term.bindings["x_0"].inputs) == 1
+        and hasattr(term.bindings["x_0"].inputs[0], "dataset")
+        and term.bindings["x_0"].inputs[0].dataset.qualname == "SecuritiesMaster"):
+        field = term.bindings["x_0"].inputs[0].name
+        op = "isnull"
+        negate = False
+        values = [True]
+        return {"field": field, "op": op, "negate": negate, "values": values}
+
+    return None
+
+def _term_to_prescreen_dict(term, prescreen=None, negate=False):
+    """
+    Tries to convert a term to a prescreen dict.
+
+    Parameters
+    ----------
+    term : zipline.pipeline.Term
+
+    prescreen : dict or None
+        Existing prescreen dict to update
+
+    negate : bool
+        Whether to negate the term. Applies only to fields, not sids.
+
+    Returns
+    -------
+    prescreen : dict or None
+
+    Notes
+    -----
+    If a prescreen dict is passed by the new term cannot be converted to a
+    prescreen, None is returned.
+    """
+    prescreen = prescreen or {}
+
+    if isinstance(term, SingleAsset):
+        if "sids" not in prescreen:
+            prescreen["sids"] = []
+        prescreen["sids"].append(term._asset.sid)
+        return prescreen
+
+    if isinstance(term, StaticAssets):
+        if "sids" not in prescreen:
+            prescreen["sids"] = []
+        prescreen["sids"].extend(term.params["sids"])
+        return prescreen
+
+    # StaticSids and StaticUniverse store real sids in the sids param
+    if isinstance(term, (StaticSids, StaticUniverse)):
+        if "real_sids" not in prescreen:
+            prescreen["real_sids"] = []
+        prescreen["real_sids"].extend(term.params["sids"])
+        return prescreen
+
+    # check if the term is a negation of a SecuritiesMaster column, e.g.
+    # ~SecuritiesMaster.SecType.latest.eq('STK')
+    if (
+        isinstance(term, NumExprFilter)
+        and term._expr == '~x_0'
+        ):
+        fielddef = _term_to_prescreen_fielddef(term.bindings["x_0"])
+        if fielddef is not None:
+            # reverse the negate flag since the term has the unary operator
+            fielddef["negate"] = True if fielddef["negate"] == False else False
+            # negate it back if requested
+            if negate:
+                fielddef["negate"] = True if fielddef["negate"] == False else False
+            if "fields" not in prescreen:
+                prescreen["fields"] = []
+            prescreen["fields"].append(fielddef)
+            return prescreen
+
+    # check if the term is an ArrayPredicate of a SecuritiesMaster column, e.g.
+    # SecuritiesMaster.SecType.latest.eq('STK')
+    fielddef = _term_to_prescreen_fielddef(term)
+    if fielddef is not None:
+        # negate if requested
+        if negate:
+            fielddef["negate"] = True if fielddef["negate"] == False else False
+        if "fields" not in prescreen:
+            prescreen["fields"] = []
+        prescreen["fields"].append(fielddef)
+        return prescreen
+
+    return None
 
 class Pipeline(object):
     """
@@ -44,7 +233,7 @@ class Pipeline(object):
 
     * Pipeline API: https://qrok.it/dl/z/pipeline
     """
-    __slots__ = ('_columns', '_screen', '_domain', '__weakref__')
+    __slots__ = ('_columns', '_prescreen', '_screen', '_domain', '__weakref__')
 
     @expect_types(
         columns=optional(dict),
@@ -72,8 +261,65 @@ class Pipeline(object):
                 )
 
         self._columns = columns
+        self._prescreen = None
         self._screen = screen
+        if screen:
+            self._maybe_convert_to_prescreen(screen)
         self._domain = domain
+
+    def _maybe_convert_to_prescreen(self, screen):
+        """
+        Tries to convert the screen Filter into prescreen parameters.
+
+        Screens filter out rows after the pipeline is computed. As a performance
+        optimization, we can alternatively pre-filter the universe before computing
+        the pipeline if the screen only includes securities master terms, which
+        don't change over time.
+
+        self._prescreen is a dict of asset-level parameters that can be used to
+        pre-filter the universe and thus limit the initial workspace size. If
+        populated, _prescreen is a dict with the following possible keys:
+          - sids: list of zipline sids to include
+          - real_sids: list of real sids to include
+          - fields: list of dicts with the following keys:
+              - field: name of securities master field to filter on
+              - op: 'eq', 'contains'
+              - negate: whether to negate the filter
+              - values: list of values to include or exclude
+        """
+
+        # see if the screen contains a single prescreenable term
+        prescreen = _term_to_prescreen_dict(screen)
+        if prescreen is not None:
+            self._prescreen = prescreen
+            self._screen = None
+            return
+
+        # if the screen is a NumExprFilter, see if it is an ANDed conjunction of
+        # prescreenable terms (ORed expressions are not supported)
+        elif isinstance(screen, NumExprFilter):
+
+            # ignore parantheses, which don't matter for ANDed expressions
+            expr = screen._expr.replace("(", "").replace(")", "")
+            # split on AND and see if the resulting terms (possibly ignoring ~)
+            # match the screen bindings
+            terms = expr.split(" & ")
+            if set([term.replace("~", "") for term in terms]) == set(screen.bindings):
+                prescreen = {}
+                for term in terms:
+                    negate = "~" in term
+                    term = term.replace("~", "")
+                    prescreen = _term_to_prescreen_dict(
+                        screen.bindings[term],
+                        prescreen=prescreen,
+                        negate=negate)
+                    # if any term cannot be converted to a prescreen, bail out
+                    if not prescreen:
+                        break
+                else:
+                    # didn't break loop, so prescreen is valid
+                    self._prescreen = prescreen
+                    self._screen = None
 
     @property
     def columns(self) -> dict[str, Term]:
@@ -185,7 +431,7 @@ class Pipeline(object):
             Whether to overwrite any existing screen.  If overwrite is False
             and self.screen is not None, we raise an error.
         """
-        if self._screen is not None and not overwrite:
+        if (self._screen is not None or self._prescreen is not None) and not overwrite:
             raise ValueError(
                 "set_screen() called with overwrite=False and screen already "
                 "set.\n"
@@ -195,6 +441,8 @@ class Pipeline(object):
                 "use set_screen(new_filter, overwrite=True)."
             )
         self._screen = screen
+        self._prescreen = None
+        self._maybe_convert_to_prescreen(screen)
 
     def to_execution_plan(
         self,

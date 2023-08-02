@@ -82,6 +82,7 @@ from .term import AssetExists, InputDates, LoadableTerm
 
 from zipline.utils.date_utils import compute_date_range_chunks
 from zipline.utils.pandas_utils import categorical_df_concat
+from quantrocket.master import get_securities
 
 class DataFrameWithMetadata(DataFrame):
 
@@ -418,7 +419,7 @@ class SimplePipelineEngine(PipelineEngine):
         )
         extra_rows = plan.extra_rows[self._root_mask_term]
         root_mask = self._compute_root_mask(
-            domain, start_date, end_date, extra_rows,
+            pipeline, domain, start_date, end_date, extra_rows,
         )
         dates, sids, root_mask_values = explode(root_mask)
 
@@ -458,13 +459,15 @@ class SimplePipelineEngine(PipelineEngine):
             sids,
         )
 
-    def _compute_root_mask(self, domain, start_date, end_date, extra_rows):
+    def _compute_root_mask(self, pipeline, domain, start_date, end_date, extra_rows):
         """
         Compute a lifetimes matrix from our AssetFinder, then drop columns that
         didn't exist at all during the query dates.
 
         Parameters
         ----------
+        pipeline : zipline.pipeline.Pipeline
+            Pipeline for which we're computing a root mask.
         domain : zipline.pipeline.domain.Domain
             Domain for which we're computing a pipeline.
         start_date : pd.Timestamp
@@ -541,7 +544,66 @@ class SimplePipelineEngine(PipelineEngine):
                 )
             )
 
+        if pipeline._prescreen:
+            columns = self._prescreen(pipeline._prescreen, ret.columns)
+            ret = ret.loc[:, columns]
+
         return ret
+
+    def _prescreen(self, prescreen, sids):
+        """
+        Filter out sids that don't pass the prescreen.
+
+        Parameters
+        ----------
+        prescreen : dict
+            The pipeline prescreen dict.
+        sids : list[int]
+            The sids to prescreen.
+
+        Returns
+        -------
+        passed : list[int]
+            The sids that passed the prescreen.
+        """
+        finder = self._finder
+        if "sids" in prescreen:
+            sids = [sid for sid in sids if sid in prescreen["sids"]]
+
+        if "real_sids" in prescreen:
+            sids = [
+                sid for sid in sids
+                if finder.sids_to_real_sids[sid] in prescreen["real_sids"]]
+
+        if "fields" in prescreen:
+            real_sids = [finder.sids_to_real_sids[sid] for sid in sids]
+            securities = get_securities(
+                sids=real_sids,
+                fields=[fielddef["field"] for fielddef in prescreen["fields"]])
+            for fielddef in prescreen["fields"]:
+                op = fielddef["op"]
+                negate = fielddef["negate"]
+                fieldname = fielddef["field"]
+                values = fielddef["values"]
+                if op == "eq":
+                    expr = securities[fieldname].isin(values).fillna(False)
+                elif op == "contains":
+                    expr = securities[fieldname].str.contains(values).fillna(False)
+                elif op == "startswith":
+                    expr = securities[fieldname].str.startswith(values).fillna(False)
+                elif op == "endswith":
+                    expr = securities[fieldname].str.endswith(values).fillna(False)
+                elif op == "match":
+                    expr = securities[fieldname].str.match(values).fillna(False)
+                elif op == "isnull":
+                    expr = securities[fieldname].isnull()
+                if negate:
+                    expr = ~expr
+                securities = securities[expr]
+
+            sids = [sid for sid in sids if finder.sids_to_real_sids[sid] in securities.index]
+
+        return sids
 
     @staticmethod
     def _inputs_for_term(term, workspace, graph, domain, refcounts):

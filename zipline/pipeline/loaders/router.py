@@ -41,9 +41,7 @@ class QuantRocketPipelineLoaderRouter:
     """
     Routes to PipelineLoaders.
     """
-    def __init__(self, asset_db_conn, calendar, default_loader, default_loader_columns):
-        self.asset_db_conn = asset_db_conn
-        zipline_sids_to_real_sids = self._get_all_asset_sids()
+    def __init__(self, sids_to_real_sids, calendar, default_loader, default_loader_columns):
 
         # Default
         self.default_loader = default_loader
@@ -51,38 +49,38 @@ class QuantRocketPipelineLoaderRouter:
 
         # Reuters financials
         self.reuters_financials_loader = ReutersFinancialsPipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
 
         # Reuters estimates
         self.reuters_estimates_loader = ReutersEstimatesPipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
 
         # Sharadar
         self.sharadar_fundamentals_loader = SharadarFundamentalsPipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
         self.sharadar_sp500_loader = SharadarSP500PipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
         self.sharadar_institutions_loader = SharadarInstitutionsPipelineLoader(
-            zipline_sids_to_real_sids
+            sids_to_real_sids
         )
 
         # Alpaca
         self.alpaca_etb_loader = AlpacaETBPipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
 
         # IBKR
         self.ibkr_shortable_shares_loader = IBKRAggregateShortableSharesPipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
         self.ibkr_borrow_fees_loader = IBKRBorrowFeesPipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
 
         # Master
         self.securities_master_loader = SecuritiesMasterPipelineLoader(
-            zipline_sids_to_real_sids)
+            sids_to_real_sids)
 
         # Database
         self.database_loader = DatabasePipelineLoader(
-            zipline_sids_to_real_sids, calendar)
+            sids_to_real_sids, calendar)
 
     def isin(self, column, dataset):
         """
@@ -137,24 +135,3 @@ class QuantRocketPipelineLoaderRouter:
         raise ValueError(
             "No PipelineLoader registered for column %s." % column.unspecialize()
         )
-
-    def _get_all_asset_sids(self):
-        """
-        Returns a dict of real sids to zipline sids, and a dict of zipline sids to real sids.
-        """
-        sql = """
-        SELECT
-            sid,
-            real_sid
-        FROM
-            equities
-        UNION
-        SELECT
-            sid,
-            real_sid
-        FROM
-            futures_contracts
-        """
-        result = self.asset_db_conn.execute(sql)
-        zipline_sids_to_real_sids = dict([(row[0], row[1]) for row in result.fetchall()])
-        return zipline_sids_to_real_sids

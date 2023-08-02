@@ -2,11 +2,14 @@
 Tests for SimplePipelineEngine
 """
 from __future__ import division
+import re
 from collections import OrderedDict
 from itertools import product
 from operator import add, sub
+from mock import patch
 
 from parameterized import parameterized
+import pandas as pd
 import numpy as np
 from numpy import (
     arange,
@@ -43,7 +46,7 @@ from zipline.lib.adjustment import MULTIPLY
 from zipline.lib.labelarray import LabelArray
 from zipline.pipeline import CustomFactor, Pipeline
 from zipline.pipeline.data import (
-    Column, DataSet, EquityPricing, USEquityPricing,
+    Column, DataSet, EquityPricing, USEquityPricing, master
 )
 from zipline.pipeline.data.testing import TestingDataSet
 from zipline.pipeline.domain import (
@@ -62,7 +65,11 @@ from zipline.pipeline.factors import (
     MaxDrawdown,
     SimpleMovingAverage,
 )
-from zipline.pipeline.filters import CustomFilter
+from zipline.pipeline.filters import (
+    CustomFilter,
+    SingleAsset,
+    StaticSids
+)
 from zipline.pipeline.loaders.equity_pricing_loader import (
     EquityPricingLoader,
 )
@@ -1545,6 +1552,180 @@ class PopulateInitialWorkspaceTestCase(WithConstantInputs,
             ),
         )
 
+class PrescreenRootMaskTestCase(WithConstantInputs,
+                                zf.WithAssetFinder,
+                                zf.WithTradingCalendars,
+                                zf.ZiplineTestCase):
+    """
+    Tests that Pipelines with prescreens correctly limit the root mask to the
+    assets that pass the prescreen.
+    """
+
+    def test_prescreen_sids(self):
+        """
+        Tests a prescreen (SingleAsset) that uses integer sids.
+        """
+
+        asset = self.assets[0]
+        pipeline = Pipeline(
+            screen=SingleAsset(asset)
+        )
+        self.assertIsNone(pipeline._screen)
+        self.assertEqual(pipeline._prescreen, {"sids": [1]})
+
+        root_mask = self.engine._compute_root_mask(
+            pipeline, self.domain, self.dates[0], self.dates[-1], 0)
+
+        self.assertEqual(
+            set(root_mask.columns.tolist()),
+            set([1]))
+
+
+    def test_prescreen_real_sids(self):
+        """
+        Tests a prescreen (StaticSids) that uses real sids.
+        """
+
+        pipeline = Pipeline(
+            screen=StaticSids(['2', '3'])
+        )
+        self.assertIsNone(pipeline._screen)
+        self.assertEqual(set(pipeline._prescreen.keys()), {"real_sids"})
+
+        root_mask = self.engine._compute_root_mask(
+            pipeline, self.domain, self.dates[0], self.dates[-1], 0)
+
+        self.assertEqual(
+            set(root_mask.columns.tolist()),
+            set([2, 3]))
+
+    @patch('zipline.pipeline.engine.get_securities')
+    def test_prescreen_securities_master(self, mock_get_securities):
+
+        # test eq and startswith ops, with and without a negate
+        mock_get_securities.return_value = pd.DataFrame(
+            data={
+                "Symbol": ["AB", "AC", "BA", "AZ"],
+                "Etf": [False, False, False, True],
+                },
+            index=['1', '2', '3', '4'])
+
+        pipeline = Pipeline(
+            screen=(
+                master.SecuritiesMaster.Symbol.latest.startswith("A")
+                & ~master.SecuritiesMaster.Etf.latest)
+        )
+        self.assertIsNone(pipeline._screen)
+        self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
+        ops = set([field['op'] for field in pipeline._prescreen['fields']])
+        self.assertEqual(ops, {"startswith", "eq"})
+
+        root_mask = self.engine._compute_root_mask(
+            pipeline, self.domain, self.dates[0], self.dates[-1], 0)
+
+        self.assertEqual(
+            set(root_mask.columns.tolist()),
+            set([1, 2]))
+
+        # test contains and endswith ops, with and without a negate
+        mock_get_securities.return_value = pd.DataFrame(
+            data={
+                "Symbol": ["AB", "AZ", "ZA", "ZB"],
+                },
+            index=['1', '2', '3', '4'])
+
+        pipeline = Pipeline(
+            screen=(
+                master.SecuritiesMaster.Symbol.latest.has_substring("Z"))
+                & ~master.SecuritiesMaster.Symbol.latest.endswith("Z")
+        )
+        self.assertIsNone(pipeline._screen)
+        self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
+        ops = set([field['op'] for field in pipeline._prescreen['fields']])
+        self.assertEqual(ops, {"endswith", "contains"})
+
+        root_mask = self.engine._compute_root_mask(
+            pipeline, self.domain, self.dates[0], self.dates[-1], 0)
+
+        self.assertEqual(
+            set(root_mask.columns.tolist()),
+            set([3, 4]))
+
+        # test matches, with a string and compiled re, with and without a negate
+        mock_get_securities.return_value = pd.DataFrame(
+            data={
+                "Symbol": ["AB", "AA", "AC", "BB"],
+                },
+            index=['1', '2', '3', '4'])
+
+        pipeline = Pipeline(
+            screen=(
+                # starts with a 2-letter sequence of As and/or Bs
+                master.SecuritiesMaster.Symbol.latest.matches(r"[A-B]{2}"))
+                # but doesn't start with 2 As
+                & ~master.SecuritiesMaster.Symbol.latest.matches(re.compile(r"[A]{2}"))
+        )
+        self.assertIsNone(pipeline._screen)
+        self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
+        ops = set([field['op'] for field in pipeline._prescreen['fields']])
+        self.assertEqual(ops, {"match"})
+
+        root_mask = self.engine._compute_root_mask(
+            pipeline, self.domain, self.dates[0], self.dates[-1], 0)
+
+        self.assertEqual(
+            set(root_mask.columns.tolist()),
+            set([1, 4]))
+
+        # test isnull and notnull on object dtypes and notnull on float dtypes
+        mock_get_securities.return_value = pd.DataFrame(
+            data={
+                "edi_LocalSymbol": ["AB", None, "AC", None],
+                "alpaca_AssetId": [None, "a1", "a2", "a3"],
+                "ibkr_ConId": [np.nan, 56, 57, np.nan],
+                },
+            index=['1', '2', '3', '4'])
+
+        pipeline = Pipeline(
+            screen=(
+                master.SecuritiesMaster.alpaca_AssetId.latest.notnull()
+                & master.SecuritiesMaster.edi_LocalSymbol.latest.isnull()
+                & master.SecuritiesMaster.ibkr_ConId.latest.notnull()
+        ))
+        self.assertIsNone(pipeline._screen)
+        self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
+        ops = set([field['op'] for field in pipeline._prescreen['fields']])
+        self.assertEqual(ops, {"isnull"})
+
+        root_mask = self.engine._compute_root_mask(
+            pipeline, self.domain, self.dates[0], self.dates[-1], 0)
+
+        self.assertEqual(
+            set(root_mask.columns.tolist()),
+            set([2]))
+
+        # test isnull on float dtypes
+        mock_get_securities.return_value = pd.DataFrame(
+            data={
+                "ibkr_ConId": [np.nan, 56, np.nan, 58],
+                },
+            index=['1', '2', '3', '4'])
+
+        pipeline = Pipeline(
+            screen=(
+                master.SecuritiesMaster.ibkr_ConId.latest.isnull()
+        ))
+        self.assertIsNone(pipeline._screen)
+        self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
+        ops = set([field['op'] for field in pipeline._prescreen['fields']])
+        self.assertEqual(ops, {"isnull"})
+
+        root_mask = self.engine._compute_root_mask(
+            pipeline, self.domain, self.dates[0], self.dates[-1], 0)
+
+        self.assertEqual(
+            set(root_mask.columns.tolist()),
+            set([1, 3]))
 
 class ChunkedPipelineTestCase(zf.WithSeededRandomPipelineEngine,
                               zf.ZiplineTestCase):

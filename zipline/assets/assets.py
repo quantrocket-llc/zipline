@@ -297,6 +297,9 @@ class AssetFinder(object):
         # Stores the max end_date of the bundle
         self._bundle_end_date = None
 
+        self._sids_to_real_sids = {}
+        self._real_sids_to_sids = {}
+
     @lazyval
     def exchange_info(self):
         es = sa.select(self.exchanges.c).execute().fetchall()
@@ -849,6 +852,39 @@ class AssetFinder(object):
         doc='All of the sids for futures contracts in the asset finder.',
     )
     del _make_sids
+
+    @property
+    def sids_to_real_sids(self):
+        """
+        Returns a dict mapping sids to real sids.
+        """
+        if not self._sids_to_real_sids:
+            sql = """
+            SELECT
+                sid,
+                real_sid
+            FROM
+                equities
+            UNION
+            SELECT
+                sid,
+                real_sid
+            FROM
+                futures_contracts
+            """
+            result = self.engine.execute(sql)
+            self._sids_to_real_sids = {row[0]: row[1] for row in result.fetchall()}
+
+        return self._sids_to_real_sids
+
+    @property
+    def real_sids_to_sids(self):
+        """
+        Returns a dict mapping real sids to sids.
+        """
+        if not self._real_sids_to_sids:
+            self._real_sids_to_sids = {v: k for k, v in self.sids_to_real_sids.items()}
+        return self._real_sids_to_sids
 
     def get_bundle_end_date(self):
         """
