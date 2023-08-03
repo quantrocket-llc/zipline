@@ -228,7 +228,22 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
         calendar_domain,
         **kwargs)
 
-    results = engine.run_pipeline(pipeline, start_date, end_date)
+    use_chunks = True
+    # if the pipeline uses a filter such as StaticAssets and we already know there are
+    # only a few sids, it's faster to run the pipeline without chunks
+    if pipeline._prescreen:
+        max_sids_without_chunks = 25
+        if "sids" in pipeline._prescreen and len(pipeline._prescreen["sids"]) <= max_sids_without_chunks:
+            use_chunks = False
+        elif "real_sids" in pipeline._prescreen and len(pipeline._prescreen["real_sids"]) <= max_sids_without_chunks:
+            use_chunks = False
+
+    if use_chunks:
+        # Run in 1-years chunks to reduce memory usage
+        chunksize = 252
+        results = engine.run_chunked_pipeline(pipeline, start_date, end_date, chunksize=chunksize)
+    else:
+        results = engine.run_pipeline(pipeline, start_date, end_date)
     # add bundle and source to DataFrame metadata
     results._qr_bundle = bundle
     results._qr_src = "pipeline"
