@@ -7,6 +7,9 @@ of the context of a Zipline algorithm. For the Zipline algorithm API, see the
 
 Functions
 ---------
+use_bundle
+    Temporarily set the default bundle to use for subsequent research calls.
+
 run_pipeline
     Execute a pipeline.
 
@@ -33,11 +36,15 @@ Usage Guide:
 * Research API: https://qrok.it/dl/z/zipline-research
 """
 from zipline.research.pipeline import run_pipeline, get_forward_returns
+from zipline.research.bundle import use_bundle
 from zipline.research.bardata import get_data
+from zipline.research import sid as sid_module # for test suite
 from zipline.research.sid import sid, symbol
+from zipline.research import continuous_future as continuous_future_module # for test suite
 from zipline.research.continuous_future import continuous_future
 
 __all__ = [
+    'use_bundle',
     'run_pipeline',
     'get_forward_returns',
     'get_data',

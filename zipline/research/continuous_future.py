@@ -21,6 +21,7 @@ from zipline.assets import ContinuousFuture
 from zipline.utils.extensions import load_extensions
 from zipline.research.exceptions import ValidationError
 from zipline.research._asset import asset_finder_cache
+from zipline.research.bundle import _get_bundle
 from quantrocket.zipline import get_default_bundle
 
 def continuous_future(
@@ -58,7 +59,9 @@ def continuous_future(
         contracts without any adjustment. Default is 'mul'.
 
     bundle : str, optional
-        the bundle code. If omitted, the default bundle will be used (and must be set).
+        the bundle code. If omitted, the currently active bundle (as set with
+        `zipline.research.use_bundle`) will be used, or if that has not been set,
+        the default bundle (as set with `quantrocket.zipline.set_default_bundle`).
 
     Returns
     -------
@@ -80,10 +83,12 @@ def continuous_future(
         print(data.current_chain(es))
     """
     if not bundle:
-        bundle = get_default_bundle()
+        bundle = _get_bundle()
         if not bundle:
-            raise ValidationError("you must specify a bundle or set a default bundle")
-        bundle = bundle["default_bundle"]
+            bundle = get_default_bundle()
+            if not bundle:
+                raise ValidationError("you must specify a bundle or set a default bundle")
+            bundle = bundle["default_bundle"]
 
     load_extensions(code=bundle)
 

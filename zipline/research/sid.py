@@ -22,6 +22,7 @@ from zipline.utils.input_validation import ensure_upper_case
 from zipline.utils.preprocess import preprocess
 from zipline.research.exceptions import ValidationError
 from zipline.research._asset import asset_finder_cache
+from zipline.research.bundle import _get_bundle
 from quantrocket.zipline import get_default_bundle
 
 def sid(sid: str, bundle: str = None) -> Asset:
@@ -35,7 +36,9 @@ def sid(sid: str, bundle: str = None) -> Asset:
         The sid to retrieve.
 
     bundle : str, optional
-        the bundle code. If omitted, the default bundle will be used (and must be set).
+        the bundle code. If omitted, the currently active bundle (as set with
+        `zipline.research.use_bundle`) will be used, or if that has not been set,
+        the default bundle (as set with `quantrocket.zipline.set_default_bundle`).
 
     Returns
     -------
@@ -55,10 +58,12 @@ def sid(sid: str, bundle: str = None) -> Asset:
         aapl = sid("FIBBG000B9XRY4", bundle="usstock-1min")
     """
     if not bundle:
-        bundle = get_default_bundle()
+        bundle = _get_bundle()
         if not bundle:
-            raise ValidationError("you must specify a bundle or set a default bundle")
-        bundle = bundle["default_bundle"]
+            bundle = get_default_bundle()
+            if not bundle:
+                raise ValidationError("you must specify a bundle or set a default bundle")
+            bundle = bundle["default_bundle"]
 
     load_extensions(code=bundle)
 
@@ -112,7 +117,9 @@ def symbol(symbol: str, bundle: str = None) -> Asset:
         The ticker symbol for the equity.
 
     bundle : str, optional
-        the bundle code. If omitted, the default bundle will be used (and must be set).
+        the bundle code. If omitted, the currently active bundle (as set with
+        `zipline.research.use_bundle`) will be used, or if that has not been set,
+        the default bundle (as set with `quantrocket.zipline.set_default_bundle`).
 
     Returns
     -------
@@ -140,10 +147,12 @@ def symbol(symbol: str, bundle: str = None) -> Asset:
         aapl = symbol("AAPL", bundle="usstock-1min")
     """
     if not bundle:
-        bundle = get_default_bundle()
+        bundle = _get_bundle()
         if not bundle:
-            raise ValidationError("you must specify a bundle or set a default bundle")
-        bundle = bundle["default_bundle"]
+            bundle = get_default_bundle()
+            if not bundle:
+                raise ValidationError("you must specify a bundle or set a default bundle")
+            bundle = bundle["default_bundle"]
 
     load_extensions(code=bundle)
 

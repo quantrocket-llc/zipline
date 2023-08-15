@@ -27,6 +27,7 @@ from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.research.exceptions import ValidationError, RequestedEndDateAfterBundleEndDate
 from zipline.research._asset import asset_finder_cache
+from zipline.research.bundle import _get_bundle
 from quantrocket.zipline import get_default_bundle
 from trading_calendars import get_calendar
 
@@ -59,7 +60,9 @@ def run_pipeline(
         Defaults to today.
 
     bundle : str, optional
-        the bundle code. If omitted, the default bundle will be used (and must be set).
+        the bundle code. If omitted, the currently active bundle (as set with
+        `zipline.research.use_bundle`) will be used, or if that has not been set,
+        the default bundle (as set with `quantrocket.zipline.set_default_bundle`).
 
     Returns
     -------
@@ -106,12 +109,13 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
         and asset combinations to compute values for. Values will only be computed for
         dates and assets containing True values.
     """
-
     if not bundle:
-        bundle = get_default_bundle()
+        bundle = _get_bundle()
         if not bundle:
-            raise ValidationError("you must specify a bundle or set a default bundle")
-        bundle = bundle["default_bundle"]
+            bundle = get_default_bundle()
+            if not bundle:
+                raise ValidationError("you must specify a bundle or set a default bundle")
+            bundle = bundle["default_bundle"]
 
     load_extensions(code=bundle)
 
@@ -273,7 +277,9 @@ def get_forward_returns(
         each period. If omitted, defaults to [1]. Example: [1, 5, 21].
 
     bundle : str, optional
-        the bundle code. If omitted, the default bundle will be used (and must be set).
+        the bundle code. If omitted, the currently active bundle (as set with
+        `zipline.research.use_bundle`) will be used, or if that has not been set,
+        the default bundle (as set with `quantrocket.zipline.set_default_bundle`).
 
     Returns
     -------
@@ -290,10 +296,12 @@ def get_forward_returns(
     """
 
     if not bundle:
-        bundle = get_default_bundle()
+        bundle = _get_bundle()
         if not bundle:
-            raise ValidationError("you must specify a bundle or set a default bundle")
-        bundle = bundle["default_bundle"]
+            bundle = get_default_bundle()
+            if not bundle:
+                raise ValidationError("you must specify a bundle or set a default bundle")
+            bundle = bundle["default_bundle"]
 
     if factor.index.empty:
         raise ValidationError(
