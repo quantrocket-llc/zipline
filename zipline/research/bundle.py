@@ -37,7 +37,8 @@ def use_bundle(bundle: str) -> None:
     trading functions defined in the `quantrocket.zipline` package as well as the
     `zipline.research` package. It is not necessary to use this function if you have
     already set a default bundle via `quantrocket.zipline.set_default_bundle` and
-    want to use that bundle.
+    want to use that bundle. If both functions have been used to set a bundle, this
+    function takes precedence.
 
     Parameters
     ----------
@@ -46,7 +47,7 @@ def use_bundle(bundle: str) -> None:
 
     Examples
     --------
-    Set the default bundle to use for subsequent research calls:
+    Set the bundle to use for subsequent research calls:
 
     >>> use_bundle("usstock-1min")
 
