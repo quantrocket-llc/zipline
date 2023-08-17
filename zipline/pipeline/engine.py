@@ -585,6 +585,11 @@ class SimplePipelineEngine(PipelineEngine):
                 negate = fielddef["negate"]
                 fieldname = fielddef["field"]
                 values = fielddef["values"]
+                # if the field is Sid, copy it from the index. This is an edge case
+                # as it's very unlikely someone would filter on Sid via SecuritiesMaster
+                # as opposed to using StaticSids.
+                if fieldname == "Sid":
+                    securities["Sid"] = securities.index
                 if op == "eq":
                     expr = securities[fieldname].isin(values).fillna(False)
                 elif op == "contains":
