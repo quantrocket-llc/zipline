@@ -576,6 +576,7 @@ def get_environment(field):
     ----------
     field : {'arena', 'data_frequency', 'start', 'end', 'capital_base', 'platform', '*'}
         The field to query. The options have the following meanings:
+
             arena : str
                 The arena from the simulation parameters. ``'backtest'`` or ``'trade'``.
 
