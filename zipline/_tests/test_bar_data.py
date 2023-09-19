@@ -21,8 +21,7 @@ from numpy import nan
 from numpy.testing import assert_almost_equal
 import pandas as pd
 from toolz import concat
-from trading_calendars import get_calendar
-from trading_calendars.utils.pandas_utils import days_at_time
+from zipline.utils.calendar_utils import get_calendar, days_at_time
 
 from zipline._protocol import handle_non_market_minutes
 
@@ -108,12 +107,9 @@ class TestMinuteBarData(WithCreateBarData,
                         WithBarDataChecks,
                         WithDataPortal,
                         ZiplineTestCase):
-    START_DATE = pd.Timestamp('2016-01-05', tz='UTC')
-    END_DATE = ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp(
-        '2016-01-07',
-        tz='UTC',
-    )
-    AUTO_CLOSE_DATE = pd.Timestamp('2016-01-11', tz='UTC')
+    START_DATE = pd.Timestamp('2016-01-05')
+    END_DATE = ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp('2016-01-07')
+    AUTO_CLOSE_DATE = pd.Timestamp('2016-01-11')
 
     ASSET_FINDER_EQUITY_SIDS = 1, 2, 3, 4, 5
 
@@ -136,21 +132,21 @@ class TestMinuteBarData(WithCreateBarData,
         # illiquid_split_asset trades every 10 minutes
         for sid in (1, cls.SPLIT_ASSET_SID):
             yield sid, create_minute_df_for_asset(
-                cls.trading_calendar,
+                cls.exchange_calendar,
                 cls.equity_minute_bar_days[0],
                 cls.equity_minute_bar_days[-1],
             )
 
         for sid in (2, cls.ILLIQUID_SPLIT_ASSET_SID):
             yield sid, create_minute_df_for_asset(
-                cls.trading_calendar,
+                cls.exchange_calendar,
                 cls.equity_minute_bar_days[0],
                 cls.equity_minute_bar_days[-1],
                 10,
             )
 
         yield cls.HILARIOUSLY_ILLIQUID_ASSET_SID, create_minute_df_for_asset(
-            cls.trading_calendar,
+            cls.exchange_calendar,
             cls.equity_minute_bar_days[0],
             cls.equity_minute_bar_days[-1],
             50,
@@ -165,9 +161,9 @@ class TestMinuteBarData(WithCreateBarData,
                     'root_symbol': 'CL',
                     'real_sid': '6',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2005-12-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2006-01-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2005-12-01'),
+                    'notice_date': pd.Timestamp('2005-12-20'),
+                    'expiration_date': pd.Timestamp('2006-01-20'),
                     'exchange': 'ICEUS',
                 },
                 7: {
@@ -175,9 +171,9 @@ class TestMinuteBarData(WithCreateBarData,
                     'root_symbol': 'CL',
                     'real_sid': '7',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2006-03-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2006-04-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2005-12-01'),
+                    'notice_date': pd.Timestamp('2006-03-20'),
+                    'expiration_date': pd.Timestamp('2006-04-20'),
                     'exchange': 'ICEUS',
                 },
             },
@@ -218,7 +214,7 @@ class TestMinuteBarData(WithCreateBarData,
         cls.ASSETS = [cls.ASSET1, cls.ASSET2]
 
     def test_current_session(self):
-        regular_minutes = self.trading_calendar.minutes_for_sessions_in_range(
+        regular_minutes = self.exchange_calendar.sessions_minutes(
             self.equity_minute_bar_days[0],
             self.equity_minute_bar_days[-1]
         )
@@ -226,14 +222,16 @@ class TestMinuteBarData(WithCreateBarData,
         bts_minutes = days_at_time(
             self.equity_minute_bar_days,
             time(8, 45),
-            "US/Eastern"
+            "US/Eastern",
+            day_offset=0,
         )
 
         # some other non-market-minute
         three_oh_six_am_minutes = days_at_time(
             self.equity_minute_bar_days,
             time(3, 6),
-            "US/Eastern"
+            "US/Eastern",
+            day_offset=0,
         )
 
         all_minutes = [regular_minutes, bts_minutes, three_oh_six_am_minutes]
@@ -241,12 +239,12 @@ class TestMinuteBarData(WithCreateBarData,
             bar_data = self.create_bardata(lambda: minute)
 
             self.assertEqual(
-                self.trading_calendar.minute_to_session_label(minute),
+                self.exchange_calendar.minute_to_session(minute),
                 bar_data.current_session
             )
 
     def test_current_session_minutes(self):
-        first_day_minutes = self.trading_calendar.minutes_for_session(
+        first_day_minutes = self.exchange_calendar.session_minutes(
             self.equity_minute_bar_days[0]
         )
 
@@ -259,8 +257,8 @@ class TestMinuteBarData(WithCreateBarData,
 
     def test_minute_before_assets_trading(self):
         # grab minutes that include the day before the asset start
-        minutes = self.trading_calendar.minutes_for_session(
-            self.trading_calendar.previous_session_label(
+        minutes = self.exchange_calendar.session_minutes(
+            self.exchange_calendar.previous_session(
                 self.equity_minute_bar_days[0]
             )
         )
@@ -290,7 +288,7 @@ class TestMinuteBarData(WithCreateBarData,
                         self.assertTrue(asset_value is pd.NaT)
 
     def test_regular_minute(self):
-        minutes = self.trading_calendar.minutes_for_session(
+        minutes = self.exchange_calendar.session_minutes(
             self.equity_minute_bar_days[0]
         )
 
@@ -386,7 +384,7 @@ class TestMinuteBarData(WithCreateBarData,
                             )
 
     def test_minute_of_last_day(self):
-        minutes = self.trading_calendar.minutes_for_session(
+        minutes = self.exchange_calendar.session_minutes(
             self.equity_daily_bar_days[-1],
         )
 
@@ -400,13 +398,13 @@ class TestMinuteBarData(WithCreateBarData,
             self.assertTrue(bar_data.can_trade(self.ASSET2))
 
     def test_minute_after_assets_stopped(self):
-        minutes = self.trading_calendar.minutes_for_session(
-            self.trading_calendar.next_session_label(
+        minutes = self.exchange_calendar.session_minutes(
+            self.exchange_calendar.next_session(
                 self.equity_minute_bar_days[-1]
             )
         )
 
-        last_trading_minute = self.trading_calendar.minutes_for_session(
+        last_trading_minute = self.exchange_calendar.session_minutes(
             self.equity_minute_bar_days[-1]
         )[-1]
 
@@ -455,11 +453,11 @@ class TestMinuteBarData(WithCreateBarData,
         split = splits[0]
         self.assertEqual(
             split[0],
-            pd.Timestamp("2016-01-06", tz='UTC')
+            pd.Timestamp("2016-01-06")
         )
 
         # ... but that's it's not applied when using spot value
-        minutes = self.trading_calendar.minutes_for_sessions_in_range(
+        minutes = self.exchange_calendar.sessions_minutes(
             self.equity_minute_bar_days[0],
             self.equity_minute_bar_days[1]
         )
@@ -476,10 +474,10 @@ class TestMinuteBarData(WithCreateBarData,
     def test_get_value_is_adjusted_if_needed(self):
         # on cls.days[1], the first 9 minutes of ILLIQUID_SPLIT_ASSET are
         # missing. let's get them.
-        day0_minutes = self.trading_calendar.minutes_for_session(
+        day0_minutes = self.exchange_calendar.session_minutes(
             self.equity_minute_bar_days[0]
         )
-        day1_minutes = self.trading_calendar.minutes_for_session(
+        day1_minutes = self.exchange_calendar.session_minutes(
             self.equity_minute_bar_days[1]
         )
 
@@ -579,17 +577,17 @@ class TestMinuteBarData(WithCreateBarData,
         # verify that can_trade returns False for the session before the
         # asset's first session
         session_before_asset1_start = \
-            self.trading_calendar.previous_session_label(
+            self.exchange_calendar.previous_session(
                 self.ASSET1.start_date
             )
-        minutes_for_session = self.trading_calendar.minutes_for_session(
+        session_minutes = self.exchange_calendar.session_minutes(
             session_before_asset1_start
         )
 
         # for good measure, check the minute before the session too
         minutes_to_check = chain(
-            [minutes_for_session[0] - pd.Timedelta(minutes=1)],
-            minutes_for_session
+            [session_minutes[0] - pd.Timedelta(minutes=1)],
+            session_minutes
         )
 
         for minute in minutes_to_check:
@@ -600,15 +598,15 @@ class TestMinuteBarData(WithCreateBarData,
             self.assertFalse(bar_data.can_trade(self.ASSET1))
 
         # after asset lifetime
-        session_after_asset1_end = self.trading_calendar.next_session_label(
+        session_after_asset1_end = self.exchange_calendar.next_session(
             self.ASSET1.end_date
         )
         bts_after_asset1_end = session_after_asset1_end.replace(
             hour=8, minute=45
-        ).tz_convert(None).tz_localize("US/Eastern")
+        ).tz_localize("US/Eastern")
 
         minutes_to_check = chain(
-            self.trading_calendar.minutes_for_session(
+            self.exchange_calendar.session_minutes(
                 session_after_asset1_end
             ),
             [bts_after_asset1_end]
@@ -626,7 +624,7 @@ class TestMinuteBarData(WithCreateBarData,
         # outside the asset's calendar (assuming the asset is alive and
         # there is a last price), because the asset is alive on the
         # next market minute.
-        minutes = self.trading_calendar.minutes_for_sessions_in_range(
+        minutes = self.exchange_calendar.sessions_minutes(
             self.ASSET1.start_date,
             self.ASSET1.end_date
         )
@@ -645,7 +643,7 @@ class TestMinuteBarData(WithCreateBarData,
         # for all minutes afterwards.
 
         minutes_in_session = \
-            self.trading_calendar.minutes_for_session(self.ASSET1.start_date)
+            self.exchange_calendar.session_minutes(self.ASSET1.start_date)
 
         for minute in minutes_in_session[0:49]:
             bar_data = self.create_bardata(
@@ -684,7 +682,7 @@ class TestMinuteBarData(WithCreateBarData,
         split = splits[0]
         self.assertEqual(
             split[0],
-            pd.Timestamp("2016-01-06", tz='UTC')
+            pd.Timestamp("2016-01-06")
         )
 
         # Current day is 1/06/16
@@ -752,11 +750,9 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
                                        WithBarDataChecks,
                                        ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2016-01-05', tz='UTC')
+    START_DATE = pd.Timestamp('2016-01-05')
     END_DATE = ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp(
-        '2016-01-07',
-        tz='UTC',
-    )
+        '2016-01-07')
 
     ASSET_FINDER_EQUITY_SIDS = [1]
 
@@ -764,7 +760,7 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
     def make_equity_minute_bar_data(cls):
         # asset1 has trades every minute
         yield 1, create_minute_df_for_asset(
-            cls.trading_calendar,
+            cls.exchange_calendar,
             cls.equity_minute_bar_days[0],
             cls.equity_minute_bar_days[-1],
         )
@@ -778,9 +774,9 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
                     'root_symbol': 'CL',
                     'real_sid': '6',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2016-01-04', tz='UTC'),
-                    'notice_date': pd.Timestamp('2016-01-19', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2016-02-19', tz='UTC'),
+                    'start_date': pd.Timestamp('2016-01-04'),
+                    'notice_date': pd.Timestamp('2016-01-19'),
+                    'expiration_date': pd.Timestamp('2016-02-19'),
                     'exchange': 'ICEUS',
                 },
                 7: {
@@ -788,10 +784,10 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
                     'root_symbol': 'FV',
                     'real_sid': '7',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2016-01-04', tz='UTC'),
-                    'notice_date': pd.Timestamp('2016-01-22', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2016-02-22', tz='UTC'),
-                    'auto_close_date': pd.Timestamp('2016-01-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2016-01-04'),
+                    'notice_date': pd.Timestamp('2016-01-22'),
+                    'expiration_date': pd.Timestamp('2016-02-22'),
+                    'auto_close_date': pd.Timestamp('2016-01-20'),
                     'exchange': 'CMES',
                 },
             },
@@ -801,7 +797,7 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
     @classmethod
     def init_class_fixtures(cls):
         super(TestMinuteBarDataFuturesCalendar, cls).init_class_fixtures()
-        cls.trading_calendar = get_calendar('CMES')
+        cls.exchange_calendar = get_calendar('CMES')
 
     def test_can_trade_multiple_exchange_closed(self):
         nyse_asset = self.asset_finder.retrieve_asset(1)
@@ -837,9 +833,9 @@ class TestMinuteBarDataFuturesCalendar(WithCreateBarData,
             (pd.Timestamp("2016-01-06 15:59", tz="US/Eastern"), True, True),
             (pd.Timestamp("2016-01-06 16:00", tz="US/Eastern"), True, True),
             (pd.Timestamp("2016-01-06 16:01", tz="US/Eastern"), False, True),
-            (pd.Timestamp("2016-01-06 16:59", tz="US/Eastern"), False, True),
-            (pd.Timestamp("2016-01-06 17:00", tz="US/Eastern"), False, True),
-            (pd.Timestamp("2016-01-06 17:01", tz="US/Eastern"), False, False),
+            (pd.Timestamp("2016-01-06 17:59", tz="US/Eastern"), False, True),
+            (pd.Timestamp("2016-01-06 18:00", tz="US/Eastern"), False, True),
+            (pd.Timestamp("2016-01-06 18:01", tz="US/Eastern"), False, False),
         ]
 
         for info in minutes_to_check:
@@ -882,12 +878,10 @@ class TestDailyBarData(WithCreateBarData,
                        WithBarDataChecks,
                        WithDataPortal,
                        ZiplineTestCase):
-    START_DATE = pd.Timestamp('2016-01-05', tz='UTC')
+    START_DATE = pd.Timestamp('2016-01-05')
     END_DATE = ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp(
-        '2016-01-11',
-        tz='UTC',
-    )
-    AUTO_CLOSE_DATE = pd.Timestamp('2016-01-11', tz='UTC')
+        '2016-01-11')
+    AUTO_CLOSE_DATE = pd.Timestamp('2016-01-11')
 
     CREATE_BARDATA_DATA_FREQUENCY = 'daily'
 
@@ -903,7 +897,7 @@ class TestDailyBarData(WithCreateBarData,
     @classmethod
     def make_equity_info(cls):
         frame = super(TestDailyBarData, cls).make_equity_info()
-        frame.loc[[1, 2], 'end_date'] = pd.Timestamp('2016-01-08', tz='UTC')
+        frame.loc[[1, 2], 'end_date'] = pd.Timestamp('2016-01-08')
         frame['auto_close_date'] = pd.NaT
         frame.loc[[1, 2], 'auto_close_date'] = cls.AUTO_CLOSE_DATE
         return frame
@@ -944,25 +938,25 @@ class TestDailyBarData(WithCreateBarData,
             {
                 # only care about ex date, the other dates don't matter here
                 'ex_date':
-                    pd.Timestamp('2016-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-06').to_datetime64(),
                 'record_date':
-                    pd.Timestamp('2016-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-06').to_datetime64(),
                 'declared_date':
-                    pd.Timestamp('2016-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-06').to_datetime64(),
                 'pay_date':
-                    pd.Timestamp('2016-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-06').to_datetime64(),
                 'amount': 2.0,
                 'sid': cls.DIVIDEND_ASSET_SID,
             },
             {
                 'ex_date':
-                    pd.Timestamp('2016-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-07').to_datetime64(),
                 'record_date':
-                    pd.Timestamp('2016-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-07').to_datetime64(),
                 'declared_date':
-                    pd.Timestamp('2016-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-07').to_datetime64(),
                 'pay_date':
-                    pd.Timestamp('2016-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2016-01-07').to_datetime64(),
                 'amount': 4.0,
                 'sid': cls.ILLIQUID_DIVIDEND_ASSET_SID,
             }],
@@ -979,9 +973,9 @@ class TestDailyBarData(WithCreateBarData,
     @classmethod
     def make_adjustment_writer_equity_daily_bar_reader(cls):
         return MockDailyBarReader(
-            dates=cls.trading_calendar.sessions_in_range(
+            dates=cls.exchange_calendar.sessions_in_range(
                 cls.START_DATE,
-                cls.AUTO_CLOSE_DATE + cls.trading_calendar.day,
+                cls.AUTO_CLOSE_DATE + cls.exchange_calendar.day,
             ),
         )
 
@@ -990,7 +984,7 @@ class TestDailyBarData(WithCreateBarData,
         for sid in sids:
             asset = cls.asset_finder.retrieve_asset(sid)
             yield sid, create_daily_df_for_asset(
-                cls.trading_calendar,
+                cls.exchange_calendar,
                 asset.start_date,
                 asset.end_date,
                 interval=2 - sid % 2
@@ -1023,12 +1017,12 @@ class TestDailyBarData(WithCreateBarData,
         cls.ASSETS = [cls.ASSET1, cls.ASSET2]
 
     def get_last_minute_of_session(self, session_label):
-        return self.trading_calendar.open_and_close_for_session(
+        return self.exchange_calendar.session_open_close(
             session_label
         )[1]
 
     def test_current_session(self):
-        for session in self.trading_calendar.sessions_in_range(
+        for session in self.exchange_calendar.sessions_in_range(
             self.equity_daily_bar_days[0],
             self.equity_daily_bar_days[-1]
         ):
@@ -1043,7 +1037,7 @@ class TestDailyBarData(WithCreateBarData,
     def test_day_before_assets_trading(self):
         # use the day before self.bcolz_daily_bar_days[0]
         minute = self.get_last_minute_of_session(
-            self.trading_calendar.previous_session_label(
+            self.exchange_calendar.previous_session(
                 self.equity_daily_bar_days[0]
             )
         )
@@ -1167,7 +1161,7 @@ class TestDailyBarData(WithCreateBarData,
 
     def test_after_assets_dead(self):
         bar_data = self.create_bardata(
-            simulation_dt_func=lambda: pd.Timestamp('2016-01-12', tz='UTC'),
+            simulation_dt_func=lambda: pd.Timestamp('2016-01-12'),
         )
         self.check_internal_consistency(bar_data)
 
@@ -1214,7 +1208,7 @@ class TestDailyBarData(WithCreateBarData,
         adjustment = adjustments[0]
         self.assertEqual(
             adjustment[0],
-            pd.Timestamp("2016-01-06", tz='UTC')
+            pd.Timestamp("2016-01-06")
         )
 
         # ... but that's it's not applied when using spot value

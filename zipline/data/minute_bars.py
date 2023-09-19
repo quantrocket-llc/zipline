@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from six import with_metaclass
 from toolz import keymap, valmap
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline.data._minute_bar_internal import (
     minute_value,
@@ -180,8 +180,8 @@ class BcolzMinuteBarMetadata(object):
     ohlc_ratio : int
          The factor by which the pricing data is multiplied so that the
          float data can be stored as an integer.
-    calendar :  trading_calendars.trading_calendar.TradingCalendar
-        The TradingCalendar on which the minute bars are based.
+    calendar :  exchange_calendars.exchange_calendar.ExchangeCalendar
+        The ExchangeCalendar on which the minute bars are based.
     start_session : datetime
         The first trading session in the data set.
     end_session : datetime
@@ -221,18 +221,18 @@ class BcolzMinuteBarMetadata(object):
             if version >= 2:
                 calendar = get_calendar(raw_data['calendar_name'])
                 start_session = pd.Timestamp(
-                    raw_data['start_session'], tz='UTC')
-                end_session = pd.Timestamp(raw_data['end_session'], tz='UTC')
+                    raw_data['start_session'])
+                end_session = pd.Timestamp(raw_data['end_session'])
             else:
                 # No calendar info included in older versions, so
                 # default to NYSE.
                 calendar = get_calendar('XNYS')
 
                 start_session = pd.Timestamp(
-                    raw_data['first_trading_day'], tz='UTC')
-                end_session = calendar.minute_to_session_label(
+                    raw_data['first_trading_day'])
+                end_session = calendar.minute_to_session(
                     pd.Timestamp(
-                        raw_data['market_closes'][-1], unit='m', tz='UTC')
+                        raw_data['market_closes'][-1], unit='m')
                 )
 
             if version >= 3:
@@ -290,7 +290,7 @@ class BcolzMinuteBarMetadata(object):
         minutes_per_day : int
             The number of minutes per each period.
         calendar_name : str
-            The name of the TradingCalendar on which the minute bars are
+            The name of the ExchangeCalendar on which the minute bars are
             based.
         start_session : datetime
             'YYYY-MM-DD' formatted representation of the first trading
@@ -299,16 +299,6 @@ class BcolzMinuteBarMetadata(object):
             'YYYY-MM-DD' formatted representation of the last trading
             session in the data set.
         """
-
-        calendar = self.calendar
-        slicer = calendar.schedule.index.slice_indexer(
-            self.start_session,
-            self.end_session,
-        )
-        schedule = calendar.schedule[slicer]
-        market_opens = schedule.market_open
-        market_closes = schedule.market_close
-
         metadata = {
             'version': self.version,
             'ohlc_ratio': self.default_ohlc_ratio,
@@ -331,7 +321,7 @@ class BcolzMinuteBarWriter(object):
     rootdir : string
         Path to the root directory into which to write the metadata and
         bcolz subdirectories.
-    calendar : trading_calendars.trading_calendar.TradingCalendar
+    calendar : exchange_calendars.exchange_calendar.ExchangeCalendar
         The trading calendar on which to base the minute bars. Used to
         get the market opens used as a starting point for each periodic
         span of minutes in the index, and the market closes that
@@ -438,7 +428,7 @@ class BcolzMinuteBarWriter(object):
         self._ohlc_ratios_per_sid = ohlc_ratios_per_sid
 
         self._minute_index = _calc_minute_index(
-            self._schedule.market_open, self._minutes_per_day)
+            calendar.first_minutes[slicer], self._minutes_per_day)
 
         if write_metadata:
             metadata = BcolzMinuteBarMetadata(
@@ -752,7 +742,7 @@ class BcolzMinuteBarWriter(object):
         table = self._ensure_ctable(sid)
 
         tds = self._session_labels
-        input_first_day = self._calendar.minute_to_session_label(
+        input_first_day = self._calendar.minute_to_session(
             pd.Timestamp(dts[0]), direction='previous')
 
         last_date = self.last_date_in_output_for_sid(sid)
@@ -901,10 +891,10 @@ class BcolzMinuteBarReader(MinuteBarReader):
             self._end_session,
         )
         self._schedule = self.calendar.schedule[slicer]
-        self._market_opens = self._schedule.market_open
+        self._market_opens = self.calendar.first_minutes[slicer]
         self._market_open_values = self._market_opens.values.\
             astype('datetime64[m]').astype(np.int64)
-        self._market_closes = self._schedule.market_close
+        self._market_closes = self._schedule.close
         self._market_close_values = self._market_closes.values.\
             astype('datetime64[m]').astype(np.int64)
 
@@ -934,31 +924,16 @@ class BcolzMinuteBarReader(MinuteBarReader):
         # which is the minute epoch of that date.
         self._known_zero_volume_dict = {}
 
-        # Deal with a problem in the usstock dataset on 2020-05-08 14:50:00-04:00.
-        # Background: _open_minute_file opens the bcolz ctable from disk, then
-        # caches the ctable in an LRU cache. When the minute file is opened on or
-        # before the problem date, and then accessed (via the LRU cache) after the
-        # problem date, a segmentation fault (or malloc or other C error) occurs.
-        # Note that the issue only affects calls to _open_minute_file that are made
-        # from get_value. Calls to _open_minute_file from load_raw_arrays or
-        # get_last_traded_dt do not trigger the C errors. The workaround is to reopen
-        # the ctable from disk (not from the cache) the first time the ctable is
-        # accessed after the problem date.
-        self.usstock_problem_dt = pd.Timestamp("2020-05-08 14:50:00-04:00", tz="UTC")
-        # Stores tuples of (field, sid) which have already force reloaded the ctable
-        # after the problem date
-        self.has_force_reloaded_after_usstock_problem_dt = []
-
     def _get_metadata(self):
         return BcolzMinuteBarMetadata.read(self._rootdir)
 
     @property
-    def trading_calendar(self):
+    def exchange_calendar(self):
         return self.calendar
 
     @lazyval
     def last_available_dt(self):
-        _, close = self.calendar.open_and_close_for_session(
+        close = self.calendar.session_close(
             min([self._end_session, self.calendar.last_session]))
         return close
 
@@ -994,7 +969,7 @@ class BcolzMinuteBarReader(MinuteBarReader):
         minutes_per_day = (market_closes - market_opens).astype(np.int64)
         early_indices = np.where(
             minutes_per_day != self._minutes_per_day - 1)[0]
-        early_closes = self._market_closes[early_indices]
+        early_closes = self._market_closes.iloc[early_indices]
         next_day_opens = self._market_opens.shift(-1).iloc[early_indices]
         minutes = [
             (early_close, next_day_open)
@@ -1017,16 +992,14 @@ class BcolzMinuteBarReader(MinuteBarReader):
         List of DatetimeIndex representing the minutes to exclude because
         of market breaks.
         """
-        breaks = self._schedule[
-            self._schedule.break_start.notnull() &
-            self._schedule.break_end.notnull()][["break_start", "break_end"]]
+        break_starts = self.calendar.last_am_minutes.loc[
+            self._schedule.index].dt.tz_localize(None)
+        break_ends = self.calendar.first_pm_minutes.loc[
+            self._schedule.index].dt.tz_localize(None)
 
-        minutes = [
-            (break_start,
-            break_end)
-            for break_start, break_end
-            in breaks.apply(list, axis=1)
-        ]
+        minutes = list(
+            zip(break_starts.dropna().tolist(),
+                break_ends.dropna().tolist()))
 
         return minutes
 
@@ -1092,14 +1065,10 @@ class BcolzMinuteBarReader(MinuteBarReader):
         # carrays are subdirectories of the sid's rootdir
         return os.path.join(self._rootdir, sid_subdir, field)
 
-    def _open_minute_file(self, field, sid, force_reload=False):
+    def _open_minute_file(self, field, sid):
         sid = int(sid)
 
         try:
-            # the force_reload option is to deal with the usstock problem
-            # date. See the comments in __init__ and get_value.
-            if force_reload:
-                raise KeyError()
             carray = self._carrays[field][sid]
         except KeyError:
             try:
@@ -1164,17 +1133,8 @@ class BcolzMinuteBarReader(MinuteBarReader):
             self._last_get_value_dt_value = dt.value
             self._last_get_value_dt_position = minute_pos
 
-        # force reload the minute file if it's after the problem date,
-        # and we haven't yet force reloaded
-        force_reload = (
-            (field, sid) not in self.has_force_reloaded_after_usstock_problem_dt
-            and dt > self.usstock_problem_dt
-        )
-        if force_reload:
-            self.has_force_reloaded_after_usstock_problem_dt.append((field, sid))
-
         try:
-            value = self._open_minute_file(field, sid, force_reload=force_reload)[minute_pos]
+            value = self._open_minute_file(field, sid)[minute_pos]
         except IndexError:
             value = 0
         if value == 0:

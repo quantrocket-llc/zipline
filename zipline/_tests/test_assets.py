@@ -74,11 +74,11 @@ from zipline._testing import (
     powerset,
     tmp_asset_finder,
 )
-from zipline._testing.predicates import assert_equal, assert_not_equal
+from zipline._testing.predicates import assert_equal
 from zipline._testing.fixtures import (
     WithAssetFinder,
     ZiplineTestCase,
-    WithTradingCalendars,
+    WithExchangeCalendars,
     WithTmpDir,
     WithInstanceTmpDir,
 )
@@ -101,10 +101,10 @@ class AssetTestCase(TestCase):
         currency='USD',
         symbol="DOGE",
         asset_name="DOGECOIN",
-        start_date=pd.Timestamp('2013-12-08 9:31', tz='UTC'),
-        end_date=pd.Timestamp('2014-06-25 11:21', tz='UTC'),
-        first_traded=pd.Timestamp('2013-12-08 9:31', tz='UTC'),
-        auto_close_date=pd.Timestamp('2014-06-26 11:21', tz='UTC'),
+        start_date=pd.Timestamp('2013-12-08'),
+        end_date=pd.Timestamp('2014-06-25'),
+        first_traded=pd.Timestamp('2013-12-08'),
+        auto_close_date=pd.Timestamp('2014-06-26'),
     )
 
     test_exchange = ExchangeInfo('test full', 'test', '??')
@@ -225,9 +225,9 @@ class TestFuture(WithAssetFinder, ZiplineTestCase):
                     'root_symbol': 'OM',
                     'real_sid': '2468',
                     'currency': 'USD',
-                    'notice_date': pd.Timestamp('2014-01-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2014-02-20', tz='UTC'),
-                    'auto_close_date': pd.Timestamp('2014-01-18', tz='UTC'),
+                    'notice_date': pd.Timestamp('2014-01-20'),
+                    'expiration_date': pd.Timestamp('2014-02-20'),
+                    'auto_close_date': pd.Timestamp('2014-01-18'),
                     'tick_size': .01,
                     'multiplier': 500.0,
                     'exchange': "TEST",
@@ -237,9 +237,9 @@ class TestFuture(WithAssetFinder, ZiplineTestCase):
                     'root_symbol': 'CL',
                     'real_sid': '0',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2005-12-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2006-01-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2005-12-01'),
+                    'notice_date': pd.Timestamp('2005-12-20'),
+                    'expiration_date': pd.Timestamp('2006-01-20'),
                     'multiplier': 1.0,
                     'exchange': 'TEST',
                 },
@@ -283,20 +283,20 @@ class TestFuture(WithAssetFinder, ZiplineTestCase):
         self.assertEqual(om.sid, 2468)
         self.assertEqual(om.symbol, 'OMH15')
         self.assertEqual(om.root_symbol, 'OM')
-        self.assertEqual(om.notice_date, pd.Timestamp('2014-01-20', tz='UTC'))
+        self.assertEqual(om.notice_date, pd.Timestamp('2014-01-20'))
         self.assertEqual(om.expiration_date,
-                         pd.Timestamp('2014-02-20', tz='UTC'))
+                         pd.Timestamp('2014-02-20'))
         self.assertEqual(om.auto_close_date,
-                         pd.Timestamp('2014-01-18', tz='UTC'))
+                         pd.Timestamp('2014-01-18'))
 
         cl = TestFuture.asset_finder.lookup_future_symbol('CLG06')
         self.assertEqual(cl.sid, 0)
         self.assertEqual(cl.symbol, 'CLG06')
         self.assertEqual(cl.root_symbol, 'CL')
-        self.assertEqual(cl.start_date, pd.Timestamp('2005-12-01', tz='UTC'))
-        self.assertEqual(cl.notice_date, pd.Timestamp('2005-12-20', tz='UTC'))
+        self.assertEqual(cl.start_date, pd.Timestamp('2005-12-01'))
+        self.assertEqual(cl.notice_date, pd.Timestamp('2005-12-20'))
         self.assertEqual(cl.expiration_date,
-                         pd.Timestamp('2006-01-20', tz='UTC'))
+                         pd.Timestamp('2006-01-20'))
 
         with self.assertRaises(SymbolNotFound):
             TestFuture.asset_finder.lookup_future_symbol('')
@@ -311,7 +311,7 @@ class TestFuture(WithAssetFinder, ZiplineTestCase):
             TestFuture.asset_finder.lookup_future_symbol('XXX99')
 
 
-class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
+class AssetFinderTestCase(WithExchangeCalendars, ZiplineTestCase):
     asset_finder_type = AssetFinder
 
     def write_assets(self, **kwargs):
@@ -327,7 +327,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
     def test_dont_trigger_max_variables_error(self):
         # we will try to query for more variables than sqlite supports
         # to make sure we are properly chunking on the client side
-        as_of = pd.Timestamp('2013-01-01', tz='UTC')
+        as_of = pd.Timestamp('2013-01-01')
         # we need more sids than we can query from sqlite
         nsids = SQLITE_MAX_VARIABLE_NUMBER + 10
         sids = range(nsids)
@@ -350,7 +350,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         assert_equal(viewkeys(assets), set(sids))
 
     def test_lookup_symbol_delimited(self):
-        as_of = pd.Timestamp('2013-01-01', tz='UTC')
+        as_of = pd.Timestamp('2013-01-01')
         frame = pd.DataFrame.from_records(
             [
                 {
@@ -443,8 +443,8 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
 
     def test_compute_lifetimes(self):
         assets_per_exchange = 4
-        trading_day = self.trading_calendar.day
-        first_start = pd.Timestamp('2015-04-01', tz='UTC')
+        trading_day = self.exchange_calendar.day
+        first_start = pd.Timestamp('2015-04-01')
 
         equities = pd.concat(
             [
@@ -527,10 +527,10 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                             expected_no_start_raw[i, j] = True
 
             for country_codes in powerset(exchanges.country_code.unique()):
-                expected_sids = pd.Int64Index(sorted(concat(
+                expected_sids = pd.Index(sorted(concat(
                     sids_by_country[country_code]
                     for country_code in country_codes
-                )))
+                )), dtype='int64')
                 permuted_sids = [
                     sid for sid in sorted(expected_sids, key=permute_sid)
                 ]
@@ -541,7 +541,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                         tile_count,
                     ),
                     index=dates,
-                    columns=pd.Int64Index(permuted_sids),
+                    columns=pd.Index(permuted_sids, dtype="int64"),
                 )
                 result = finder.lifetimes(
                     dates,
@@ -558,7 +558,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
                         tile_count,
                     ),
                     index=dates,
-                    columns=pd.Int64Index(permuted_sids),
+                    columns=pd.Index(permuted_sids, dtype="int64"),
                 )
                 result = finder.lifetimes(
                     dates,
@@ -579,7 +579,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         self.write_assets(equities=equities)
         self.assertEqual(
             self.asset_finder.get_bundle_end_date(),
-            pd.Timestamp('2014-01-05', tz='UTC')
+            pd.Timestamp('2014-01-05')
         )
 
     def test_bundle_end_date_futures(self):
@@ -597,7 +597,7 @@ class AssetFinderTestCase(WithTradingCalendars, ZiplineTestCase):
         self.write_assets(equities=equities, futures=futures)
         self.assertEqual(
             self.asset_finder.get_bundle_end_date(),
-            pd.Timestamp(futures.end_date.max(), tz='UTC')
+            pd.Timestamp(futures.end_date.max())
         )
 
     def test_sids(self):
@@ -861,16 +861,16 @@ class TestExchangeInfo(ZiplineTestCase):
 
         # same full name but different canonical name
         c = ExchangeInfo('FULL NAME', 'NOT E', 'US')
-        assert_not_equal(c, a)
+        self.assertNotEqual(c, a)
 
         # same canonical name but different full name
         d = ExchangeInfo('DIFFERENT FULL NAME', 'E', 'US')
-        assert_not_equal(d, a)
+        self.assertNotEqual(d, a)
 
         # same names but different country
 
         e = ExchangeInfo('FULL NAME', 'E', 'JP')
-        assert_not_equal(e, a)
+        self.assertNotEqual(e, a)
 
     def test_repr(self):
         e = ExchangeInfo('FULL NAME', 'E', 'US')
@@ -945,7 +945,7 @@ class TestWrite(WithInstanceTmpDir, ZiplineTestCase):
         # Incrementing by two so that start and end dates for each
         # generated Asset don't overlap (each Asset's end_date is the
         # day after its start date).
-        dates = pd.date_range('2013-01-01', freq='2D', periods=5, tz='UTC')
+        dates = pd.date_range('2013-01-01', freq='2D', periods=5)
         sids = list(range(5))
         df = pd.DataFrame.from_records(
             [
@@ -1013,8 +1013,8 @@ class TestWrite(WithInstanceTmpDir, ZiplineTestCase):
                 currency='USD',
                 symbol='AYY',
                 asset_name='Ayy Inc.',
-                start_date=pd.Timestamp(0, tz='UTC'),
-                end_date=pd.Timestamp.max.tz_localize('UTC'),
+                start_date=pd.Timestamp(0),
+                end_date=pd.Timestamp.max,
                 first_traded=None,
                 auto_close_date=None,
                 tick_size=0.01,
@@ -1027,8 +1027,8 @@ class TestWrite(WithInstanceTmpDir, ZiplineTestCase):
                 currency='CAD',
                 symbol='LMAO',
                 asset_name='Lmao LP',
-                start_date=pd.Timestamp(0, tz='UTC'),
-                end_date=pd.Timestamp.max.tz_localize('UTC'),
+                start_date=pd.Timestamp(0),
+                end_date=pd.Timestamp.max,
                 first_traded=None,
                 auto_close_date=None,
                 tick_size=0.01,

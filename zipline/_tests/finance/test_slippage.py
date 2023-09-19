@@ -48,7 +48,7 @@ from zipline._testing.fixtures import (
     WithCreateBarData,
     WithDataPortal,
     WithSimParams,
-    WithTradingCalendars,
+    WithExchangeCalendars,
     ZiplineTestCase,
 )
 from zipline.utils.classproperty import classproperty
@@ -56,25 +56,26 @@ from zipline.utils.pandas_utils import normalize_date
 
 
 TestOrder = namedtuple('TestOrder', 'limit direction')
-
+TestOrder.__test__ = False # don't collect this class as a test case
 
 class SlippageTestCase(WithCreateBarData,
                        WithSimParams,
                        WithDataPortal,
                        ZiplineTestCase):
-    START_DATE = pd.Timestamp('2006-01-05 14:31', tz='utc')
-    END_DATE = pd.Timestamp('2006-01-05 14:36', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-05 14:31')
+    END_DATE = pd.Timestamp('2006-01-05 14:36')
     SIM_PARAMS_CAPITAL_BASE = 1.0e5
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
     SIM_PARAMS_EMISSION_RATE = 'daily'
 
     ASSET_FINDER_EQUITY_SIDS = (133,)
-    ASSET_FINDER_EQUITY_START_DATE = pd.Timestamp('2006-01-05', tz='utc')
-    ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp('2006-01-07', tz='utc')
+    ASSET_FINDER_EQUITY_START_DATE = pd.Timestamp('2006-01-05')
+    ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp('2006-01-07')
     minutes = pd.date_range(
         start=START_DATE,
         end=END_DATE - pd.Timedelta('1 minute'),
-        freq='1min'
+        freq='1min',
+        tz='utc',
     )
 
     @classproperty
@@ -569,19 +570,20 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
                                   WithDataPortal,
                                   ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2006-01-05 14:31', tz='utc')
-    END_DATE = pd.Timestamp('2006-01-05 14:36', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-05 14:31')
+    END_DATE = pd.Timestamp('2006-01-05 14:36')
     SIM_PARAMS_CAPITAL_BASE = 1.0e5
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
     SIM_PARAMS_EMISSION_RATE = 'daily'
 
     ASSET_FINDER_EQUITY_SIDS = (133,)
-    ASSET_FINDER_EQUITY_START_DATE = pd.Timestamp('2006-01-05', tz='utc')
-    ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp('2006-01-07', tz='utc')
+    ASSET_FINDER_EQUITY_START_DATE = pd.Timestamp('2006-01-05')
+    ASSET_FINDER_EQUITY_END_DATE = pd.Timestamp('2006-01-07')
     minutes = pd.date_range(
         start=START_DATE,
         end=END_DATE - pd.Timedelta('1 minute'),
-        freq='1min'
+        freq='1min',
+        tz="utc"
     )
 
     @classproperty
@@ -745,10 +747,10 @@ class VolatilityVolumeShareTestCase(WithCreateBarData,
                                     WithDataPortal,
                                     ZiplineTestCase):
 
-    ASSET_START_DATE = pd.Timestamp('2006-02-10', tz='utc')
+    ASSET_START_DATE = pd.Timestamp('2006-02-10')
 
-    TRADING_CALENDAR_STRS = ('NYSE', 'us_futures')
-    TRADING_CALENDAR_PRIMARY_CAL = 'us_futures'
+    EXCHANGE_CALENDAR_STRS = ('NYSE', 'us_futures')
+    EXCHANGE_CALENDAR_PRIMARY_CAL = 'us_futures'
 
     @classmethod
     def init_class_fixtures(cls):
@@ -778,7 +780,8 @@ class VolatilityVolumeShareTestCase(WithCreateBarData,
         )
         # Make the first month's worth of data NaN to simulate cases where a
         # futures contract does not exist yet.
-        data[0][1].loc[:cls.ASSET_START_DATE] = np.NaN
+        asset_start_date = cls.ASSET_START_DATE.tz_localize(data[0][1].index.tzinfo)
+        data[0][1].loc[:asset_start_date] = np.NaN
         return data
 
     def test_calculate_impact_buy(self):
@@ -813,7 +816,7 @@ class VolatilityVolumeShareTestCase(WithCreateBarData,
         model = VolatilityVolumeShare(volume_limit=0.05)
         first_minute = pd.Timestamp('2006-03-31 11:35AM', tz='UTC')
 
-        next_3_minutes = self.trading_calendar.minutes_window(first_minute, 3)
+        next_3_minutes = self.exchange_calendar.minutes_window(first_minute, 3)
         remaining_shares = test_order.open_amount
 
         for i, minute in enumerate(next_3_minutes):
@@ -898,9 +901,9 @@ class MarketImpactTestCase(WithCreateBarData, ZiplineTestCase):
 
     @classmethod
     def make_equity_minute_bar_data(cls):
-        trading_calendar = cls.trading_calendars[Equity]
+        exchange_calendar = cls.exchange_calendars[Equity]
         return create_minute_bar_data(
-            trading_calendar.minutes_for_sessions_in_range(
+            exchange_calendar.sessions_minutes(
                 cls.equity_minute_bar_days[0],
                 cls.equity_minute_bar_days[-1],
             ),
@@ -909,7 +912,7 @@ class MarketImpactTestCase(WithCreateBarData, ZiplineTestCase):
 
     def test_window_data(self):
         session = pd.Timestamp('2006-03-01')
-        minute = self.trading_calendar.minutes_for_session(session)[1]
+        minute = self.exchange_calendar.session_minutes(session)[1]
         data = self.create_bardata(simulation_dt_func=lambda: minute)
         asset = self.asset_finder.retrieve_asset(1)
 
@@ -949,11 +952,11 @@ class MarketImpactTestCase(WithCreateBarData, ZiplineTestCase):
 
 class OrdersStopTestCase(WithSimParams,
                          WithAssetFinder,
-                         WithTradingCalendars,
+                         WithExchangeCalendars,
                          ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2006-01-05 14:31', tz='utc')
-    END_DATE = pd.Timestamp('2006-01-05 14:36', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-05 14:31')
+    END_DATE = pd.Timestamp('2006-01-05 14:36')
     SIM_PARAMS_CAPITAL_BASE = 1.0e5
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
     SIM_PARAMS_EMISSION_RATE = 'daily'
@@ -961,7 +964,8 @@ class OrdersStopTestCase(WithSimParams,
     minutes = pd.date_range(
         start=START_DATE,
         end=END_DATE - pd.Timedelta('1 minute'),
-        freq='1min'
+        freq='1min',
+        tz="utc"
     )
 
     @classmethod
@@ -1111,13 +1115,13 @@ class OrdersStopTestCase(WithSimParams,
             )),
         )
         days = pd.date_range(
-            start=normalize_date(self.minutes[0]),
-            end=normalize_date(self.minutes[-1])
+            start=normalize_date(self.minutes[0].tz_localize(None)),
+            end=normalize_date(self.minutes[-1].tz_localize(None)),
         )
         with tmp_bcolz_equity_minute_bar_reader(
-                self.trading_calendar, days, assets) as reader:
+                self.exchange_calendar, days, assets) as reader:
             data_portal = DataPortal(
-                self.asset_finder, self.trading_calendar,
+                self.asset_finder, self.exchange_calendar,
                 first_trading_day=reader.first_trading_day,
                 equity_minute_reader=reader,
             )
@@ -1130,7 +1134,7 @@ class OrdersStopTestCase(WithSimParams,
                     data_portal,
                     lambda: dt,
                     self.sim_params.data_frequency,
-                    self.trading_calendar,
+                    self.exchange_calendar,
                     NoRestrictions(),
                 )
 
@@ -1154,8 +1158,8 @@ class OrdersStopTestCase(WithSimParams,
 class FixedBasisPointsSlippageTestCase(WithCreateBarData,
                                        ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2006-01-05', tz='utc')
-    END_DATE = pd.Timestamp('2006-01-05', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-05')
+    END_DATE = pd.Timestamp('2006-01-05')
 
     ASSET_FINDER_EQUITY_SIDS = (133,)
 

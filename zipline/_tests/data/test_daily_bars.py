@@ -21,26 +21,22 @@ import numpy as np
 import pandas as pd
 from numpy import (
     arange,
-    array,
-    float64,
     nan,
 )
 from pandas import (
     concat,
     DataFrame,
-    NaT,
     Series,
     Timestamp,
 )
 from six import iteritems
 from six.moves import range
 from toolz import merge
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline.data.bar_reader import (
     NoDataAfterDate,
-    NoDataBeforeDate,
-    NoDataOnDate,
+    NoDataBeforeDate
 )
 from zipline.data.bcolz_daily_bars import BcolzDailyBarWriter
 from zipline.pipeline.loaders.synthetic import (
@@ -58,17 +54,17 @@ from zipline._testing.fixtures import (
     WithEquityDailyBarData,
     WithSeededRandomState,
     WithTmpDir,
-    WithTradingCalendars,
+    WithExchangeCalendars,
     ZiplineTestCase,
 )
-from zipline._testing.predicates import assert_equal, assert_sequence_equal
+from zipline._testing.predicates import assert_equal
 from zipline.utils.classproperty import classproperty
 
-TEST_CALENDAR_START = Timestamp('2015-06-01', tz='UTC')
-TEST_CALENDAR_STOP = Timestamp('2015-06-30', tz='UTC')
+TEST_CALENDAR_START = Timestamp('2015-06-01')
+TEST_CALENDAR_STOP = Timestamp('2015-06-30')
 
-TEST_QUERY_START = Timestamp('2015-06-10', tz='UTC')
-TEST_QUERY_STOP = Timestamp('2015-06-19', tz='UTC')
+TEST_QUERY_START = Timestamp('2015-06-10')
+TEST_QUERY_STOP = Timestamp('2015-06-19')
 
 # NOTE: All sids here are odd, so we can test querying for unknown sids
 #       with evens.
@@ -126,8 +122,8 @@ TEST_QUERY_ASSETS = EQUITY_INFO.index
 assert (TEST_QUERY_ASSETS % 2 == 1).all(), 'All sids should be odd.'
 
 HOLES = {
-    'US': {5: (Timestamp('2015-06-17', tz='UTC'),)},
-    'CA': {17: (Timestamp('2015-06-17', tz='UTC'),)},
+    'US': {5: (Timestamp('2015-06-17'),)},
+    'CA': {17: (Timestamp('2015-06-17'),)},
 }
 
 
@@ -146,13 +142,15 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
         'CA': ['USD', 'CAD']
     }
 
+    __test__ = False # subclasses must override with True to be collected
+
     @classmethod
     def init_class_fixtures(cls):
         super(_DailyBarsTestCase, cls).init_class_fixtures()
 
-        cls.sessions = cls.trading_calendar.sessions_in_range(
-            cls.trading_calendar.minute_to_session_label(TEST_CALENDAR_START),
-            cls.trading_calendar.minute_to_session_label(TEST_CALENDAR_STOP)
+        cls.sessions = cls.exchange_calendar.sessions_in_range(
+            cls.exchange_calendar.minute_to_session(TEST_CALENDAR_START),
+            cls.exchange_calendar.minute_to_session(TEST_CALENDAR_STOP)
         )
 
     @classmethod
@@ -434,10 +432,10 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
         reader = self.daily_bar_reader
 
         for asset in self.assets:
-            before_start = self.trading_calendar.previous_session_label(
+            before_start = self.exchange_calendar.previous_session(
                 self.asset_start(asset)
             )
-            after_end = self.trading_calendar.next_session_label(
+            after_end = self.exchange_calendar.next_session(
                 self.asset_end(asset)
             )
 
@@ -489,7 +487,7 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
             # is either the end date for the asset, or ``mid_date`` if
             # the asset is *still* alive at that point. Otherwise, it
             # is pd.NaT.
-            mid_date = Timestamp('2015-06-15', tz='UTC')
+            mid_date = Timestamp('2015-06-15')
             if self.asset_start(sid) <= mid_date:
                 expected = min(self.asset_end(sid), mid_date)
                 assert_equal(
@@ -511,7 +509,7 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
             self.assertTrue(
                 self.daily_bar_reader.get_last_traded_dt(
                     self.asset_finder.retrieve_asset(sid),
-                    Timestamp(0, tz='UTC')) is pd.NaT)
+                    Timestamp(0)) is pd.NaT)
 
     def test_listing_currency(self):
         # Test loading on all assets.
@@ -558,6 +556,7 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
 
 class BcolzDailyBarTestCase(WithBcolzEquityDailyBarReader, _DailyBarsTestCase):
     EQUITY_DAILY_BAR_COUNTRY_CODES = ['US']
+    __test__ = True
 
     @classmethod
     def init_class_fixtures(cls):
@@ -630,8 +629,8 @@ class BcolzDailyBarTestCase(WithBcolzEquityDailyBarReader, _DailyBarsTestCase):
             expected_calendar_offset,
         )
         cal = get_calendar(result.attrs['calendar_name'])
-        first_session = Timestamp(result.attrs['start_session_ns'], tz='UTC')
-        end_session = Timestamp(result.attrs['end_session_ns'], tz='UTC')
+        first_session = Timestamp(result.attrs['start_session_ns'])
+        end_session = Timestamp(result.attrs['end_session_ns'])
         sessions = cal.sessions_in_range(first_session, end_session)
 
         assert_equal(
@@ -660,12 +659,12 @@ class BcolzDailyBarNeverReadAllTestCase(BcolzDailyBarTestCase):
 
 class BcolzDailyBarWriterMissingDataTestCase(WithAssetFinder,
                                              WithTmpDir,
-                                             WithTradingCalendars,
+                                             WithExchangeCalendars,
                                              ZiplineTestCase):
     # Sid 5 is active from 2015-06-02 to 2015-06-30.
     MISSING_DATA_SID = 5
     # Leave out data for a day in the middle of the query range.
-    MISSING_DATA_DAY = Timestamp('2015-06-15', tz='UTC')
+    MISSING_DATA_DAY = Timestamp('2015-06-15')
 
     @classmethod
     def make_equity_info(cls):
@@ -674,7 +673,7 @@ class BcolzDailyBarWriterMissingDataTestCase(WithAssetFinder,
         )
 
     def test_missing_values_assertion(self):
-        sessions = self.trading_calendar.sessions_in_range(
+        sessions = self.exchange_calendar.sessions_in_range(
             TEST_CALENDAR_START,
             TEST_CALENDAR_STOP,
         )
@@ -684,7 +683,7 @@ class BcolzDailyBarWriterMissingDataTestCase(WithAssetFinder,
 
         writer = BcolzDailyBarWriter(
             self.tmpdir.path,
-            self.trading_calendar,
+            self.exchange_calendar,
             sessions[0],
             sessions[-1],
         )
@@ -695,7 +694,7 @@ class BcolzDailyBarWriterMissingDataTestCase(WithAssetFinder,
             "Got 20 rows for daily bars table with first day=2015-06-02, last "
             "day=2015-06-30, expected 21 rows.\n"
             "Missing sessions: "
-            "[Timestamp('2015-06-15 00:00:00+0000', tz='UTC')]\n"
+            "[Timestamp('2015-06-15 00:00:00')]\n"
             "Extra sessions: []"
         )
         with self.assertRaisesRegex(AssertionError, expected_msg):

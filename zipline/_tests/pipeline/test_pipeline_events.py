@@ -70,7 +70,7 @@ critical_dates = pd.to_datetime([
     '2014-01-10',
     '2014-01-15',
     '2014-01-20',
-], utc=True)
+])
 
 
 def make_events_for_sid(sid, event_dates, event_timestamps):
@@ -81,7 +81,7 @@ def make_events_for_sid(sid, event_dates, event_timestamps):
         'event_date': event_dates,
         'float': np.arange(num_events, dtype=np.float64) + sid,
         'int': np.arange(num_events) + sid,
-        'datetime': pd.date_range('1990-01-01', periods=num_events, tz='utc').shift(sid),
+        'datetime': pd.date_range('1990-01-01', periods=num_events).shift(sid),
         'string': ['-'.join([str(sid), str(i)]) for i in range(num_events)],
     })
 
@@ -95,10 +95,10 @@ def make_null_event_date_events(all_sids, timestamp):
     return pd.DataFrame({
         'sid': all_sids,
         'timestamp': timestamp,
-        'event_date': pd.Timestamp('NaT', tz='utc'),
+        'event_date': pd.Timestamp('NaT'),
         'float': -9999.0,
         'int': -9999,
-        'datetime': pd.Timestamp('1980', tz='utc'),
+        'datetime': pd.Timestamp('1980'),
         'string': 'should be ignored',
     })
 
@@ -145,7 +145,39 @@ def make_events(add_nulls):
                 )
             )
 
-    return pd.concat(event_frames, ignore_index=True)
+    # As of pandas 2.0, the original line:
+    #
+    # return pd.concat(event_frames, ignore_index=True)
+    #
+    # throws the error:
+    #
+    # ValueError: all the input array dimensions except for the concatenation axis
+    # must match exactly, but along dimension 1, the array at index 0 has size 2 and
+    # the array at index 96 has size 96
+    #
+    # This only happens when add_nulls is True. The first 96 event frames have 2 rows, like
+    # this:
+    #
+    #    sid  timestamp event_date  float  int   datetime string
+    # 0    0 2014-01-05 2014-01-05    0.0    0 1990-01-01    0-0
+    # 1    0 2014-01-05 2014-01-10    1.0    1 1990-01-02    0-1
+    #
+    # The last 4 event frames have 96 rows, like this:
+    #
+    #
+    # sid  timestamp event_date   float   int   datetime             string
+    # 0    0 2014-01-20        NaT -9999.0 -9999 1980-01-01  should be ignored
+    # 1    1 2014-01-20        NaT -9999.0 -9999 1980-01-01  should be ignored
+    # 2    2 2014-01-20        NaT -9999.0 -9999 1980-01-01  should be ignored
+    # 3    3 2014-01-20        NaT -9999.0 -9999 1980-01-01  should be ignored
+    # 4    4 2014-01-20        NaT -9999.0 -9999 1980-01-01  should be ignored
+    # ...
+    # 96  96 2014-01-20        NaT -9999.0 -9999 1980-01-01  should be ignored
+    #
+    # I don't know why pd.concat has a problem with that. It refers to axis 1 having
+    # size 96, but axis 1 really only has size 6 (6 columns). The error can be
+    # worked around but transposing and transposing back. ¯\_(ツ)_/¯
+    return pd.concat([frame.T for frame in event_frames], axis=1).T
 
 
 class EventIndexerTestCase(ZiplineTestCase):
@@ -162,7 +194,7 @@ class EventIndexerTestCase(ZiplineTestCase):
         event_dates = events['event_date']
         event_timestamps = events['timestamp']
 
-        all_dates = pd.date_range('2014', '2014-01-31', tz='utc')
+        all_dates = pd.date_range('2014', '2014-01-31')
         all_sids = np.unique(event_sids)
 
         domain = EquitySessionDomain(
@@ -226,7 +258,7 @@ class EventIndexerTestCase(ZiplineTestCase):
         event_dates = events['event_date']
         event_timestamps = events['timestamp']
 
-        all_dates = pd.date_range('2014', '2014-01-31', tz='UTC')
+        all_dates = pd.date_range('2014', '2014-01-31')
         all_sids = np.unique(event_sids)
 
         domain = EquitySessionDomain(
@@ -284,8 +316,8 @@ class EventIndexerTestCase(ZiplineTestCase):
 class EventsLoaderEmptyTestCase(WithAssetFinder,
                                 WithTradingSessions,
                                 ZiplineTestCase):
-    START_DATE = pd.Timestamp('2014-01-01', tz='utc')
-    END_DATE = pd.Timestamp('2014-01-30', tz='utc')
+    START_DATE = pd.Timestamp('2014-01-01')
+    END_DATE = pd.Timestamp('2014-01-30')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     @classmethod
@@ -369,8 +401,8 @@ class EventsLoaderTestCase(WithAssetFinder,
                            WithTradingSessions,
                            ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2014-01-01', tz='utc')
-    END_DATE = pd.Timestamp('2014-01-30', tz='utc')
+    START_DATE = pd.Timestamp('2014-01-01')
+    END_DATE = pd.Timestamp('2014-01-30')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     @classmethod
@@ -415,7 +447,7 @@ class EventsLoaderTestCase(WithAssetFinder,
             default_domain=US_EQUITIES,
         )
 
-    def test_load_with_trading_calendar(self):
+    def test_load_with_exchange_calendar(self):
         results = self.engine.run_pipeline(
             Pipeline({c.name: c.latest for c in EventDataSet_US.columns}),
             start_date=self.trading_days[0],
@@ -482,7 +514,7 @@ class EventsLoaderTestCase(WithAssetFinder,
 
         events = self.raw_events_no_nulls
 
-        for asset, asset_result in results.iteritems():
+        for asset, asset_result in results.items():
             relevant_events = events[events.sid == asset.sid]
             self.assertEqual(len(relevant_events), 2)
 
@@ -495,8 +527,6 @@ class EventsLoaderTestCase(WithAssetFinder,
             )
 
             for date, computed_value in zip(dates, asset_result):
-                if isinstance(computed_value, pd.Timestamp):
-                    computed_value = computed_value.tz_localize("UTC")
                 if date >= event2_first_eligible:
                     # If we've seen event 2, it should win even if we've seen
                     # event 1, because events are sorted by event_date.
@@ -523,7 +553,7 @@ class EventsLoaderTestCase(WithAssetFinder,
 
         events = self.raw_events_no_nulls
 
-        for asset, asset_result in results.iteritems():
+        for asset, asset_result in results.items():
             relevant_events = events[events.sid == asset.sid]
             self.assertEqual(len(relevant_events), 2)
 
@@ -532,8 +562,6 @@ class EventsLoaderTestCase(WithAssetFinder,
             t1, t2 = relevant_events['timestamp']
 
             for date, computed_value in zip(dates, asset_result):
-                if isinstance(computed_value, pd.Timestamp):
-                    computed_value = computed_value.tz_localize("UTC")
                 if t1 <= date <= e1:
                     # If we've seen event 2, it should win even if we've seen
                     # event 1, because events are sorted by event_date.

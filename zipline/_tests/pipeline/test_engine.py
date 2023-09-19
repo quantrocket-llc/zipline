@@ -3,7 +3,7 @@ Tests for SimplePipelineEngine
 """
 from __future__ import division
 import re
-from collections import OrderedDict
+from collections import OrderedDict, ChainMap
 from itertools import product
 from operator import add, sub
 from mock import patch
@@ -30,12 +30,11 @@ from pandas import (
     Categorical,
     DataFrame,
     date_range,
-    Int64Index,
+    Index,
     MultiIndex,
     Series,
     Timestamp
 )
-from pandas.compat.chainmap import ChainMap
 from pandas.testing import assert_frame_equal
 from six import iteritems, itervalues
 from toolz import merge
@@ -181,8 +180,8 @@ class RollingSumSum(CustomFactor):
 
 class WithConstantInputs(zf.WithAssetFinder):
     asset_ids = ASSET_FINDER_EQUITY_SIDS = 1, 2, 3, 4
-    START_DATE = Timestamp('2014-01-01', tz='utc')
-    END_DATE = Timestamp('2014-03-01', tz='utc')
+    START_DATE = Timestamp('2014-01-01')
+    END_DATE = Timestamp('2014-03-01')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     @classmethod
@@ -206,7 +205,6 @@ class WithConstantInputs(zf.WithAssetFinder):
             cls.START_DATE,
             cls.END_DATE,
             freq='D',
-            tz='UTC',
         )
         cls.loader = PrecomputedLoader(
             constants=cls.constants,
@@ -223,7 +221,7 @@ class WithConstantInputs(zf.WithAssetFinder):
 
 class ConstantInputTestCase(WithConstantInputs,
                             zf.WithAssetFinder,
-                            zf.WithTradingCalendars,
+                            zf.WithExchangeCalendars,
                             zf.ZiplineTestCase):
 
     def test_bad_dates(self):
@@ -280,7 +278,7 @@ class ConstantInputTestCase(WithConstantInputs,
         #  (i.e. start and end dates are the same) we should accurately get
         # data for the day prior.
         result = self.engine.run_pipeline(p, self.dates[1], self.dates[1])
-        self.assertEqual(result['f'][0], 1.0)
+        self.assertEqual(result['f'].iloc[0], 1.0)
 
     def test_screen(self):
         asset_ids = array(self.asset_ids)
@@ -674,7 +672,7 @@ class ConstantInputTestCase(WithConstantInputs,
         close_values = [constants[EquityPricing.close]] * num_assets
         expected_values = [list(zip(open_values, close_values))] * num_dates
         expected_results = DataFrame(
-            expected_values, index=dates, columns=assets, dtype=float64,
+            expected_values, index=dates, columns=assets,
         )
         expected_results.index.set_names("date", inplace=True)
         expected_results.columns.set_names("asset", inplace=True)
@@ -824,11 +822,11 @@ HUGE_SID = np.iinfo('int32').max + 1
 
 
 class FrameInputTestCase(zf.WithAssetFinder,
-                         zf.WithTradingCalendars,
+                         zf.WithExchangeCalendars,
                          zf.ZiplineTestCase):
     asset_ids = ASSET_FINDER_EQUITY_SIDS = range(HUGE_SID, HUGE_SID + 3)
-    start = START_DATE = Timestamp('2015-01-01', tz='utc')
-    end = END_DATE = Timestamp('2015-01-31', tz='utc')
+    start = START_DATE = Timestamp('2015-01-01')
+    end = END_DATE = Timestamp('2015-01-31')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     @classmethod
@@ -837,8 +835,7 @@ class FrameInputTestCase(zf.WithAssetFinder,
         cls.dates = date_range(
             cls.start,
             cls.end,
-            freq=cls.trading_calendar.day,
-            tz='UTC',
+            freq=cls.exchange_calendar.day
         )
         cls.assets = cls.asset_finder.retrieve_all(cls.asset_ids)
         cls.domain = US_EQUITIES
@@ -941,16 +938,16 @@ class FrameInputTestCase(zf.WithAssetFinder,
 class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
                              zf.WithAssetFinder,
                              zf.ZiplineTestCase):
-    first_asset_start = Timestamp('2015-04-01', tz='UTC')
-    START_DATE = Timestamp('2015-01-01', tz='utc')
-    END_DATE = Timestamp('2015-08-01', tz='utc')
+    first_asset_start = Timestamp('2015-04-01')
+    START_DATE = Timestamp('2015-01-01')
+    END_DATE = Timestamp('2015-08-01')
 
     @classmethod
     def make_equity_info(cls):
         cls.equity_info = ret = make_rotating_equity_info(
             num_assets=6,
             first_start=cls.first_asset_start,
-            frequency=cls.trading_calendar.day,
+            frequency=cls.exchange_calendar.day,
             periods_between_starts=4,
             asset_lifetime=8,
             exchange='NYSE',
@@ -1007,7 +1004,7 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
         min_, max_ = index[[0, -1]]
         for asset in df.columns:
             if asset.start_date >= min_:
-                start = index.get_loc(asset.start_date, method='bfill')
+                start = index.get_indexer([asset.start_date], method="bfill")[0]
                 # +1 to overwrite start_date:
                 df.iloc[:start + 1, df.columns.get_loc(asset)] = nan
             if asset.end_date <= max_:
@@ -1019,9 +1016,9 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
         window_length = 5
         asset_ids = self.all_asset_ids
         dates = date_range(
-            self.first_asset_start + self.trading_calendar.day,
+            self.first_asset_start + self.exchange_calendar.day,
             self.last_asset_end,
-            freq=self.trading_calendar.day,
+            freq=self.exchange_calendar.day,
         )
         dates_to_test = dates[window_length:]
 
@@ -1041,7 +1038,7 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
         # **previous** day's data.
         expected_raw = DataFrame(
             expected_bar_values_2d(
-                dates - self.trading_calendar.day,
+                dates - self.exchange_calendar.day,
                 asset_ids,
                 self.equity_info,
                 'close',
@@ -1069,9 +1066,9 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
         window_length = 5
         asset_ids = self.all_asset_ids
         dates = date_range(
-            self.first_asset_start + self.trading_calendar.day,
+            self.first_asset_start + self.exchange_calendar.day,
             self.last_asset_end,
-            freq=self.trading_calendar.day,
+            freq=self.exchange_calendar.day,
         )
         dates_to_test = dates[window_length:]
 
@@ -1103,23 +1100,22 @@ class SyntheticBcolzTestCase(zf.WithAdjustmentReader,
 
 
 class ParameterizedFactorTestCase(zf.WithAssetFinder,
-                                  zf.WithTradingCalendars,
+                                  zf.WithExchangeCalendars,
                                   zf.ZiplineTestCase):
-    sids = ASSET_FINDER_EQUITY_SIDS = Int64Index([1, 2, 3])
-    START_DATE = Timestamp('2015-01-31', tz='UTC')
-    END_DATE = Timestamp('2015-03-01', tz='UTC')
+    sids = ASSET_FINDER_EQUITY_SIDS = Index([1, 2, 3], dtype="int64")
+    START_DATE = Timestamp('2015-01-31')
+    END_DATE = Timestamp('2015-03-01')
     ASSET_FINDER_COUNTRY_CODE = '??'
 
     @classmethod
     def init_class_fixtures(cls):
         super(ParameterizedFactorTestCase, cls).init_class_fixtures()
-        day = cls.trading_calendar.day
+        day = cls.exchange_calendar.day
 
         cls.dates = dates = date_range(
             '2015-02-01',
             '2015-02-28',
             freq=day,
-            tz='UTC',
         )
         sids = cls.sids
 
@@ -1430,7 +1426,7 @@ class WindowSafetyPropagationTestCase(zf.WithSeededRandomPipelineEngine,
 
 class PopulateInitialWorkspaceTestCase(WithConstantInputs,
                                        zf.WithAssetFinder,
-                                       zf.WithTradingCalendars,
+                                       zf.WithExchangeCalendars,
                                        zf.ZiplineTestCase):
 
     @parameter_space(window_length=[3, 5], pipeline_length=[5, 10])
@@ -1554,7 +1550,7 @@ class PopulateInitialWorkspaceTestCase(WithConstantInputs,
 
 class PrescreenRootMaskTestCase(WithConstantInputs,
                                 zf.WithAssetFinder,
-                                zf.WithTradingCalendars,
+                                zf.WithExchangeCalendars,
                                 zf.ZiplineTestCase):
     """
     Tests that Pipelines with prescreens correctly limit the root mask to the
@@ -1730,8 +1726,8 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
 class ChunkedPipelineTestCase(zf.WithSeededRandomPipelineEngine,
                               zf.ZiplineTestCase):
 
-    PIPELINE_START_DATE = Timestamp('2006-01-05', tz='UTC')
-    END_DATE = Timestamp('2006-12-29', tz='UTC')
+    PIPELINE_START_DATE = Timestamp('2006-01-05')
+    END_DATE = Timestamp('2006-12-29')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     def test_run_chunked_pipeline(self):

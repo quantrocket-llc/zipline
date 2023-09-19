@@ -18,8 +18,10 @@ class _FXReaderTestCase(zp_fixtures.WithFXRates,
     and implement the ``reader`` property, returning an FXRateReader that uses
     the data stored in ``cls.fx_rates``.
     """
-    FX_RATES_START_DATE = pd.Timestamp('2014-01-01', tz='UTC')
-    FX_RATES_END_DATE = pd.Timestamp('2014-01-31', tz='UTC')
+    __test__ = False
+
+    FX_RATES_START_DATE = pd.Timestamp('2014-01-01')
+    FX_RATES_END_DATE = pd.Timestamp('2014-01-31')
 
     # Calendar to which exchange rates data is aligned.
     FX_RATES_CALENDAR = '24/5'
@@ -74,7 +76,7 @@ class _FXReaderTestCase(zp_fixtures.WithFXRates,
         cases = itertools.product(rates, quotes, bases, dates)
 
         for rate, quote, base, dt in cases:
-            dts = pd.DatetimeIndex([dt], tz='UTC')
+            dts = pd.DatetimeIndex([dt])
             bases = np.array([base], dtype=object)
 
             result = reader.get_rates(rate, quote, bases, dts)
@@ -110,7 +112,7 @@ class _FXReaderTestCase(zp_fixtures.WithFXRates,
             # Choose N random distinct days...
             for ndays in 1, 2, 7, 20:
                 dts_raw = rand.choice(dates, ndays, replace=False)
-                dts = pd.DatetimeIndex(dts_raw, tz='utc').sort_values()
+                dts = pd.DatetimeIndex(dts_raw).sort_values()
 
                 # Choose M random possibly-non-distinct currencies...
                 for nbases in 1, 2, 10, 200:
@@ -143,7 +145,7 @@ class _FXReaderTestCase(zp_fixtures.WithFXRates,
             for N in 1, 2, 10, 200:
                 # Choose N (date, base) pairs randomly with replacement.
                 dts_raw = rand.choice(dates, N, replace=True)
-                dts = pd.DatetimeIndex(dts_raw, tz='utc')
+                dts = pd.DatetimeIndex(dts_raw)
                 bases = (
                     rand.choice(possible_bases, N, replace=True)
                     .astype(object)
@@ -244,6 +246,8 @@ class _FXReaderTestCase(zp_fixtures.WithFXRates,
 
 class InMemoryFXReaderTestCase(_FXReaderTestCase):
 
+    __test__ = True
+
     @property
     def reader(self):
         return self.in_memory_fx_rate_reader
@@ -261,11 +265,15 @@ class FastGetLocTestCase(zp_fixtures.ZiplineTestCase):
 
         for dt in pd.date_range('2014-01-02', '2014-01-08'):
             result = zp_fixtures.fast_get_loc_ffilled(dts.values, dt.asm8)
-            expected = dts.get_loc(dt, method='ffill')
+            expected = dts.get_indexer([dt], method="ffill")[0]
             assert_equal(result, expected)
 
-        with self.assertRaises(KeyError):
-            dts.get_loc(pd.Timestamp('2014-01-01'), method='ffill')
+        # get_indexer returns -1 for values not in the index.
+        assert_equal(
+            dts.get_indexer([pd.Timestamp('2014-01-01')], method="ffill")[0],
+            -1)
 
+        # fast_get_loc_ffilled raises KeyError for values not in the index,
+        # which was the behavior of the now removed get_loc(..., method='ffill')
         with self.assertRaises(KeyError):
             zp_fixtures.fast_get_loc_ffilled(dts, pd.Timestamp('2014-01-01'))

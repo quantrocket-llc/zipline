@@ -50,6 +50,8 @@ def testing_hooks_method(method_name):
 class TestingHooks(implements(PipelineHooks)):
     """A hooks implementation that keeps a trace of hook method calls.
     """
+    __test__ = False # don't collect this class as a test case
+
     def __init__(self):
         self.trace = []
 

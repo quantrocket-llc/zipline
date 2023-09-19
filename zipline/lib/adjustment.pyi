@@ -82,9 +82,9 @@ def get_adjustment_locs(dates_index,
 
     Example:
 
-    >>> from pandas import date_range, Int64Index, Timestamp
+    >>> from pandas import date_range, Index, Timestamp
     >>> dates = date_range('2014-01-01', '2014-01-07')
-    >>> assets = Int64Index(range(10))
+    >>> assets = Index(range(10), dtype="int64")
     >>> get_adjustment_locs(
     ...     dates,
     ...     assets,
@@ -110,9 +110,9 @@ def _from_assets_and_dates(cls,
     Example
     -------
 
-    >>> from pandas import date_range, Int64Index, Timestamp
+    >>> from pandas import date_range, Index, Timestamp
     >>> dates = date_range('2014-01-01', '2014-01-07')
-    >>> assets = Int64Index(range(10))
+    >>> assets = Index(range(10))
     >>> Float64Multiply.from_assets_and_dates(
     ...     dates,
     ...     assets,

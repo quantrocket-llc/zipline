@@ -50,8 +50,8 @@ def minute_frame_to_session_frame(minute_frame, calendar):
     minute_frame : pd.DataFrame
         A DataFrame with the columns `open`, `high`, `low`, `close`, `volume`,
         and `dt` (minute dts)
-    calendar : trading_calendars.trading_calendar.TradingCalendar
-        A TradingCalendar on which session labels to resample from minute
+    calendar : exchange_calendars.exchange_calendar.ExchangeCalendar
+        A ExchangeCalendar on which session labels to resample from minute
         to session.
 
     Return
@@ -62,7 +62,7 @@ def minute_frame_to_session_frame(minute_frame, calendar):
     """
     how = OrderedDict((c, _MINUTE_TO_SESSION_OHCLV_HOW[c])
                       for c in minute_frame.columns)
-    labels = calendar.minute_index_to_session_labels(minute_frame.index)
+    labels = calendar.minutes_to_sessions(minute_frame.index)
     return minute_frame.groupby(labels).agg(how)
 
 
@@ -114,10 +114,10 @@ class DailyHistoryAggregator(object):
 
     """
 
-    def __init__(self, market_opens, minute_reader, trading_calendar):
+    def __init__(self, market_opens, minute_reader, exchange_calendar):
         self._market_opens = market_opens
         self._minute_reader = minute_reader
-        self._trading_calendar = trading_calendar
+        self._exchange_calendar = exchange_calendar
 
         # The caches are structured as (date, market_open, entries), where
         # entries is a dict of asset -> (last_visited_dt, value)
@@ -149,7 +149,7 @@ class DailyHistoryAggregator(object):
         self._one_min = pd.Timedelta('1 min').value
 
     def _prelude(self, dt, field):
-        session = self._trading_calendar.minute_to_session_label(dt)
+        session = self._exchange_calendar.minute_to_session(dt)
         dt_value = dt.value
         cache = self._caches[field]
         if cache is None or cache[0] != session:
@@ -157,7 +157,6 @@ class DailyHistoryAggregator(object):
             cache = self._caches[field] = (session, market_open, {})
 
         _, market_open, entries = cache
-        market_open = market_open.tz_localize('UTC')
         if dt != market_open:
             prev_dt = dt_value - self._one_min
         else:
@@ -180,7 +179,7 @@ class DailyHistoryAggregator(object):
         market_open, prev_dt, dt_value, entries = self._prelude(dt, 'open')
 
         opens = []
-        session_label = self._trading_calendar.minute_to_session_label(dt)
+        session_label = self._exchange_calendar.minute_to_session(dt)
 
         for asset in assets:
             if not asset.is_alive_for_session(session_label):
@@ -249,7 +248,7 @@ class DailyHistoryAggregator(object):
         market_open, prev_dt, dt_value, entries = self._prelude(dt, 'high')
 
         highs = []
-        session_label = self._trading_calendar.minute_to_session_label(dt)
+        session_label = self._exchange_calendar.minute_to_session(dt)
 
         for asset in assets:
             if not asset.is_alive_for_session(session_label):
@@ -324,7 +323,7 @@ class DailyHistoryAggregator(object):
         market_open, prev_dt, dt_value, entries = self._prelude(dt, 'low')
 
         lows = []
-        session_label = self._trading_calendar.minute_to_session_label(dt)
+        session_label = self._exchange_calendar.minute_to_session(dt)
 
         for asset in assets:
             if not asset.is_alive_for_session(session_label):
@@ -399,7 +398,7 @@ class DailyHistoryAggregator(object):
         market_open, prev_dt, dt_value, entries = self._prelude(dt, 'close')
 
         closes = []
-        session_label = self._trading_calendar.minute_to_session_label(dt)
+        session_label = self._exchange_calendar.minute_to_session(dt)
 
         def _get_filled_close(asset):
             """
@@ -473,7 +472,7 @@ class DailyHistoryAggregator(object):
         market_open, prev_dt, dt_value, entries = self._prelude(dt, 'volume')
 
         volumes = []
-        session_label = self._trading_calendar.minute_to_session_label(dt)
+        session_label = self._exchange_calendar.minute_to_session(dt)
 
         for asset in assets:
             if not asset.is_alive_for_session(session_label):
@@ -532,7 +531,7 @@ class MinuteResampleSessionBarReader(SessionBarReader):
         self._minute_bar_reader = minute_bar_reader
 
     def _get_resampled(self, columns, start_session, end_session, assets):
-        range_open = self._calendar.session_open(start_session)
+        range_open = self._calendar.session_first_minute(start_session)
         range_close = self._calendar.session_close(end_session)
 
         minute_data = self._minute_bar_reader.load_raw_arrays(
@@ -553,10 +552,7 @@ class MinuteResampleSessionBarReader(SessionBarReader):
                 range_open,
                 range_close,
             )
-            session_closes = self._calendar.session_closes_in_range(
-                start_session,
-                end_session,
-            )
+            session_closes = self._calendar.closes[start_session:end_session]
             close_ilocs = minutes.searchsorted(pd.to_datetime(session_closes.values, utc=True))
 
         results = []
@@ -577,7 +573,7 @@ class MinuteResampleSessionBarReader(SessionBarReader):
         return results
 
     @property
-    def trading_calendar(self):
+    def exchange_calendar(self):
         return self._calendar
 
     def load_raw_arrays(self, columns, start_dt, end_dt, sids):
@@ -594,13 +590,13 @@ class MinuteResampleSessionBarReader(SessionBarReader):
     def sessions(self):
         cal = self._calendar
         first = self._minute_bar_reader.first_trading_day
-        last = cal.minute_to_session_label(
+        last = cal.minute_to_session(
             self._minute_bar_reader.last_available_dt)
         return cal.sessions_in_range(first, last)
 
     @lazyval
     def last_available_dt(self):
-        return self.trading_calendar.minute_to_session_label(
+        return self.exchange_calendar.minute_to_session(
             self._minute_bar_reader.last_available_dt
         )
 
@@ -612,7 +608,7 @@ class MinuteResampleSessionBarReader(SessionBarReader):
         last_traded_dt = self._minute_bar_reader.get_last_traded_dt(asset, dt)
         if pd.isnull(last_traded_dt):
             return last_traded_dt
-        return self.trading_calendar.minute_to_session_label(last_traded_dt)
+        return self.exchange_calendar.minute_to_session(last_traded_dt)
 
 
 class ReindexBarReader(with_metaclass(ABCMeta)):
@@ -622,17 +618,17 @@ class ReindexBarReader(with_metaclass(ABCMeta)):
 
     Used to align the reading assets which trade on different calendars.
 
-    Currently only supports a ``trading_calendar`` which is a superset of the
+    Currently only supports a ``exchange_calendar`` which is a superset of the
     ``reader``'s calendar.
 
     Parameters
     ----------
 
-    - trading_calendar : trading_calendars.TradingCalendar
+    - exchange_calendar : exchange_calendars.ExchangeCalendar
        The calendar to use when indexing results from the reader.
     - reader : MinuteBarReader|SessionBarReader
        The reader which has a calendar that is a subset of the desired
-       ``trading_calendar``.
+       ``exchange_calendar``.
     - first_trading_session : pd.Timestamp
        The first trading session the reader should provide. Must be specified,
        since the ``reader``'s first session may not exactly align with the
@@ -646,11 +642,11 @@ class ReindexBarReader(with_metaclass(ABCMeta)):
     """
 
     def __init__(self,
-                 trading_calendar,
+                 exchange_calendar,
                  reader,
                  first_trading_session,
                  last_trading_session):
-        self._trading_calendar = trading_calendar
+        self._exchange_calendar = exchange_calendar
         self._reader = reader
         self._first_trading_session = first_trading_session
         self._last_trading_session = last_trading_session
@@ -685,12 +681,12 @@ class ReindexBarReader(with_metaclass(ABCMeta)):
         raise NotImplementedError
 
     @property
-    def trading_calendar(self):
-        return self._trading_calendar
+    def exchange_calendar(self):
+        return self._exchange_calendar
 
     @lazyval
     def sessions(self):
-        return self.trading_calendar.sessions_in_range(
+        return self.exchange_calendar.sessions_in_range(
             self._first_trading_session,
             self._last_trading_session
         )
@@ -731,7 +727,7 @@ class ReindexMinuteBarReader(ReindexBarReader, MinuteBarReader):
     """
 
     def _outer_dts(self, start_dt, end_dt):
-        return self._trading_calendar.minutes_in_range(start_dt, end_dt)
+        return self._exchange_calendar.minutes_in_range(start_dt, end_dt)
 
     def _inner_dts(self, start_dt, end_dt):
         return self._reader.calendar.minutes_in_range(start_dt, end_dt)
@@ -743,8 +739,8 @@ class ReindexSessionBarReader(ReindexBarReader, SessionBarReader):
     """
 
     def _outer_dts(self, start_dt, end_dt):
-        return self.trading_calendar.sessions_in_range(start_dt, end_dt)
+        return self.exchange_calendar.sessions_in_range(start_dt, end_dt)
 
     def _inner_dts(self, start_dt, end_dt):
-        return self._reader.trading_calendar.sessions_in_range(
+        return self._reader.exchange_calendar.sessions_in_range(
             start_dt, end_dt)

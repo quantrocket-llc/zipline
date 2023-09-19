@@ -15,7 +15,6 @@ pip-log.txt
 .coverage
 .tox
 test.log
-.noseids
 *.xlsx
 
 # Compiled python files
@@ -37,7 +36,6 @@ develop-eggs
 .installed.cfg
 coverage.xml
 htmlcov
-nosetests.xml
 
 # C Extensions
 *.o

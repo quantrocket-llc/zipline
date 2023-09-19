@@ -23,7 +23,7 @@ class MetricsTracker(object):
 
     Parameters
     ----------
-    trading_calendar : TrandingCalendar
+    exchange_calendar : TrandingCalendar
         The trading calendar used in the simulation.
     first_session : pd.Timestamp
         The label of the first trading session in the simulation.
@@ -51,15 +51,17 @@ class MetricsTracker(object):
     )
 
     @staticmethod
-    def _execution_open_and_close(calendar, session):
-        open_, close = calendar.open_and_close_for_session(session)
-        execution_open = calendar.execution_time_from_open(open_)
-        execution_close = calendar.execution_time_from_close(close)
+    def _open_and_close(calendar, session):
+        if session.tzinfo is not None:
+            session = session.tz_localize(None)
 
-        return execution_open, execution_close
+        open_ = calendar.session_first_minute(session)
+        close = calendar.session_close(session)
+
+        return open_, close
 
     def __init__(self,
-                 trading_calendar,
+                 exchange_calendar,
                  first_session,
                  last_session,
                  capital_base,
@@ -69,20 +71,20 @@ class MetricsTracker(object):
                  metrics):
         self.emission_rate = emission_rate
 
-        self._trading_calendar = trading_calendar
+        self._exchange_calendar = exchange_calendar
         self._first_session = first_session
         self._last_session = last_session
         self._capital_base = capital_base
         self._asset_finder = asset_finder
 
         self._current_session = first_session
-        self._market_open, self._market_close = self._execution_open_and_close(
-            trading_calendar,
+        self._market_open, self._market_close = self._open_and_close(
+            exchange_calendar,
             first_session,
         )
         self._session_count = 0
 
-        self._sessions = sessions = trading_calendar.sessions_in_range(
+        self._sessions = sessions = exchange_calendar.sessions_in_range(
             first_session,
             last_session,
         )
@@ -133,7 +135,7 @@ class MetricsTracker(object):
         self.start_of_simulation(
             self._ledger,
             self.emission_rate,
-            self._trading_calendar,
+            self._exchange_calendar,
             self._sessions,
             benchmark_source,
         )
@@ -260,8 +262,8 @@ class MetricsTracker(object):
 
         self._current_session = session_label
 
-        cal = self._trading_calendar
-        self._market_open, self._market_close = self._execution_open_and_close(
+        cal = self._exchange_calendar
+        self._market_open, self._market_close = self._open_and_close(
             cal,
             session_label,
         )
@@ -330,7 +332,7 @@ class MetricsTracker(object):
         self.end_of_simulation(
             packet,
             self._ledger,
-            self._trading_calendar,
+            self._exchange_calendar,
             self._sessions,
             data_portal,
             self._benchmark_source,

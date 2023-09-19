@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import pandas as pd
+import warnings
 
 from zipline.errors import (
     InvalidBenchmarkAsset,
@@ -25,7 +26,7 @@ from zipline.errors import (
 class BenchmarkSource(object):
     def __init__(self,
                  benchmark_asset,
-                 trading_calendar,
+                 exchange_calendar,
                  sessions,
                  data_portal,
                  emission_rate="daily",
@@ -42,7 +43,7 @@ class BenchmarkSource(object):
             (self._precalculated_series,
              self._daily_returns) = self._initialize_precalculated_series(
                  benchmark_asset,
-                 trading_calendar,
+                 exchange_calendar,
                  sessions,
                  data_portal
               )
@@ -58,14 +59,12 @@ class BenchmarkSource(object):
             if self.emission_rate == "minute":
                 # we need to take the env's benchmark returns, which are daily,
                 # and resample them to minute
-                minutes = trading_calendar.minutes_for_sessions_in_range(
+                minutes = exchange_calendar.sessions_minutes(
                     sessions[0],
                     sessions[-1]
                 )
-
-                minute_series = daily_series.reindex(
-                    index=minutes,
-                    method="ffill"
+                minute_series = daily_series.tz_localize(minutes.tzinfo).reindex(
+                    index=minutes, method="ffill"
                 )
 
                 self._precalculated_series = minute_series
@@ -181,22 +180,19 @@ class BenchmarkSource(object):
 
     @classmethod
     def downsample_minute_return_series(cls,
-                                        trading_calendar,
+                                        exchange_calendar,
                                         minutely_returns):
-        sessions = trading_calendar.minute_index_to_session_labels(
+        sessions = exchange_calendar.minutes_to_sessions(
             minutely_returns.index,
         )
-        closes = trading_calendar.session_closes_in_range(
-            sessions[0],
-            sessions[-1],
-        )
+        closes = exchange_calendar.closes[sessions[0]:sessions[-1]]
         daily_returns = minutely_returns[closes].pct_change()
         daily_returns.index = closes.index
         return daily_returns.iloc[1:]
 
     def _initialize_precalculated_series(self,
                                          asset,
-                                         trading_calendar,
+                                         exchange_calendar,
                                          trading_days,
                                          data_portal):
         """
@@ -207,7 +203,7 @@ class BenchmarkSource(object):
         ----------
         asset:  Asset to use
 
-        trading_calendar: TradingCalendar
+        exchange_calendar: ExchangeCalendar
 
         trading_days: pd.DateTimeIndex
 
@@ -235,7 +231,7 @@ class BenchmarkSource(object):
             the partial daily returns for each minute
         """
         if self.emission_rate == "minute":
-            minutes = trading_calendar.minutes_for_sessions_in_range(
+            minutes = exchange_calendar.sessions_minutes(
                 self.sessions[0], self.sessions[-1]
             )
             benchmark_series = data_portal.get_history_window(
@@ -251,7 +247,7 @@ class BenchmarkSource(object):
             return (
                 benchmark_series.pct_change()[1:],
                 self.downsample_minute_return_series(
-                    trading_calendar,
+                    exchange_calendar,
                     benchmark_series,
                 ),
             )
@@ -272,7 +268,15 @@ class BenchmarkSource(object):
                 ffill=True
             )[asset]
 
-            returns = benchmark_series.pct_change()[1:]
+            with warnings.catch_warnings():
+                # Suppress pandas >=2.1 FutureWarning:
+                #    The default fill_method='pad' in DataFrame.pct_change is deprecated
+                #    and will be removed in a future version. Call ffill before calling
+                #    pct_change to retain current behavior and silence this warning.
+                # The suggested fix doesn't help because prices has leading NaNs, which
+                # aren't filled by ffill(). Can likely remove in pandas 3.x.
+                warnings.simplefilter("ignore", category=FutureWarning)
+                returns = benchmark_series.ffill().pct_change()[1:]
             return returns, returns
         elif start_date == trading_days[0]:
             # Attempt to handle case where stock data starts on first
@@ -304,7 +308,7 @@ class BenchmarkSource(object):
             first_day_return = (first_close - first_open) / first_open
 
             returns = benchmark_series.pct_change()[:]
-            returns[0] = first_day_return
+            returns.iloc[0] = first_day_return
             return returns, returns
         else:
             raise ValueError(

@@ -17,21 +17,18 @@ import array
 import binascii
 from collections import deque, namedtuple
 from functools import partial
-from numbers import Integral
-from operator import itemgetter, attrgetter
+from operator import itemgetter
 import struct
 
 import numpy as np
 import pandas as pd
 from pandas import isnull
-from six import with_metaclass, string_types, viewkeys, iteritems
+from six import with_metaclass, string_types, viewkeys
 import sqlalchemy as sa
 from toolz import (
-    compose,
     concat,
     concatv,
     curry,
-    groupby,
     merge,
     partition_all,
     sliding_window,
@@ -137,8 +134,8 @@ def _build_ownership_map_from_rows(rows, key_from_row, value_from_row):
             [],
         ).append(
             OwnershipPeriod(
-                pd.Timestamp(row.start_date, unit='ns', tz='utc'),
-                pd.Timestamp(row.end_date, unit='ns', tz='utc'),
+                pd.Timestamp(row.start_date, unit='ns'),
+                pd.Timestamp(row.end_date, unit='ns'),
                 row.sid,
                 value_from_row(row),
             ),
@@ -187,7 +184,7 @@ def _convert_asset_timestamp_fields(dict_):
     Takes in a dict of Asset init args and converts dates to pd.Timestamps
     """
     for key in _asset_timestamp_fields & viewkeys(dict_):
-        value = pd.Timestamp(dict_[key], tz='UTC')
+        value = pd.Timestamp(dict_[key])
         dict_[key] = None if isnull(value) else value
     return dict_
 
@@ -909,7 +906,7 @@ class AssetFinder(object):
                 )
                 """
                 ).scalar()
-            self._bundle_end_date = pd.Timestamp(max_date, tz="UTC")
+            self._bundle_end_date = pd.Timestamp(max_date)
 
         return self._bundle_end_date
 
@@ -971,7 +968,7 @@ class AssetFinder(object):
         Returns
         -------
         lifetimes : pd.DataFrame
-            A frame of dtype bool with `dates` as index and an Int64Index of
+            A frame of dtype bool with `dates` as index and an Index[int] of
             assets as columns.  The value at `lifetimes.loc[date, asset]` will
             be True iff `asset` existed on `date`.  If `include_start_date` is
             False, then lifetimes.loc[date, asset] will be false when date ==

@@ -21,7 +21,7 @@ class PipelineLoader(Interface):
             Columns for which data is being requested.
         dates : pd.DatetimeIndex
             Dates for which data is being requested.
-        sids : pd.Int64Index
+        sids : pd.Index[int]
             Asset identifiers for which data is being requested.
         mask : np.array[ndim=2, dtype=bool]
             Boolean array of shape (len(dates), len(sids)) indicating dates on

@@ -129,7 +129,7 @@ class SQLiteAdjustmentReader(object):
         ----------
         dates : pd.DatetimeIndex
             Dates for which adjustments are needed.
-        assets : pd.Int64Index
+        assets : pd.Index[int]
             Assets for which adjustments are needed.
         should_include_splits : bool
             Whether split adjustments should be included.
@@ -190,7 +190,7 @@ class SQLiteAdjustmentReader(object):
             table_name, t).fetchall()
         c.close()
 
-        return [[Timestamp(adjustment[0], unit='s', tz='UTC'), adjustment[1]]
+        return [[Timestamp(adjustment[0], unit='s'), adjustment[1]]
                 for adjustment in
                 adjustments_for_sid]
 
@@ -210,7 +210,7 @@ class SQLiteAdjustmentReader(object):
             for row in rows:
                 div = Dividend(
                     asset_finder.retrieve_asset(row[0]),
-                    row[1], Timestamp(row[2], unit='s', tz='UTC'))
+                    row[1], Timestamp(row[2], unit='s'))
                 divs.append(div)
         c.close()
 
@@ -235,7 +235,7 @@ class SQLiteAdjustmentReader(object):
                     asset_finder.retrieve_asset(row[0]),    # asset
                     asset_finder.retrieve_asset(row[1]),    # payment_asset
                     row[2],
-                    Timestamp(row[3], unit='s', tz='UTC'))
+                    Timestamp(row[3], unit='s'))
                 stock_divs.append(stock_div)
         c.close()
 
@@ -277,9 +277,8 @@ class SQLiteAdjustmentReader(object):
             )
 
         # Dates are stored in second resolution as ints in adj.db tables.
-        # Need to specifically convert them as UTC, not local time.
         kwargs = (
-            {'parse_dates': {col: {'unit': 's', 'utc': True}
+            {'parse_dates': {col: {'unit': 's'}
                              for col in date_cols}
              }
             if convert_dates
@@ -462,8 +461,8 @@ class SQLiteAdjustmentWriter(object):
 
         close, = pricing_reader.load_raw_arrays(
             ['close'],
-            pd.Timestamp(dates[0], tz='UTC'),
-            pd.Timestamp(dates[-1], tz='UTC'),
+            pd.Timestamp(dates[0]),
+            pd.Timestamp(dates[-1]),
             unique_sids,
         )
         date_ix = np.searchsorted(dates, dividends.ex_date.values)

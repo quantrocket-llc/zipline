@@ -7,7 +7,7 @@ import operator as op
 
 import numpy as np
 import pandas as pd
-from trading_calendars.utils.pandas_utils import days_at_time  # noqa: reexport
+from exchange_calendars.utils.pandas_utils import days_at_time  # noqa: reexport
 
 # Help Sphinx autoapi understand this definition
 days_at_time = days_at_time

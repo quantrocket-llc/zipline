@@ -99,7 +99,7 @@ class HistoryCompatibleUSEquityAdjustmentReader(object):
             mergers = self._adjustments_reader.get_adjustments_for_sid(
                 'mergers', sid)
             for m in mergers:
-                dt = m[0]
+                dt = m[0].tz_localize(dts.tzinfo)
                 if start < dt <= end:
                     end_loc = dts.searchsorted(dt)
                     adj_loc = end_loc
@@ -115,7 +115,7 @@ class HistoryCompatibleUSEquityAdjustmentReader(object):
             divs = self._adjustments_reader.get_adjustments_for_sid(
                 'dividends', sid)
             for d in divs:
-                dt = d[0]
+                dt = d[0].tz_localize(dts.tzinfo)
                 if start < dt <= end:
                     end_loc = dts.searchsorted(dt)
                     adj_loc = end_loc
@@ -131,7 +131,7 @@ class HistoryCompatibleUSEquityAdjustmentReader(object):
         splits = self._adjustments_reader.get_adjustments_for_sid(
             'splits', sid)
         for s in splits:
-            dt = s[0]
+            dt = s[0].tz_localize(dts.tzinfo)
             if start < dt <= end:
                 if field == 'volume':
                     ratio = 1.0 / s[1]
@@ -158,12 +158,12 @@ class ContinuousFutureAdjustmentReader(object):
     """
 
     def __init__(self,
-                 trading_calendar,
+                 exchange_calendar,
                  asset_finder,
                  bar_reader,
                  roll_finders,
                  frequency):
-        self._trading_calendar = trading_calendar
+        self._exchange_calendar = exchange_calendar
         self._asset_finder = asset_finder
         self._bar_reader = bar_reader
         self._roll_finders = roll_finders
@@ -215,17 +215,17 @@ class ContinuousFutureAdjustmentReader(object):
         rolls = rf.get_rolls(cf.root_symbol, dts[0], dts[-1],
                              cf.offset)
 
-        tc = self._trading_calendar
+        tc = self._exchange_calendar
 
         adjs = {}
 
         for front, back in sliding_window(2, rolls):
             front_sid, roll_dt = front
             back_sid = back[0]
-            dt = tc.previous_session_label(roll_dt)
+            dt = tc.previous_session(roll_dt)
             if self._frequency == 'minute':
-                dt = tc.open_and_close_for_session(dt)[1]
-                roll_dt = tc.open_and_close_for_session(roll_dt)[0]
+                dt = tc.session_close(dt)
+                roll_dt = tc.session_first_minute(roll_dt)
             partitions.append((front_sid,
                                back_sid,
                                dt,
@@ -299,7 +299,7 @@ class HistoryLoader(with_metaclass(ABCMeta)):
 
     Parameters
     ----------
-    trading_calendar: TradingCalendar
+    exchange_calendar: ExchangeCalendar
         Contains the grouping logic needed to assign minutes to periods.
     reader : DailyBarReader, MinuteBarReader
         Reader for pricing bars.
@@ -308,12 +308,12 @@ class HistoryLoader(with_metaclass(ABCMeta)):
     """
     FIELDS = ('open', 'high', 'low', 'close', 'volume', 'sid')
 
-    def __init__(self, trading_calendar, reader, equity_adjustment_reader,
+    def __init__(self, exchange_calendar, reader, equity_adjustment_reader,
                  asset_finder,
                  roll_finders=None,
                  sid_cache_size=1000,
                  prefetch_length=0):
-        self.trading_calendar = trading_calendar
+        self.exchange_calendar = exchange_calendar
         self._asset_finder = asset_finder
         self._reader = reader
         self._adjustment_readers = {}
@@ -323,7 +323,7 @@ class HistoryLoader(with_metaclass(ABCMeta)):
                     equity_adjustment_reader)
         if roll_finders:
             self._adjustment_readers[ContinuousFuture] =\
-                ContinuousFutureAdjustmentReader(trading_calendar,
+                ContinuousFutureAdjustmentReader(exchange_calendar,
                                                  asset_finder,
                                                  reader,
                                                  roll_finders,
@@ -582,9 +582,14 @@ class MinuteHistoryLoader(HistoryLoader):
 
     @lazyval
     def _calendar(self):
-        mm = self.trading_calendar.all_minutes
-        start = mm.searchsorted(self._reader.first_trading_day)
-        end = mm.searchsorted(self._reader.last_available_dt, side='right')
+        mm = self.exchange_calendar.minutes
+        start = mm.searchsorted(self._reader.first_trading_day.tz_localize("UTC"))
+        if self._reader.last_available_dt.tzinfo is None:
+            end = mm.searchsorted(
+                self._reader.last_available_dt.tz_localize("UTC"), side="right"
+            )
+        else:
+            end = mm.searchsorted(self._reader.last_available_dt, side="right")
         return mm[start:end]
 
     def _array(self, dts, assets, field):

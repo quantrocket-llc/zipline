@@ -31,7 +31,7 @@ cpdef enum:
 
 cdef class MinuteSimulationClock:
     cdef bool minute_emission
-    cdef np.int64_t[:] market_opens_nanos, market_closes_nanos, bts_nanos, \
+    cdef np.int64_t[:] opens_nanos, closes_nanos, bts_nanos, \
         sessions_nanos, break_starts_nanos, break_ends_nanos
     cdef dict minutes_by_session
 
@@ -46,8 +46,8 @@ cdef class MinuteSimulationClock:
 
         self.minute_emission = minute_emission
 
-        self.market_opens_nanos = market_opens.values.astype(np.int64)
-        self.market_closes_nanos = market_closes.values.astype(np.int64)
+        self.opens_nanos = market_opens.values.astype(np.int64)
+        self.closes_nanos = market_closes.values.astype(np.int64)
         self.sessions_nanos = sessions.values.astype(np.int64)
         self.bts_nanos = before_trading_start_minutes.values.astype(np.int64)
         self.break_starts_nanos = break_starts.values.astype(np.int64)
@@ -67,8 +67,8 @@ cdef class MinuteSimulationClock:
         minutes_by_session = {}
         for session_idx, session_nano in enumerate(self.sessions_nanos):
             minutes_nanos = np.arange(
-                self.market_opens_nanos[session_idx],
-                self.market_closes_nanos[session_idx] + _nanos_in_minute,
+                self.opens_nanos[session_idx],
+                self.closes_nanos[session_idx] + _nanos_in_minute,
                 _nanos_in_minute
             )
             minutes_by_session[session_nano] = pd.to_datetime(

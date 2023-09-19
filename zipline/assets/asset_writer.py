@@ -286,7 +286,7 @@ def _split_symbol_mappings(df, exchanges):
 
 
 def _dt_to_epoch_ns(dt_series):
-    """Convert a timeseries into an Int64Index of nanoseconds since the epoch.
+    """Convert a timeseries into an Index[int] of nanoseconds since the epoch.
 
     Parameters
     ----------
@@ -295,14 +295,10 @@ def _dt_to_epoch_ns(dt_series):
 
     Returns
     -------
-    idx : pd.Int64Index
+    idx : pd.Index[int]
         The index converted to nanoseconds since the epoch.
     """
     index = pd.to_datetime(dt_series.values)
-    if index.tzinfo is None:
-        index = index.tz_localize('UTC')
-    else:
-        index = index.tz_convert('UTC')
     return index.view(np.int64)
 
 
@@ -687,13 +683,13 @@ class AssetDBWriter(object):
 
     def _write_df_to_table(self, tbl, df, txn, chunk_size):
         df = df.copy()
-        for column, dtype in df.dtypes.iteritems():
+        for column, dtype in df.dtypes.items():
             if dtype.kind == 'M':
                 df[column] = _dt_to_epoch_ns(df[column])
 
         df.to_sql(
             tbl.name,
-            txn.connection,
+            txn,
             index=True,
             index_label=first(tbl.primary_key.columns).name,
             if_exists='append',
@@ -736,7 +732,7 @@ class AssetDBWriter(object):
             asset_router.c.asset_type.name: asset_type,
         }).to_sql(
             asset_router.name,
-            txn.connection,
+            txn,
             if_exists='append',
             index=False,
             chunksize=chunk_size

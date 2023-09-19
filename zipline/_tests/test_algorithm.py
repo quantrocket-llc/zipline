@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 import pytz
 from pandas.errors import PerformanceWarning
-from trading_calendars import get_calendar, register_calendar
+from zipline.utils.calendar_utils import get_calendar, register_calendar_alias
 
 import zipline.api
 from zipline.api import FixedSlippage
@@ -71,7 +71,6 @@ from zipline._testing import (
     make_trade_data_for_asset_info,
     parameter_space,
     str_to_seconds,
-    to_utc,
 )
 from zipline._testing import RecordBatchBlotter
 import zipline._testing.fixtures as zf
@@ -167,8 +166,8 @@ class TestRecord(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
 class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2006-01-03', tz='UTC')
-    END_DATE = pd.Timestamp('2006-01-04', tz='UTC')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-04')
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
     sids = 1, 2
 
@@ -211,9 +210,9 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'root_symbol': 'CL',
                     'real_sid': '5',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2005-12-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2006-01-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2005-12-01'),
+                    'notice_date': pd.Timestamp('2005-12-20'),
+                    'expiration_date': pd.Timestamp('2006-01-20'),
                     'exchange': 'TEST'
                 },
                 6: {
@@ -221,9 +220,9 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'symbol': 'CLK06',
                     'real_sid': '6',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2006-03-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2006-04-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2005-12-01'),
+                    'notice_date': pd.Timestamp('2006-03-20'),
+                    'expiration_date': pd.Timestamp('2006-04-20'),
                     'exchange': 'TEST',
                 },
                 7: {
@@ -231,9 +230,9 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'root_symbol': 'CL',
                     'real_sid': '7',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2005-12-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2006-06-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2006-07-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2005-12-01'),
+                    'notice_date': pd.Timestamp('2006-06-20'),
+                    'expiration_date': pd.Timestamp('2006-07-20'),
                     'exchange': 'TEST',
                 },
                 8: {
@@ -241,9 +240,9 @@ class TestMiscellaneousAPI(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'root_symbol': 'CL',
                     'real_sid': '8',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2006-02-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2006-09-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2006-10-20', tz='UTC'),
+                    'start_date': pd.Timestamp('2006-02-01'),
+                    'notice_date': pd.Timestamp('2006-09-20'),
+                    'expiration_date': pd.Timestamp('2006-10-20'),
                     'exchange': 'TEST',
                 }
             },
@@ -345,11 +344,11 @@ def handle_data(context, data):
     order(sid(24), 1000)
         """
         sim_params = SimulationParameters(
-            start_session=pd.Timestamp("2006-01-03", tz='UTC'),
-            end_session=pd.Timestamp("2006-01-06", tz='UTC'),
+            start_session=pd.Timestamp("2006-01-03"),
+            end_session=pd.Timestamp("2006-01-06"),
             capital_base=cap_base,
             data_frequency="minute",
-            trading_calendar=self.trading_calendar
+            exchange_calendar=self.exchange_calendar
         )
 
         with self.assertRaises(ZeroCapitalError) as exc:
@@ -439,7 +438,7 @@ def handle_data(context, data):
 from zipline.api import (
     schedule_function, get_datetime, time_rules, date_rules,
 )
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 def initialize(context):
     schedule_function(
@@ -469,7 +468,7 @@ def log_nyse_close(context, data):
         algo = self.make_algo(
             script=algotext,
             sim_params=self.make_simparams(
-                trading_calendar=get_calendar("CMES"),
+                exchange_calendar=get_calendar("CMES"),
             )
         )
         algo.run()
@@ -478,14 +477,14 @@ def log_nyse_close(context, data):
 
         for minute in algo.nyse_opens:
             # each minute should be a nyse session open
-            session_label = nyse.minute_to_session_label(minute)
-            session_open = nyse.session_open(session_label)
+            session_label = nyse.minute_to_session(minute)
+            session_open = nyse.session_first_minute(session_label)
             self.assertEqual(session_open, minute)
 
         for minute in algo.nyse_closes:
             # each minute should be a minute before a nyse session close
-            session_label = nyse.minute_to_session_label(minute)
-            session_close = nyse.session_close(session_label)
+            session_label = nyse.minute_to_session(minute)
+            session_close = nyse.session_last_minute(session_label)
             self.assertEqual(session_close - timedelta(minutes=1), minute)
 
     def test_schedule_function(self):
@@ -605,29 +604,29 @@ def log_nyse_close(context, data):
 
         event_rule = algo.event_manager._events[1].rule
         self.assertIsInstance(event_rule, OncePerDay)
-        self.assertEqual(event_rule.cal, algo.trading_calendar)
+        self.assertEqual(event_rule.cal, algo.exchange_calendar)
 
         inner_rule = event_rule.rule
         self.assertIsInstance(inner_rule, ComposedRule)
-        self.assertEqual(inner_rule.cal, algo.trading_calendar)
+        self.assertEqual(inner_rule.cal, algo.exchange_calendar)
 
         first = inner_rule.first
         second = inner_rule.second
         composer = inner_rule.composer
 
         self.assertIsInstance(first, Always)
-        self.assertEqual(first.cal, algo.trading_calendar)
-        self.assertEqual(second.cal, algo.trading_calendar)
+        self.assertEqual(first.cal, algo.exchange_calendar)
+        self.assertEqual(second.cal, algo.exchange_calendar)
 
         if mode == 'daily':
             self.assertIsInstance(second, Always)
         else:
             self.assertIsInstance(second, ComposedRule)
             self.assertIsInstance(second.first, Never)
-            self.assertEqual(second.first.cal, algo.trading_calendar)
+            self.assertEqual(second.first.cal, algo.exchange_calendar)
 
             self.assertIsInstance(second.second, Always)
-            self.assertEqual(second.second.cal, algo.trading_calendar)
+            self.assertEqual(second.second.cal, algo.exchange_calendar)
 
         self.assertIs(composer, ComposedRule.lazy_and)
 
@@ -666,17 +665,17 @@ def log_nyse_close(context, data):
         """ Tests the future_symbol API function.
         """
         algo = self.make_algo()
-        algo.datetime = pd.Timestamp('2006-12-01', tz='UTC')
+        algo.datetime = pd.Timestamp('2006-12-01')
 
         # Check that we get the correct fields for the CLG06 symbol
         cl = algo.future_symbol('CLG06')
         self.assertEqual(cl.sid, 5)
         self.assertEqual(cl.symbol, 'CLG06')
         self.assertEqual(cl.root_symbol, 'CL')
-        self.assertEqual(cl.start_date, pd.Timestamp('2005-12-01', tz='UTC'))
-        self.assertEqual(cl.notice_date, pd.Timestamp('2005-12-20', tz='UTC'))
+        self.assertEqual(cl.start_date, pd.Timestamp('2005-12-01'))
+        self.assertEqual(cl.notice_date, pd.Timestamp('2005-12-20'))
         self.assertEqual(cl.expiration_date,
-                         pd.Timestamp('2006-01-20', tz='UTC'))
+                         pd.Timestamp('2006-01-20'))
 
         with self.assertRaises(SymbolNotFound):
             algo.future_symbol('')
@@ -713,9 +712,9 @@ class TestSetSymbolLookupDate(zf.WithMakeAlgo, zf.ZiplineTestCase):
     # 15 16 17 18 19 20 21
     # 22 23 24 25 26 27 28
     # 29 30 31
-    START_DATE = pd.Timestamp('2006-01-03', tz='UTC')
-    END_DATE = pd.Timestamp('2006-01-06', tz='UTC')
-    SIM_PARAMS_START_DATE = pd.Timestamp('2006-01-04', tz='UTC')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-06')
+    SIM_PARAMS_START_DATE = pd.Timestamp('2006-01-04')
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
     DATA_PORTAL_USE_MINUTE_DATA = False
     BENCHMARK_SID = 3
@@ -755,8 +754,8 @@ class TestSetSymbolLookupDate(zf.WithMakeAlgo, zf.ZiplineTestCase):
         ], index=cls.sids)
 
 class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2006-01-03', tz='utc')
-    END_DATE = pd.Timestamp('2006-01-06', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-06')
     SIM_PARAMS_CAPITAL_BASE = 1000
 
     ASSET_FINDER_EQUITY_SIDS = (1, 133)
@@ -788,7 +787,7 @@ class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'currency': 'USD',
                     'start_date': cls.START_DATE,
                     'end_date': cls.END_DATE,
-                    'auto_close_date': cls.END_DATE + cls.trading_calendar.day,
+                    'auto_close_date': cls.END_DATE + cls.exchange_calendar.day,
                     'exchange': 'CMES',
                     'multiplier': 100,
                 },
@@ -798,10 +797,10 @@ class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @classmethod
     def make_future_minute_bar_data(cls):
-        trading_calendar = cls.trading_calendars[Future]
+        exchange_calendar = cls.exchange_calendars[Future]
 
         sids = cls.asset_finder.futures_sids
-        minutes = trading_calendar.minutes_for_sessions_in_range(
+        minutes = exchange_calendar.sessions_minutes(
             cls.future_minute_bar_days[0],
             cls.future_minute_bar_days[-1],
         )
@@ -985,20 +984,18 @@ class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
 
 class TestBeforeTradingStart(zf.WithMakeAlgo, zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2016-01-06', tz='utc')
-    END_DATE = pd.Timestamp('2016-01-07', tz='utc')
+    START_DATE = pd.Timestamp('2016-01-06')
+    END_DATE = pd.Timestamp('2016-01-07')
     SIM_PARAMS_CAPITAL_BASE = 10000
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
     EQUITY_DAILY_BAR_LOOKBACK_DAYS = EQUITY_MINUTE_BAR_LOOKBACK_DAYS = 1
 
-    DATA_PORTAL_FIRST_TRADING_DAY = pd.Timestamp("2016-01-05", tz='UTC')
-    EQUITY_MINUTE_BAR_START_DATE = pd.Timestamp("2016-01-05", tz='UTC')
-    FUTURE_MINUTE_BAR_START_DATE = pd.Timestamp("2016-01-05", tz='UTC')
+    DATA_PORTAL_FIRST_TRADING_DAY = pd.Timestamp("2016-01-05")
+    EQUITY_MINUTE_BAR_START_DATE = pd.Timestamp("2016-01-05")
+    FUTURE_MINUTE_BAR_START_DATE = pd.Timestamp("2016-01-05")
 
     data_start = ASSET_FINDER_EQUITY_START_DATE = pd.Timestamp(
-        '2016-01-05',
-        tz='utc',
-    )
+        '2016-01-05')
 
     SPLIT_ASSET_SID = 3
     ASSET_FINDER_EQUITY_SIDS = 1, 2, SPLIT_ASSET_SID
@@ -1006,7 +1003,7 @@ class TestBeforeTradingStart(zf.WithMakeAlgo, zf.ZiplineTestCase):
     @classmethod
     def make_equity_minute_bar_data(cls):
         asset_minutes = \
-            cls.trading_calendar.minutes_in_range(
+            cls.exchange_calendar.minutes_in_range(
                 cls.data_start,
                 cls.END_DATE,
             )
@@ -1025,13 +1022,13 @@ class TestBeforeTradingStart(zf.WithMakeAlgo, zf.ZiplineTestCase):
         split_data.iloc[780:] = split_data.iloc[780:] / 2.0
         for sid in (1, 8554):
             yield sid, create_minute_df_for_asset(
-                cls.trading_calendar,
+                cls.exchange_calendar,
                 cls.data_start,
                 cls.END_DATE,
             )
 
         yield 2, create_minute_df_for_asset(
-            cls.trading_calendar,
+            cls.exchange_calendar,
             cls.data_start,
             cls.END_DATE,
             50,
@@ -1052,7 +1049,7 @@ class TestBeforeTradingStart(zf.WithMakeAlgo, zf.ZiplineTestCase):
     def make_equity_daily_bar_data(cls, country_code, sids):
         for sid in sids:
             yield sid, create_daily_df_for_asset(
-                cls.trading_calendar,
+                cls.exchange_calendar,
                 cls.data_start,
                 cls.END_DATE,
             )
@@ -1118,7 +1115,7 @@ class TestBeforeTradingStart(zf.WithMakeAlgo, zf.ZiplineTestCase):
             np.full(19, np.nan), algo.history_values[0]["high"][2][0:19]
         )
 
-        self.assertEqual(352, algo.history_values[0]["high"][2][19])
+        self.assertEqual(352, algo.history_values[0]["high"][2].iloc[19])
 
         np.testing.assert_array_equal(
             np.full(40, np.nan), algo.history_values[0]["high"][2][20:]
@@ -1150,19 +1147,19 @@ class TestBeforeTradingStart(zf.WithMakeAlgo, zf.ZiplineTestCase):
         algo = self.make_algo(script=algo_code)
         results = algo.run()
 
-        self.assertEqual(392, results.the_high1[0])
-        self.assertEqual(390, results.the_price1[0])
+        self.assertEqual(392, results.the_high1.iloc[0])
+        self.assertEqual(390, results.the_price1.iloc[0])
 
         # nan because asset2 only trades every 50 minutes
-        self.assertTrue(np.isnan(results.the_high2[0]))
+        self.assertTrue(np.isnan(results.the_high2.iloc[0]))
 
-        self.assertTrue(350, results.the_price2[0])
+        self.assertTrue(350, results.the_price2.iloc[0])
 
-        self.assertEqual(392, algo.history_values[0]["high"][1][0])
-        self.assertEqual(390, algo.history_values[0]["price"][1][0])
+        self.assertEqual(392, algo.history_values[0]["high"][1].iloc[0])
+        self.assertEqual(390, algo.history_values[0]["price"][1].iloc[0])
 
-        self.assertEqual(352, algo.history_values[0]["high"][2][0])
-        self.assertEqual(350, algo.history_values[0]["price"][2][0])
+        self.assertEqual(352, algo.history_values[0]["high"][2].iloc[0])
+        self.assertEqual(350, algo.history_values[0]["price"][2].iloc[0])
 
     def test_portfolio_bts(self):
         algo_code = dedent("""
@@ -1309,8 +1306,8 @@ class TestBeforeTradingStart(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
 
 class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2006-01-03', tz='utc')
-    END_DATE = pd.Timestamp('2006-12-31', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-12-31')
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
     DATA_PORTAL_USE_MINUTE_DATA = False
     EQUITY_DAILY_BAR_LOOKBACK_DAYS = 5  # max history window length
@@ -1371,7 +1368,7 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @classmethod
     def make_equity_info(cls):
-        register_calendar("TEST", get_calendar("NYSE"), force=True)
+        register_calendar_alias("TEST", "NYSE", force=True)
 
         data = make_simple_equity_info(
             cls.sids,
@@ -1385,7 +1382,7 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @classmethod
     def make_equity_daily_bar_data(cls, country_code, sids):
-        cal = cls.trading_calendars[Equity]
+        cal = cls.exchange_calendars[Equity]
         sessions = cal.sessions_in_range(cls.START_DATE, cls.END_DATE)
         frame = pd.DataFrame({
             'close': 10., 'high': 10.5, 'low': 9.5, 'open': 10., 'volume': 100,
@@ -1475,7 +1472,7 @@ def handle_data(context, data):
         # the txn was for -1000 shares at 9.95, means -9.95k.  our capital_used
         # for that day was therefore 9.95k, but after the $100 commission,
         # it should be 9.85k.
-        self.assertEqual(9850, results.capital_used[1])
+        self.assertEqual(9850, results.capital_used.iloc[1])
         self.assertEqual(100, results["orders"].iloc[1][0]["commission"])
 
     @parameterized.expand(
@@ -1500,10 +1497,10 @@ def handle_data(context, data):
             # XXX: This is the last remaining consumer of
             #      create_daily_trade_source.
             trades = factory.create_daily_trade_source(
-                [0], self.sim_params, self.asset_finder, self.trading_calendar
+                [0], self.sim_params, self.asset_finder, self.exchange_calendar
             )
             data_portal = create_data_portal_from_trade_history(
-                self.asset_finder, self.trading_calendar, tempdir,
+                self.asset_finder, self.exchange_calendar, tempdir,
                 self.sim_params, {0: trades}
             )
             test_algo = self.make_algo(
@@ -1707,9 +1704,9 @@ def handle_data(context, data):
     def test_order_dead_asset(self):
         # after asset 0 is dead
         params = SimulationParameters(
-            start_session=pd.Timestamp("2007-01-03", tz='UTC'),
-            end_session=pd.Timestamp("2007-01-05", tz='UTC'),
-            trading_calendar=self.trading_calendar,
+            start_session=pd.Timestamp("2007-01-03"),
+            end_session=pd.Timestamp("2007-01-05"),
+            exchange_calendar=self.exchange_calendar,
         )
 
         # order, order_value and order_percent should blow up
@@ -1748,9 +1745,9 @@ def handle_data(context, data):
         arguments.
         """
         params = SimulationParameters(
-            start_session=pd.Timestamp("2006-01-10", tz='UTC'),
-            end_session=pd.Timestamp("2006-01-11", tz='UTC'),
-            trading_calendar=self.trading_calendar,
+            start_session=pd.Timestamp("2006-01-10"),
+            end_session=pd.Timestamp("2006-01-11"),
+            exchange_calendar=self.exchange_calendar,
         )
         self.run_algorithm(sim_params=params, script=call_without_kwargs)
 
@@ -1760,9 +1757,9 @@ def handle_data(context, data):
         arguments.
         """
         params = SimulationParameters(
-            start_session=pd.Timestamp("2006-01-10", tz='UTC'),
-            end_session=pd.Timestamp("2006-01-11", tz='UTC'),
-            trading_calendar=self.trading_calendar,
+            start_session=pd.Timestamp("2006-01-10"),
+            end_session=pd.Timestamp("2006-01-11"),
+            exchange_calendar=self.exchange_calendar,
         )
         self.run_algorithm(script=call_with_kwargs, sim_params=params)
 
@@ -1800,9 +1797,9 @@ def handle_data(context, data):
 
     def test_empty_asset_list_to_history(self):
         params = SimulationParameters(
-            start_session=pd.Timestamp("2006-01-10", tz='UTC'),
-            end_session=pd.Timestamp("2006-01-11", tz='UTC'),
-            trading_calendar=self.trading_calendar,
+            start_session=pd.Timestamp("2006-01-10"),
+            end_session=pd.Timestamp("2006-01-11"),
+            exchange_calendar=self.exchange_calendar,
         )
 
         self.run_algorithm(
@@ -1854,8 +1851,8 @@ def handle_data(context, data):
         """
 
         sim_params = factory.create_simulation_parameters(
-            start=pd.Timestamp('2006-01-12', tz='UTC'),
-            end=pd.Timestamp('2006-01-13', tz='UTC'),
+            start=pd.Timestamp('2006-01-12'),
+            end=pd.Timestamp('2006-01-13'),
             data_frequency='minute'
         )
 
@@ -1880,6 +1877,7 @@ def handle_data(context, data):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("ignore", PerformanceWarning)
+            warnings.simplefilter("ignore", RuntimeWarning)
 
             algo = self.make_algo(script=algocode, sim_params=sim_params)
             algo.run()
@@ -1913,8 +1911,8 @@ def handle_data(context, data):
 
 class TestCapitalChanges(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2006-01-03', tz='UTC')
-    END_DATE = pd.Timestamp('2006-01-09', tz='UTC')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-09')
 
     # XXX: This suite only has daily data for sid 0 and only has minutely data
     #      for sid 1.
@@ -1927,7 +1925,7 @@ class TestCapitalChanges(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @classmethod
     def make_equity_minute_bar_data(cls):
-        minutes = cls.trading_calendar.minutes_in_range(
+        minutes = cls.exchange_calendar.minutes_in_range(
             cls.START_DATE,
             cls.END_DATE,
         )
@@ -1951,7 +1949,7 @@ class TestCapitalChanges(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @classmethod
     def make_equity_daily_bar_data(cls, country_code, sids):
-        days = cls.trading_calendar.sessions_in_range(
+        days = cls.exchange_calendar.sessions_in_range(
             cls.START_DATE,
             cls.END_DATE,
         )
@@ -2001,7 +1999,7 @@ def order_stuff(context, data):
             sim_params=SimulationParameters(
                 start_session=self.START_DATE,
                 end_session=self.END_DATE,
-                trading_calendar=self.nyse_calendar,
+                exchange_calendar=self.nyse_calendar,
             )
         )
 
@@ -2139,11 +2137,11 @@ def order_stuff(context, data):
         change_loc, change_type = change.split('_')
 
         sim_params = SimulationParameters(
-            start_session=pd.Timestamp('2006-01-03', tz='UTC'),
-            end_session=pd.Timestamp('2006-01-05', tz='UTC'),
+            start_session=pd.Timestamp('2006-01-03'),
+            end_session=pd.Timestamp('2006-01-05'),
             data_frequency='minute',
             capital_base=1000.0,
-            trading_calendar=self.nyse_calendar,
+            exchange_calendar=self.nyse_calendar,
         )
 
         capital_changes = {
@@ -2309,12 +2307,12 @@ def order_stuff(context, data):
         change_loc, change_type = change.split('_')
 
         sim_params = SimulationParameters(
-            start_session=pd.Timestamp('2006-01-03', tz='UTC'),
-            end_session=pd.Timestamp('2006-01-05', tz='UTC'),
+            start_session=pd.Timestamp('2006-01-03'),
+            end_session=pd.Timestamp('2006-01-05'),
             data_frequency='minute',
             emission_rate='minute',
             capital_base=1000.0,
-            trading_calendar=self.nyse_calendar,
+            exchange_calendar=self.nyse_calendar,
         )
 
         capital_changes = {pd.Timestamp(val[0], tz='UTC'): {
@@ -2540,8 +2538,8 @@ def order_stuff(context, data):
 
 class TestGetDatetime(zf.WithMakeAlgo, zf.ZiplineTestCase):
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
-    START_DATE = to_utc('2014-01-02 9:31')
-    END_DATE = to_utc('2014-01-03 9:31')
+    START_DATE = pd.Timestamp('2014-01-02 9:31')
+    END_DATE = pd.Timestamp('2014-01-03 9:31')
 
     ASSET_FINDER_EQUITY_SIDS = 0, 1
 
@@ -2567,7 +2565,7 @@ class TestGetDatetime(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
             def handle_data(context, data):
                 dt = get_datetime({tz})
-                if dt.tz.zone != context.tz:
+                if str(dt.tz) != context.tz:
                     raise ValueError("Mismatched Zone")
 
                 if context.first_bar:
@@ -2587,8 +2585,8 @@ class TestGetDatetime(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
 class TestTradingControls(zf.WithMakeAlgo,
                           zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2006-01-03', tz='utc')
-    END_DATE = pd.Timestamp('2006-01-06', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-06')
 
     sid = 133
     sids = ASSET_FINDER_EQUITY_SIDS = 133, 134
@@ -3025,8 +3023,8 @@ class TestTradingControls(zf.WithMakeAlgo,
 
 class TestAssetDateBounds(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2014-01-02', tz='UTC')
-    END_DATE = pd.Timestamp('2014-01-03', tz='UTC')
+    START_DATE = pd.Timestamp('2014-01-02')
+    END_DATE = pd.Timestamp('2014-01-03')
     SIM_PARAMS_START_DATE = END_DATE  # Only run for one day.
 
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
@@ -3036,7 +3034,7 @@ class TestAssetDateBounds(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @classmethod
     def make_equity_info(cls):
-        T = partial(pd.Timestamp, tz='UTC')
+        T = partial(pd.Timestamp)
         return pd.DataFrame.from_records([
             {'sid': 1,
              'symbol': 'OLD',
@@ -3065,8 +3063,8 @@ class TestAssetDateBounds(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
 class TestAccountControls(zf.WithMakeAlgo,
                           zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2006-01-03', tz='utc')
-    END_DATE = pd.Timestamp('2006-01-06', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-06')
 
     sidint, = ASSET_FINDER_EQUITY_SIDS = (133,)
     BENCHMARK_SID = None
@@ -3178,14 +3176,14 @@ class TestAccountControls(zf.WithMakeAlgo,
 
 
 class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2016-01-06', tz='utc')
-    END_DATE = pd.Timestamp('2016-01-07', tz='utc')
-    FUTURE_MINUTE_BAR_START_DATE = pd.Timestamp('2016-01-05', tz='UTC')
+    START_DATE = pd.Timestamp('2016-01-06')
+    END_DATE = pd.Timestamp('2016-01-07')
+    FUTURE_MINUTE_BAR_START_DATE = pd.Timestamp('2016-01-05')
 
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
 
-    TRADING_CALENDAR_STRS = ('us_futures',)
-    TRADING_CALENDAR_PRIMARY_CAL = 'us_futures'
+    EXCHANGE_CALENDAR_STRS = ('us_futures',)
+    EXCHANGE_CALENDAR_PRIMARY_CAL = 'us_futures'
     BENCHMARK_SID = None
 
     @classmethod
@@ -3197,10 +3195,10 @@ class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     'root_symbol': 'CL',
                     'real_sid': '1',
                     'currency': 'USD',
-                    'start_date': pd.Timestamp('2015-12-01', tz='UTC'),
-                    'notice_date': pd.Timestamp('2016-01-20', tz='UTC'),
-                    'expiration_date': pd.Timestamp('2016-02-19', tz='UTC'),
-                    'auto_close_date': pd.Timestamp('2016-01-18', tz='UTC'),
+                    'start_date': pd.Timestamp('2015-12-01'),
+                    'notice_date': pd.Timestamp('2016-01-20'),
+                    'expiration_date': pd.Timestamp('2016-02-19'),
+                    'auto_close_date': pd.Timestamp('2016-01-18'),
                     'exchange': 'TEST',
                 },
             },
@@ -3252,7 +3250,7 @@ class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
         algo = self.make_algo(
             script=algo_code,
-            trading_calendar=get_calendar('us_futures'),
+            exchange_calendar=get_calendar('us_futures'),
         )
         algo.run()
 
@@ -3319,7 +3317,7 @@ class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
         algo_code = self.algo_with_slippage('FixedSlippage(spread=0.10)')
         algo = self.make_algo(
             script=algo_code,
-            trading_calendar=get_calendar('us_futures'),
+            exchange_calendar=get_calendar('us_futures'),
         )
         results = algo.run()
 
@@ -3338,7 +3336,7 @@ class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
         expected_price = (algo.order_price + 1) + expected_spread
 
         self.assertEqual(txn['price'], expected_price)
-        self.assertEqual(results['orders'][0][0]['commission'], 0.0)
+        self.assertEqual(results['orders'].iloc[0][0]['commission'], 0.0)
 
     def test_volume_contract_slippage(self):
         algo_code = self.algo_with_slippage(
@@ -3346,12 +3344,12 @@ class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
         )
         algo = self.make_algo(
             script=algo_code,
-            trading_calendar=get_calendar('us_futures'),
+            exchange_calendar=get_calendar('us_futures'),
         )
         results = algo.run()
 
         # There should be no commissions.
-        self.assertEqual(results['orders'][0][0]['commission'], 0.0)
+        self.assertEqual(results['orders'].iloc[0][0]['commission'], 0.0)
 
         # Flatten the list of transactions.
         all_txns = [
@@ -3374,8 +3372,8 @@ class TestFuturesAlgo(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
 
 class TestAnalyzeAPIMethod(zf.WithMakeAlgo, zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2016-01-05', tz='utc')
-    END_DATE = pd.Timestamp('2016-01-05', tz='utc')
+    START_DATE = pd.Timestamp('2016-01-05')
+    END_DATE = pd.Timestamp('2016-01-05')
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
     DATA_PORTAL_USE_MINUTE_DATA = False
 
@@ -3399,8 +3397,8 @@ class TestAnalyzeAPIMethod(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
 
 class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
-    START_DATE = pd.Timestamp('2016-01-05', tz='utc')
-    END_DATE = pd.Timestamp('2016-01-07', tz='utc')
+    START_DATE = pd.Timestamp('2016-01-05')
+    END_DATE = pd.Timestamp('2016-01-07')
 
     ASSET_FINDER_EQUITY_SIDS = (1,)
     ASSET_FINDER_EQUITY_SYMBOLS = ('ASSET1',)
@@ -3436,7 +3434,7 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
     @classmethod
     def make_equity_minute_bar_data(cls):
         asset_minutes = \
-            cls.trading_calendar.minutes_for_sessions_in_range(
+            cls.exchange_calendar.sessions_minutes(
                 cls.START_DATE,
                 cls.END_DATE,
             )
@@ -3501,6 +3499,7 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
         )
 
         with warnings.catch_warnings(record=True) as captured_warnings:
+            warnings.simplefilter("ignore", RuntimeWarning)
             results = algo.run()
 
         for daily_positions in results.positions:
@@ -3509,7 +3508,7 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 np.copysign(389, direction),
                 daily_positions[0]["amount"],
             )
-            self.assertEqual(1, results.positions[0][0]["sid"])
+            self.assertEqual(1, results.positions.iloc[0][0]["sid"])
 
         # should be an order on day1, but no more orders afterwards
         np.testing.assert_array_equal([1, 0, 0],
@@ -3519,7 +3518,7 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
         np.testing.assert_array_equal([389, 0, 0],
                                         list(map(len, results.transactions)))
 
-        the_order = results.orders[0][0]
+        the_order = results.orders.iloc[0][0]
 
         self.assertEqual(ORDER_STATUS.CANCELLED, the_order["status"])
         self.assertEqual(np.copysign(389, direction), the_order["filled"])
@@ -3549,6 +3548,7 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
         algo = self.prep_algo("")
 
         with warnings.catch_warnings(record=True) as captured_warnings:
+            warnings.simplefilter("ignore", RuntimeWarning)
             results = algo.run()
 
         # order stays open throughout simulation
@@ -3583,8 +3583,8 @@ class TestOrderCancelation(zf.WithMakeAlgo, zf.ZiplineTestCase):
         np.testing.assert_array_equal([0, 1, 0],
                                         list(map(len, results.transactions)))
 
-        the_order_day1 = results.orders[0][0]
-        the_order_day2 = results.orders[1][0]
+        the_order_day1 = results.orders.iloc[0][0]
+        the_order_day2 = results.orders.iloc[1][0]
 
         # Open after day 1, cancelled after day 2
         self.assertEqual(ORDER_STATUS.OPEN, the_order_day1["status"])
@@ -3615,8 +3615,8 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
     # 11 12 13 14 15 16 17
     # 18 19 20 21 22 23 24
     # 25 26 27 28 29 30 31
-    START_DATE = pd.Timestamp('2015-01-05', tz='UTC')
-    END_DATE = pd.Timestamp('2015-01-13', tz='UTC')
+    START_DATE = pd.Timestamp('2015-01-05')
+    END_DATE = pd.Timestamp('2015-01-13')
 
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
     DATA_PORTAL_USE_MINUTE_DATA = False
@@ -3631,7 +3631,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @classmethod
     def make_equity_info(cls):
-        cls.test_days = cls.trading_calendar.sessions_in_range(
+        cls.test_days = cls.exchange_calendar.sessions_in_range(
             cls.START_DATE, cls.END_DATE,
         )
         assert len(cls.test_days) == 7, "Number of days in test changed!"
@@ -3647,9 +3647,9 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
             num_assets=3,
             start_date=cls.test_days[0],
             first_end=cls.first_asset_expiration,
-            frequency=cls.trading_calendar.day,
+            frequency=cls.exchange_calendar.day,
             periods_between_ends=2,
-            auto_close_delta=2 * cls.trading_calendar.day,
+            auto_close_delta=2 * cls.exchange_calendar.day,
         )
         return cls.asset_info
 
@@ -3806,7 +3806,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
         self.assertEqual(len(initial_fills), len(assets))
 
         last_minute_of_session = \
-            self.trading_calendar.session_close(self.test_days[1])
+            self.exchange_calendar.session_close(self.test_days[1])
 
         for asset, txn in zip(assets, initial_fills):
             expected = {
@@ -3835,7 +3835,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
             {
                 'amount': -order_size,
                 'commission': None,
-                'dt': self.trading_calendar.session_close(
+                'dt': self.exchange_calendar.session_close(
                     assets[0].auto_close_date,
                 ),
                 'price': fp0,
@@ -3852,7 +3852,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
             {
                 'amount': -order_size,
                 'commission': None,
-                'dt': self.trading_calendar.session_close(
+                'dt': self.exchange_calendar.session_close(
                     assets[1].auto_close_date,
                 ),
                 'price': fp1,
@@ -3880,10 +3880,10 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 context.portfolio.cash == context.portfolio.starting_cash
             )
 
-            today_session = self.trading_calendar.minute_to_session_label(
+            today_session = self.exchange_calendar.minute_to_session(
                 context.get_datetime()
             )
-            day_after_auto_close = self.trading_calendar.next_session_label(
+            day_after_auto_close = self.exchange_calendar.next_session(
                 first_asset_auto_close_date,
             )
 
@@ -3918,7 +3918,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
         assert len(original_open_orders) == 1
 
         last_close_for_asset = \
-            algo.trading_calendar.session_close(first_asset_end_date)
+            algo.exchange_calendar.session_close(first_asset_end_date)
 
         expected = {
                 'amount': 10,
@@ -3942,7 +3942,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
             'amount': 10,
             'commission': 0.0,
             'created': last_close_for_asset,
-            'dt': algo.trading_calendar.session_close(
+            'dt': algo.exchange_calendar.session_close(
                 first_asset_auto_close_date,
             ),
             'sid': assets[0],
@@ -3967,8 +3967,8 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
     # 11 12 13 14 15 16 17
     # 18 19 20 21 22 23 24
     # 25 26 27 28 29 30 31
-    START_DATE = pd.Timestamp('2015-01-05', tz='UTC')
-    END_DATE = pd.Timestamp('2015-01-13', tz='UTC')
+    START_DATE = pd.Timestamp('2015-01-05')
+    END_DATE = pd.Timestamp('2015-01-13')
 
     BENCHMARK_SID = None
 
@@ -3981,10 +3981,10 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
 
     @classmethod
     def make_equity_info(cls):
-        cls.test_days = cls.trading_calendar.sessions_in_range(
+        cls.test_days = cls.exchange_calendar.sessions_in_range(
             cls.START_DATE, cls.END_DATE,
         )
-        cls.test_minutes = cls.trading_calendar.minutes_for_sessions_in_range(
+        cls.test_minutes = cls.exchange_calendar.sessions_minutes(
             cls.START_DATE, cls.END_DATE,
         )
         cls.first_asset_expiration = cls.test_days[2]
@@ -3999,9 +3999,9 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
             num_assets=3,
             start_date=cls.test_days[0],
             first_end=cls.first_asset_expiration,
-            frequency=cls.trading_calendar.day,
+            frequency=cls.exchange_calendar.day,
             periods_between_ends=2,
-            auto_close_delta=1 * cls.trading_calendar.day,
+            auto_close_delta=1 * cls.exchange_calendar.day,
         )
         return cls.asset_info
 
@@ -4027,7 +4027,7 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
 
     def final_minute_price(self, asset):
         return self.minute_data[asset.sid].loc[
-            self.trading_calendar.session_close(asset.end_date)
+            self.exchange_calendar.session_close(asset.end_date)
         ].close
 
     def default_initialize(self):
@@ -4166,7 +4166,7 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
             {
                 'amount': -order_size,
                 'commission': None,
-                'dt': algo.trading_calendar.session_close(
+                'dt': algo.exchange_calendar.session_close(
                     assets[0].auto_close_date,
                 ),
                 'price': fp0,
@@ -4183,7 +4183,7 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
             {
                 'amount': -order_size,
                 'commission': None,
-                'dt': algo.trading_calendar.session_close(
+                'dt': algo.exchange_calendar.session_close(
                     assets[1].auto_close_date,
                 ),
                 'price': fp1,
@@ -4194,10 +4194,10 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
 
 
 class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
-    start = pd.Timestamp('2016-01-05', tz='utc')
-    day_1 = pd.Timestamp('2016-01-06', tz='utc')
-    day_4 = pd.Timestamp('2016-01-11', tz='utc')
-    end = pd.Timestamp('2016-01-15', tz='utc')
+    start = pd.Timestamp('2016-01-05')
+    day_1 = pd.Timestamp('2016-01-06')
+    day_4 = pd.Timestamp('2016-01-11')
+    end = pd.Timestamp('2016-01-15')
 
     # FIXME: Pass a benchmark source here.
     BENCHMARK_SID = None
@@ -4237,9 +4237,9 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
         self.data_portal = FakeDataPortal(self.asset_finder)
 
     @parameterized.expand([
-        ('auto_close_after_end_date', 1, pd.Timestamp("2016-01-07", tz='UTC'), False),
-        ('auto_close_after_end_date', 1, pd.Timestamp("2016-01-12", tz='UTC'), True),
-        ('auto_close_before_end_date', 2, pd.Timestamp("2016-01-07", tz='UTC'), True),
+        ('auto_close_after_end_date', 1, pd.Timestamp("2016-01-07"), False),
+        ('auto_close_after_end_date', 1, pd.Timestamp("2016-01-12"), True),
+        ('auto_close_before_end_date', 2, pd.Timestamp("2016-01-07"), True),
     ])
     def test_order_in_quiet_period(self, name, sid, end_date, should_raise):
         asset = self.asset_finder.retrieve_asset(sid)
@@ -4271,9 +4271,9 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
         algo = self.make_algo(
             script=algo_code,
             sim_params=SimulationParameters(
-                start_session=pd.Timestamp("2016-01-06", tz='UTC'),
+                start_session=pd.Timestamp("2016-01-06"),
                 end_session=end_date,
-                trading_calendar=self.trading_calendar,
+                exchange_calendar=self.exchange_calendar,
                 data_frequency="minute"
             )
         )

@@ -19,10 +19,9 @@ Tests for the zipline.finance package
 from datetime import datetime, timedelta
 import os
 
-from nose.tools import timed
 import numpy as np
 import pandas as pd
-import pytz
+import pytest
 from six import iteritems
 from six.moves import range
 from testfixtures import TempDirectory
@@ -51,11 +50,11 @@ _multiprocess_can_split_ = False
 
 
 class FinanceTestCase(zf.WithAssetFinder,
-                      zf.WithTradingCalendars,
+                      zf.WithExchangeCalendars,
                       zf.ZiplineTestCase):
     ASSET_FINDER_EQUITY_SIDS = 1, 2, 133
-    start = START_DATE = pd.Timestamp('2006-01-01', tz='utc')
-    end = END_DATE = pd.Timestamp('2006-12-31', tz='utc')
+    start = START_DATE = pd.Timestamp('2006-01-01')
+    end = END_DATE = pd.Timestamp('2006-12-31')
 
     def init_instance_fixtures(self):
         super(FinanceTestCase, self).init_instance_fixtures()
@@ -64,7 +63,7 @@ class FinanceTestCase(zf.WithAssetFinder,
     # TODO: write tests for short sales
     # TODO: write a test to do massive buying or shorting.
 
-    @timed(DEFAULT_TIMEOUT)
+    @pytest.mark.timeout(DEFAULT_TIMEOUT)
     def test_partially_filled_orders(self):
 
         # create a scenario where order size and trade size are equal
@@ -101,7 +100,7 @@ class FinanceTestCase(zf.WithAssetFinder,
 
         self.transaction_sim(**params2)
 
-    @timed(DEFAULT_TIMEOUT)
+    @pytest.mark.timeout(DEFAULT_TIMEOUT)
     def test_collapsing_orders(self):
         # create a scenario where order.amount <<< trade.volume
         # to test that several orders can be covered properly by one trade,
@@ -144,7 +143,7 @@ class FinanceTestCase(zf.WithAssetFinder,
         }
         self.transaction_sim(**params3)
 
-    @timed(DEFAULT_TIMEOUT)
+    @pytest.mark.timeout(DEFAULT_TIMEOUT)
     def test_alternating_long_short(self):
         # create a scenario where we alternate buys and sells
         params1 = {
@@ -191,7 +190,7 @@ class FinanceTestCase(zf.WithAssetFinder,
                     data_frequency="minute"
                 )
 
-                minutes = self.trading_calendar.minutes_window(
+                minutes = self.exchange_calendar.minutes_window(
                     sim_params.first_open,
                     int((trade_interval.total_seconds() / 60) * trade_count)
                     + 100)
@@ -209,12 +208,12 @@ class FinanceTestCase(zf.WithAssetFinder,
                 }
 
                 write_bcolz_minute_data(
-                    self.trading_calendar,
-                    self.trading_calendar.sessions_in_range(
-                        self.trading_calendar.minute_to_session_label(
+                    self.exchange_calendar,
+                    self.exchange_calendar.sessions_in_range(
+                        self.exchange_calendar.minute_to_session(
                             minutes[0]
                         ),
-                        self.trading_calendar.minute_to_session_label(
+                        self.exchange_calendar.minute_to_session(
                             minutes[-1]
                         )
                     ),
@@ -225,7 +224,7 @@ class FinanceTestCase(zf.WithAssetFinder,
                 equity_minute_reader = BcolzMinuteBarReader(tempdir.path)
 
                 data_portal = DataPortal(
-                    self.asset_finder, self.trading_calendar,
+                    self.asset_finder, self.exchange_calendar,
                     first_trading_day=equity_minute_reader.first_trading_day,
                     equity_minute_reader=equity_minute_reader,
                 )
@@ -248,7 +247,7 @@ class FinanceTestCase(zf.WithAssetFinder,
                 }
 
                 path = os.path.join(tempdir.path, "testdata.bcolz")
-                BcolzDailyBarWriter(path, self.trading_calendar, days[0],
+                BcolzDailyBarWriter(path, self.exchange_calendar, days[0],
                                     days[-1]).write(
                     assets.items()
                 )
@@ -256,7 +255,7 @@ class FinanceTestCase(zf.WithAssetFinder,
                 equity_daily_reader = BcolzDailyBarReader(path)
 
                 data_portal = DataPortal(
-                    self.asset_finder, self.trading_calendar,
+                    self.asset_finder, self.exchange_calendar,
                     first_trading_day=equity_daily_reader.first_trading_day,
                     equity_daily_reader=equity_daily_reader,
                 )
@@ -277,7 +276,7 @@ class FinanceTestCase(zf.WithAssetFinder,
                 alternator = 1
 
             tracker = MetricsTracker(
-                trading_calendar=self.trading_calendar,
+                exchange_calendar=self.exchange_calendar,
                 first_session=sim_params.start_session,
                 last_session=sim_params.end_session,
                 capital_base=sim_params.capital_base,
@@ -292,7 +291,7 @@ class FinanceTestCase(zf.WithAssetFinder,
             if sim_params.data_frequency == "minute":
                 ticks = minutes
             else:
-                ticks = days
+                ticks = days.tz_localize("UTC")
 
             transactions = []
 
@@ -321,7 +320,7 @@ class FinanceTestCase(zf.WithAssetFinder,
                         data_portal=data_portal,
                         simulation_dt_func=lambda: tick,
                         data_frequency=sim_params.data_frequency,
-                        trading_calendar=self.trading_calendar,
+                        exchange_calendar=self.exchange_calendar,
                         restrictions=NoRestrictions(),
                     )
                     txns, _, closed_orders = blotter.get_transactions(bar_data)
@@ -406,22 +405,22 @@ class FinanceTestCase(zf.WithAssetFinder,
         self.assertEqual(2, asset2_order.asset)
 
 
-class SimParamsTestCase(zf.WithTradingCalendars, zf.ZiplineTestCase):
+class SimParamsTestCase(zf.WithExchangeCalendars, zf.ZiplineTestCase):
     """
     Tests for date management utilities in zipline.finance.trading.
     """
     def test_simulation_parameters(self):
         sp = SimulationParameters(
-            start_session=pd.Timestamp("2008-01-01", tz='UTC'),
-            end_session=pd.Timestamp("2008-12-31", tz='UTC'),
+            start_session=pd.Timestamp("2008-01-01"),
+            end_session=pd.Timestamp("2008-12-31"),
             capital_base=100000,
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
         )
 
         self.assertTrue(sp.last_close.month == 12)
         self.assertTrue(sp.last_close.day == 31)
 
-    @timed(DEFAULT_TIMEOUT)
+    @pytest.mark.timeout(DEFAULT_TIMEOUT)
     def test_sim_params_days_in_period(self):
 
         #     January 2008
@@ -433,22 +432,22 @@ class SimParamsTestCase(zf.WithTradingCalendars, zf.ZiplineTestCase):
         #  27 28 29 30 31
 
         params = SimulationParameters(
-            start_session=pd.Timestamp("2007-12-31", tz='UTC'),
-            end_session=pd.Timestamp("2008-01-07", tz='UTC'),
+            start_session=pd.Timestamp("2007-12-31"),
+            end_session=pd.Timestamp("2008-01-07"),
             capital_base=100000,
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
         )
 
         expected_trading_days = (
-            datetime(2007, 12, 31, tzinfo=pytz.utc),
+            datetime(2007, 12, 31),
             # Skip new years
             # holidays taken from: http://www.nyse.com/press/1191407641943.html
-            datetime(2008, 1, 2, tzinfo=pytz.utc),
-            datetime(2008, 1, 3, tzinfo=pytz.utc),
-            datetime(2008, 1, 4, tzinfo=pytz.utc),
+            datetime(2008, 1, 2),
+            datetime(2008, 1, 3),
+            datetime(2008, 1, 4),
             # Skip Saturday
             # Skip Sunday
-            datetime(2008, 1, 7, tzinfo=pytz.utc)
+            datetime(2008, 1, 7)
         )
 
         num_expected_trading_days = 5

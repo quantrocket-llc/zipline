@@ -1,6 +1,6 @@
 from zipline.extensions import Registry
 from zipline._testing.fixtures import ZiplineTestCase
-from zipline._testing.predicates import assert_raises_str, assert_true
+from zipline._testing.predicates import assert_raises_str
 
 
 class FakeInterface(object):
@@ -39,7 +39,7 @@ class RegistrationManagerTestCase(ZiplineTestCase):
             pass
 
         def check_registered():
-            assert_true(
+            self.assertTrue(
                 rm.is_registered('ayy-lmao'),
                 "Class ProperDummyInterface wasn't properly registered under"
                 "name 'ayy-lmao'"
@@ -83,7 +83,7 @@ class RegistrationManagerTestCase(ZiplineTestCase):
         rm.register('ayy-lmao', ProperDummyInterface)
 
         def check_registered():
-            assert_true(
+            self.assertTrue(
                 rm.is_registered('ayy-lmao'),
                 "Class ProperDummyInterface wasn't properly registered under"
                 "name 'ayy-lmao'"

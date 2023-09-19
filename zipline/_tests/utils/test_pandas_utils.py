@@ -131,7 +131,7 @@ class TestCatDFConcat(ZiplineTestCase):
                 ),
             },
         )
-        expected.index = pd.Int64Index([0, 1, 2, 0, 1, 2, 0, 1, 2])
+        expected.index = pd.Index([0, 1, 2, 0, 1, 2, 0, 1, 2], dtype='int64')
         assert_equal(expected, result)
         assert_equal(
             expected['A'].cat.categories,

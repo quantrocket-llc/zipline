@@ -74,7 +74,7 @@ class AlgorithmSimulator(object):
             data_portal=self.data_portal,
             simulation_dt_func=self.get_simulation_dt,
             data_frequency=self.sim_params.data_frequency,
-            trading_calendar=self.algo.trading_calendar,
+            exchange_calendar=self.algo.exchange_calendar,
             restrictions=self.restrictions
         )
 
@@ -229,6 +229,8 @@ class AlgorithmSimulator(object):
 
         def past_auto_close_date(asset):
             acd = asset.auto_close_date
+            if acd is not None:
+                acd = acd.tz_localize(dt.tzinfo)
             return acd is not None and acd <= dt
 
         # Remove positions in any sids that have reached their auto_close date.

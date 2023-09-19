@@ -39,8 +39,8 @@ class TestBeforeTradingStartTiming(zf.WithMakeAlgo,
     # 13 14 15 16 17 18 19
     # 20 21 22 23 24 25 26
     # 27 28 29 30 31
-    START_DATE = pd.Timestamp('2016-03-10', tz='UTC')
-    END_DATE = pd.Timestamp('2016-03-15', tz='UTC')
+    START_DATE = pd.Timestamp('2016-03-10')
+    END_DATE = pd.Timestamp('2016-03-15')
 
     @parameter_space(
         num_sessions=[1, 2, 3],
@@ -67,7 +67,7 @@ class TestBeforeTradingStartTiming(zf.WithMakeAlgo,
             end_session=self.nyse_sessions[num_sessions],
             data_frequency=data_frequency,
             emission_rate=emission_rate,
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
         )
 
         self.run_algorithm(
@@ -76,11 +76,20 @@ class TestBeforeTradingStartTiming(zf.WithMakeAlgo,
         )
 
         self.assertEqual(len(bts_times), num_sessions)
-        expected_times = [
-            pd.Timestamp('2016-03-11 8:45', tz='US/Eastern').tz_convert('UTC'),
-            pd.Timestamp('2016-03-14 8:45', tz='US/Eastern').tz_convert('UTC'),
-            pd.Timestamp('2016-03-15 8:45', tz='US/Eastern').tz_convert('UTC'),
-        ]
+        # in daily mode, before_trading_start runs at the close (everything runs
+        # at the close in daily mode)
+        if data_frequency == 'daily':
+            expected_times = [
+                pd.Timestamp('2016-03-11 16:00', tz='US/Eastern').tz_convert('UTC'),
+                pd.Timestamp('2016-03-14 16:00', tz='US/Eastern').tz_convert('UTC'),
+                pd.Timestamp('2016-03-15 16:00', tz='US/Eastern').tz_convert('UTC'),
+            ]
+        else:
+            expected_times = [
+                pd.Timestamp('2016-03-11 8:45', tz='US/Eastern').tz_convert('UTC'),
+                pd.Timestamp('2016-03-14 8:45', tz='US/Eastern').tz_convert('UTC'),
+                pd.Timestamp('2016-03-15 8:45', tz='US/Eastern').tz_convert('UTC'),
+            ]
         self.assertEqual(bts_times, expected_times[:num_sessions])
 
 

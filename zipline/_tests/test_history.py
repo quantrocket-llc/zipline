@@ -42,10 +42,8 @@ ALL_FIELDS = OHLCP + ['volume']
 
 class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
     TRADING_START_DT = TRADING_ENV_MIN_DATE = START_DATE = pd.Timestamp(
-        '2014-01-03',
-        tz='UTC',
-    )
-    TRADING_END_DT = END_DATE = pd.Timestamp('2016-01-29', tz='UTC')
+        '2014-01-03')
+    TRADING_END_DT = END_DATE = pd.Timestamp('2016-01-29')
 
     SPLIT_ASSET_SID = 4
     DIVIDEND_ASSET_SID = 5
@@ -82,7 +80,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
     @classmethod
     def init_class_fixtures(cls):
         super(WithHistory, cls).init_class_fixtures()
-        cls.trading_days = cls.trading_calendar.sessions_in_range(
+        cls.trading_days = cls.exchange_calendar.sessions_in_range(
             cls.TRADING_START_DT,
             cls.TRADING_END_DT
         )
@@ -111,13 +109,13 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
 
     @classmethod
     def make_equity_info(cls):
-        jan_5_2015 = pd.Timestamp('2015-01-05', tz='UTC')
-        day_after_12312015 = pd.Timestamp('2016-01-04', tz='UTC')
+        jan_5_2015 = pd.Timestamp('2015-01-05')
+        day_after_12312015 = pd.Timestamp('2016-01-04')
 
         return pd.DataFrame.from_dict(
             {
                 1: {
-                    'start_date': pd.Timestamp('2014-01-03', tz='UTC'),
+                    'start_date': pd.Timestamp('2014-01-03'),
                     'end_date': cls.TRADING_END_DT,
                     'auto_close_date': cls.TRADING_END_DT,
                     'real_sid': '1',
@@ -171,7 +169,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                     'exchange': "TEST",
                 },
                 cls.HALF_DAY_TEST_ASSET_SID: {
-                    'start_date': pd.Timestamp('2014-07-02', tz='UTC'),
+                    'start_date': pd.Timestamp('2014-07-02'),
                     'end_date': day_after_12312015,
                     'auto_close_date': day_after_12312015,
                     'real_sid': str(cls.HALF_DAY_TEST_ASSET_SID),
@@ -180,18 +178,18 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
                     'exchange': "TEST",
                 },
                 cls.SHORT_ASSET_SID: {
-                    'start_date': pd.Timestamp('2015-01-05', tz='UTC'),
-                    'end_date': pd.Timestamp('2015-01-06', tz='UTC'),
-                    'auto_close_date': pd.Timestamp('2015-01-06', tz="UTC"),
+                    'start_date': pd.Timestamp('2015-01-05'),
+                    'end_date': pd.Timestamp('2015-01-06'),
+                    'auto_close_date': pd.Timestamp('2015-01-06'),
                     'real_sid': str(cls.SHORT_ASSET_SID),
                     'currency': 'USD',
                     'symbol': 'SHORT_ASSET',
                     'exchange': "TEST",
                 },
                 cls.AUTO_CLOSE_AFTER_END_ASSET_SID: {
-                    'start_date': pd.Timestamp('2015-01-05', tz='UTC'),
-                    'end_date': pd.Timestamp('2015-01-06', tz='UTC'),
-                    'auto_close_date': pd.Timestamp('2015-01-07', tz="UTC"),
+                    'start_date': pd.Timestamp('2015-01-05'),
+                    'end_date': pd.Timestamp('2015-01-06'),
+                    'auto_close_date': pd.Timestamp('2015-01-07'),
                     'real_sid': str(cls.AUTO_CLOSE_AFTER_END_ASSET_SID),
                     'currency': 'USD',
                     'symbol': 'AUTO_CLOSE_AFTER_END_ASSET',
@@ -237,25 +235,25 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
             {
                 # only care about ex date, the other dates don't matter here
                 'ex_date':
-                    pd.Timestamp('2015-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-06').to_datetime64(),
                 'record_date':
-                    pd.Timestamp('2015-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-06').to_datetime64(),
                 'declared_date':
-                    pd.Timestamp('2015-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-06').to_datetime64(),
                 'pay_date':
-                    pd.Timestamp('2015-01-06', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-06').to_datetime64(),
                 'amount': 2.0,
                 'sid': cls.DIVIDEND_ASSET_SID,
             },
             {
                 'ex_date':
-                    pd.Timestamp('2015-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-07').to_datetime64(),
                 'record_date':
-                    pd.Timestamp('2015-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-07').to_datetime64(),
                 'declared_date':
-                    pd.Timestamp('2015-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-07').to_datetime64(),
                 'pay_date':
-                    pd.Timestamp('2015-01-07', tz='UTC').to_datetime64(),
+                    pd.Timestamp('2015-01-07').to_datetime64(),
                 'amount': 4.0,
                 'sid': cls.DIVIDEND_ASSET_SID,
             }],
@@ -271,7 +269,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
     @classmethod
     def make_adjustment_writer_equity_daily_bar_reader(cls):
         return MockDailyBarReader(
-            dates=cls.trading_calendar.sessions_in_range(
+            dates=cls.exchange_calendar.sessions_in_range(
                 cls.TRADING_START_DT,
                 cls.TRADING_END_DT,
             ),
@@ -283,8 +281,8 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
         else:
             freq = '1m'
 
-        cal = self.trading_calendar
-        equity_cal = self.trading_calendars[Equity]
+        cal = self.exchange_calendar
+        equity_cal = self.exchange_calendars[Equity]
 
         def reindex_to_primary_calendar(a, field):
             """
@@ -293,12 +291,12 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
             dt and window size.
             """
             if mode == 'daily':
-                dts = cal.sessions_window(dt, -9)
+                dts = cal.sessions_window(dt, -10)
 
                 # `dt` may not be a session on the equity calendar, so
                 # find the next valid session.
-                equity_sess = equity_cal.minute_to_session_label(dt)
-                equity_dts = equity_cal.sessions_window(equity_sess, -9)
+                equity_sess = equity_cal.minute_to_session(dt)
+                equity_dts = equity_cal.sessions_window(equity_sess, -10)
             elif mode == 'minute':
                 dts = cal.minutes_window(dt, -10)
                 equity_dts = equity_cal.minutes_window(dt, -10)
@@ -313,7 +311,7 @@ class WithHistory(zf.WithCreateBarData, zf.WithDataPortal):
             if field == 'volume':
                 return output.fillna(0)
             elif field == 'price':
-                return output.fillna(method='ffill')
+                return output.ffill()
             else:
                 return output
 
@@ -574,7 +572,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
 
     @classmethod
     def make_equity_minute_bar_data(cls):
-        equities_cal = cls.trading_calendars[Equity]
+        equities_cal = cls.exchange_calendars[Equity]
 
         data = {}
         sids = {2, 5, cls.SHORT_ASSET_SID, cls.AUTO_CLOSE_AFTER_END_ASSET_SID, cls.HALF_DAY_TEST_ASSET_SID}
@@ -589,8 +587,8 @@ class MinuteEquityHistoryTestCase(WithHistory,
 
         data[1] = create_minute_df_for_asset(
             equities_cal,
-            pd.Timestamp('2014-01-03', tz='utc'),
-            pd.Timestamp('2016-01-29', tz='utc'),
+            pd.Timestamp('2014-01-03'),
+            pd.Timestamp('2016-01-29'),
             start_val=2,
         )
 
@@ -598,7 +596,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
         data[asset2.sid] = create_minute_df_for_asset(
             equities_cal,
             asset2.start_date,
-            equities_cal.previous_session_label(asset2.end_date),
+            equities_cal.previous_session(asset2.end_date),
             start_val=2,
             minute_blacklist=[
                 pd.Timestamp('2015-01-08 14:31', tz='UTC'),
@@ -614,23 +612,23 @@ class MinuteEquityHistoryTestCase(WithHistory,
         data[cls.MERGER_ASSET_SID] = data[cls.SPLIT_ASSET_SID] = pd.concat((
             create_minute_df_for_asset(
                 equities_cal,
-                pd.Timestamp('2015-01-05', tz='UTC'),
-                pd.Timestamp('2015-01-05', tz='UTC'),
+                pd.Timestamp('2015-01-05'),
+                pd.Timestamp('2015-01-05'),
                 start_val=8000),
             create_minute_df_for_asset(
                 equities_cal,
-                pd.Timestamp('2015-01-06', tz='UTC'),
-                pd.Timestamp('2015-01-06', tz='UTC'),
+                pd.Timestamp('2015-01-06'),
+                pd.Timestamp('2015-01-06'),
                 start_val=2000),
             create_minute_df_for_asset(
                 equities_cal,
-                pd.Timestamp('2015-01-07', tz='UTC'),
-                pd.Timestamp('2015-01-07', tz='UTC'),
+                pd.Timestamp('2015-01-07'),
+                pd.Timestamp('2015-01-07'),
                 start_val=1000),
             create_minute_df_for_asset(
                 equities_cal,
-                pd.Timestamp('2015-01-08', tz='UTC'),
-                pd.Timestamp('2015-01-08', tz='UTC'),
+                pd.Timestamp('2015-01-08'),
+                pd.Timestamp('2015-01-08'),
                 start_val=1000)
         ))
         asset3 = cls.asset_finder.retrieve_asset(3)
@@ -664,13 +662,13 @@ class MinuteEquityHistoryTestCase(WithHistory,
         # self.SPLIT_ASSET and self.MERGER_ASSET had splits/mergers
         # on 1/6 and 1/7
 
-        jan5 = pd.Timestamp('2015-01-05', tz='UTC')
+        jan5 = pd.Timestamp('2015-01-05')
 
         for asset in [self.SPLIT_ASSET, self.MERGER_ASSET]:
             # before any of the adjustments, 1/4 and 1/5
             window1 = self.data_portal.get_history_window(
                 [asset],
-                self.trading_calendar.open_and_close_for_session(jan5)[1],
+                self.exchange_calendar.session_open_close(jan5)[1],
                 2,
                 '1d',
                 'close',
@@ -729,13 +727,13 @@ class MinuteEquityHistoryTestCase(WithHistory,
     def test_daily_dividends(self):
         # self.DIVIDEND_ASSET had dividends on 1/6 and 1/7
 
-        jan5 = pd.Timestamp('2015-01-05', tz='UTC')
+        jan5 = pd.Timestamp('2015-01-05')
         asset = self.DIVIDEND_ASSET
 
         # before any of the dividends
         window1 = self.data_portal.get_history_window(
             [asset],
-            self.trading_calendar.session_close(jan5),
+            self.exchange_calendar.session_close(jan5),
             2,
             '1d',
             'close',
@@ -794,9 +792,9 @@ class MinuteEquityHistoryTestCase(WithHistory,
     def test_minute_before_assets_trading(self):
         # since asset2 and asset3 both started trading on 1/5/2015, let's do
         # some history windows that are completely before that
-        minutes = self.trading_calendar.minutes_for_session(
-            self.trading_calendar.previous_session_label(pd.Timestamp(
-                '2015-01-05', tz='UTC'
+        minutes = self.exchange_calendar.session_minutes(
+            self.exchange_calendar.previous_session(pd.Timestamp(
+                '2015-01-05'
             ))
         )[0:60]
 
@@ -846,8 +844,8 @@ class MinuteEquityHistoryTestCase(WithHistory,
         asset = self.asset_finder.retrieve_asset(sid)
 
         # Check the first hour of equities trading.
-        minutes = self.trading_calendars[Equity].minutes_for_session(
-            pd.Timestamp('2015-01-05', tz='UTC')
+        minutes = self.exchange_calendars[Equity].session_minutes(
+            pd.Timestamp('2015-01-05')
         )[0:60]
 
         for idx, minute in enumerate(minutes):
@@ -857,12 +855,12 @@ class MinuteEquityHistoryTestCase(WithHistory,
 
     def test_minute_sunday_midnight(self):
         # Most trading calendars aren't open at midnight on Sunday.
-        sunday_midnight = pd.Timestamp('2015-01-09', tz='UTC')
+        sunday_midnight = pd.Timestamp('2015-01-09 00:00:00', tz='UTC')
 
         # Find the closest prior minute when the trading calendar was
         # open (note that if the calendar is open at `sunday_midnight`,
         # this will be `sunday_midnight`).
-        trading_minutes = self.trading_calendar.all_minutes
+        trading_minutes = self.exchange_calendar.minutes
         last_minute = trading_minutes[trading_minutes <= sunday_midnight][-1]
 
         sunday_midnight_bar_data = self.create_bardata(lambda: sunday_midnight)
@@ -891,8 +889,8 @@ class MinuteEquityHistoryTestCase(WithHistory,
         # SHORT_ASSET's and AUTO_CLOSE_AFTER_END_ASSET's last day was 2015-01-06, but
         # AUTO_CLOSE_AFTER_END_ASSET's auto_close_date isn't until 2015-01-07
         # get some history windows that straddle the end
-        minutes = self.trading_calendars[Equity].minutes_for_session(
-            pd.Timestamp('2015-01-07', tz='UTC')
+        minutes = self.exchange_calendars[Equity].session_minutes(
+            pd.Timestamp('2015-01-07')
         )[0:60]
 
         for idx, minute in enumerate(minutes):
@@ -949,11 +947,11 @@ class MinuteEquityHistoryTestCase(WithHistory,
             simulation_dt_func=lambda: minutes[15],
             data_frequency='minute',
             restrictions=NoRestrictions(),
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
         )
 
         bar_count = len(
-            self.trading_calendar.minutes_in_range(window_start, window_end)
+            self.exchange_calendar.minutes_in_range(window_start, window_end)
         )
         window = bar_data.history(
             asset,
@@ -1006,17 +1004,17 @@ class MinuteEquityHistoryTestCase(WithHistory,
         # self.SPLIT_ASSET and self.MERGER_ASSET had splits/mergers
         # on 1/6 and 1/7
 
-        jan5 = pd.Timestamp('2015-01-05', tz='UTC')
+        jan5 = pd.Timestamp('2015-01-05')
 
         # the assets' close column starts at 2 on the first minute of
         # 1/5, then goes up one per minute forever
 
         for asset in [self.SPLIT_ASSET, self.MERGER_ASSET]:
             # before any of the adjustments, last 10 minutes of jan 5
-            equity_cal = self.trading_calendars[Equity]
+            equity_cal = self.exchange_calendars[Equity]
             window1 = self.data_portal.get_history_window(
                 [asset],
-                equity_cal.open_and_close_for_session(jan5)[1],
+                equity_cal.session_open_close(jan5)[1],
                 10,
                 '1m',
                 'close',
@@ -1031,7 +1029,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
             # 2015-01-06.
             window2_start = pd.Timestamp('2015-01-05 20:56', tz='UTC')
             window2_end = pd.Timestamp('2015-01-06 14:35', tz='UTC')
-            window2_count = len(self.trading_calendar.minutes_in_range(
+            window2_count = len(self.exchange_calendar.minutes_in_range(
                 window2_start,
                 window2_end,
             ))
@@ -1068,7 +1066,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
             # minutes of 1/7, 390 of 1/6, and 5 minutes of 1/5.
             window3_start = pd.Timestamp('2015-01-05 20:56', tz='UTC')
             window3_end = pd.Timestamp('2015-01-07 14:35', tz='UTC')
-            window3_minutes = self.trading_calendar.minutes_in_range(
+            window3_minutes = self.exchange_calendar.minutes_in_range(
                 window3_start,
                 window3_end,
             )
@@ -1136,7 +1134,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
         window2_start = pd.Timestamp('2015-01-05 20:56', tz='UTC')
         window2_end = pd.Timestamp('2015-01-06 14:35', tz='UTC')
         window2_count = len(
-            self.trading_calendar.minutes_in_range(window2_start, window2_end)
+            self.exchange_calendar.minutes_in_range(window2_start, window2_end)
         )
         window2 = self.data_portal.get_history_window(
             [self.DIVIDEND_ASSET],
@@ -1161,7 +1159,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
         # 5 minutes of 1/7, 390 of 1/6, and 5 minutes of 1/5).
         window3_start = pd.Timestamp('2015-01-05 20:56', tz='UTC')
         window3_end = pd.Timestamp('2015-01-07 14:35', tz='UTC')
-        window3_minutes = self.trading_calendar.minutes_in_range(
+        window3_minutes = self.exchange_calendar.minutes_in_range(
             window3_start,
             window3_end,
         )
@@ -1249,7 +1247,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
         window_start = pd.Timestamp('2015-01-05 20:51', tz='UTC')
         window_end = pd.Timestamp('2015-01-06 13:44', tz='UTC')
         window_length = len(
-            self.trading_calendar.minutes_in_range(window_start, window_end)
+            self.exchange_calendar.minutes_in_range(window_start, window_end)
         )
 
         with handle_non_market_minutes(bar_data):
@@ -1316,7 +1314,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
         #
         # five minutes into the day after the early close, get 20 1m bars
 
-        cal = self.trading_calendar
+        cal = self.exchange_calendar
 
         window_start = pd.Timestamp('2014-07-03 16:46:00', tz='UTC')
         window_end = pd.Timestamp('2014-07-07 13:35:00', tz='UTC')
@@ -1358,11 +1356,11 @@ class MinuteEquityHistoryTestCase(WithHistory,
         )
 
     def test_minute_different_lifetimes(self):
-        cal = self.trading_calendar
-        equity_cal = self.trading_calendars[Equity]
+        cal = self.exchange_calendar
+        equity_cal = self.exchange_calendars[Equity]
 
         # at trading start, only asset1 existed
-        day = self.trading_calendar.next_session_label(self.TRADING_START_DT)
+        day = self.exchange_calendar.next_session(self.TRADING_START_DT)
 
         # Range containing 100 equity minutes, possibly more on other
         # calendars (i.e. futures).
@@ -1370,10 +1368,10 @@ class MinuteEquityHistoryTestCase(WithHistory,
         window_end = pd.Timestamp('2014-01-06 14:31', tz='UTC')
         bar_count = len(cal.minutes_in_range(window_start, window_end))
 
-        equity_cal = self.trading_calendars[Equity]
-        first_equity_open, _ = equity_cal.open_and_close_for_session(day)
+        equity_cal = self.exchange_calendars[Equity]
+        first_equity_open = equity_cal.session_first_minute(day)
 
-        asset1_minutes = equity_cal.minutes_for_sessions_in_range(
+        asset1_minutes = equity_cal.sessions_minutes(
             self.ASSET1.start_date,
             self.ASSET1.end_date
         )
@@ -1416,7 +1414,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
     def test_history_window_before_first_trading_day(self):
         # trading_start is 2/3/2014
         # get a history window that starts before that, and ends after that
-        first_day_minutes = self.trading_calendar.minutes_for_session(
+        first_day_minutes = self.exchange_calendar.session_minutes(
             self.TRADING_START_DT
         )
         exp_msg = (
@@ -1440,11 +1438,11 @@ class MinuteEquityHistoryTestCase(WithHistory,
         # last day
 
         # January 2015 has both daily and minute data for ASSET2
-        day = pd.Timestamp('2015-01-07', tz='UTC')
-        minutes = self.trading_calendar.minutes_for_session(day)
+        day = pd.Timestamp('2015-01-07')
+        minutes = self.exchange_calendar.session_minutes(day)
 
-        equity_cal = self.trading_calendars[Equity]
-        equity_minutes = equity_cal.minutes_for_session(day)
+        equity_cal = self.exchange_calendars[Equity]
+        equity_minutes = equity_cal.session_minutes(day)
         equity_open, equity_close = equity_minutes[0], equity_minutes[-1]
 
         # minute data, baseline:
@@ -1468,20 +1466,20 @@ class MinuteEquityHistoryTestCase(WithHistory,
                 self.assertEqual(len(window), 3)
 
                 if field == 'open':
-                    self.assertEqual(window[0], 3)
-                    self.assertEqual(window[1], 393)
+                    self.assertEqual(window.iloc[0], 3)
+                    self.assertEqual(window.iloc[1], 393)
                 elif field == 'high':
-                    self.assertEqual(window[0], 393)
-                    self.assertEqual(window[1], 783)
+                    self.assertEqual(window.iloc[0], 393)
+                    self.assertEqual(window.iloc[1], 783)
                 elif field == 'low':
-                    self.assertEqual(window[0], 1)
-                    self.assertEqual(window[1], 391)
+                    self.assertEqual(window.iloc[0], 1)
+                    self.assertEqual(window.iloc[1], 391)
                 elif field == 'close':
-                    self.assertEqual(window[0], 391)
-                    self.assertEqual(window[1], 781)
+                    self.assertEqual(window.iloc[0], 391)
+                    self.assertEqual(window.iloc[1], 781)
                 elif field == 'volume':
-                    self.assertEqual(window[0], 7663500)
-                    self.assertEqual(window[1], 22873500)
+                    self.assertEqual(window.iloc[0], 7663500)
+                    self.assertEqual(window.iloc[1], 22873500)
 
                 last_val = -1
 
@@ -1491,7 +1489,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
                     if field == 'volume':
                         last_val = 0
                     elif field == 'price':
-                        last_val = window[1]
+                        last_val = window.iloc[1]
                     else:
                         last_val = nan
                 elif field == 'open':
@@ -1512,7 +1510,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
 
                     last_val = sum(np.array(range(782, 782 + idx + 1)) * 100)
 
-                np.testing.assert_equal(window[-1], last_val)
+                np.testing.assert_equal(window.iloc[-1], last_val)
 
     @parameterized.expand(ALL_FIELDS)
     def test_daily_history_blended_gaps(self, field):
@@ -1520,11 +1518,11 @@ class MinuteEquityHistoryTestCase(WithHistory,
         # last day
 
         # January 2015 has both daily and minute data for ASSET2
-        day = pd.Timestamp('2015-01-08', tz='UTC')
-        minutes = self.trading_calendar.minutes_for_session(day)
+        day = pd.Timestamp('2015-01-08')
+        minutes = self.exchange_calendar.session_minutes(day)
 
-        equity_cal = self.trading_calendars[Equity]
-        equity_minutes = equity_cal.minutes_for_session(day)
+        equity_cal = self.exchange_calendars[Equity]
+        equity_minutes = equity_cal.session_minutes(day)
         equity_open, equity_close = equity_minutes[0], equity_minutes[-1]
 
         # minute data, baseline:
@@ -1546,23 +1544,23 @@ class MinuteEquityHistoryTestCase(WithHistory,
             self.assertEqual(len(window), 3)
 
             if field == 'open':
-                self.assertEqual(window[0], 393)
-                self.assertEqual(window[1], 783)
+                self.assertEqual(window.iloc[0], 393)
+                self.assertEqual(window.iloc[1], 783)
             elif field == 'high':
-                self.assertEqual(window[0], 783)
-                self.assertEqual(window[1], 1173)
+                self.assertEqual(window.iloc[0], 783)
+                self.assertEqual(window.iloc[1], 1173)
             elif field == 'low':
-                self.assertEqual(window[0], 391)
-                self.assertEqual(window[1], 781)
+                self.assertEqual(window.iloc[0], 391)
+                self.assertEqual(window.iloc[1], 781)
             elif field == 'close':
-                self.assertEqual(window[0], 781)
-                self.assertEqual(window[1], 1171)
+                self.assertEqual(window.iloc[0], 781)
+                self.assertEqual(window.iloc[1], 1171)
             elif field == 'price':
-                self.assertEqual(window[0], 781)
-                self.assertEqual(window[1], 1171)
+                self.assertEqual(window.iloc[0], 781)
+                self.assertEqual(window.iloc[1], 1171)
             elif field == 'volume':
-                self.assertEqual(window[0], 22873500)
-                self.assertEqual(window[1], 38083500)
+                self.assertEqual(window.iloc[0], 22873500)
+                self.assertEqual(window.iloc[1], 38083500)
 
             last_val = -1
 
@@ -1572,7 +1570,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
                 if field == 'volume':
                     last_val = 0
                 elif field == 'price':
-                    last_val = window[1]
+                    last_val = window.iloc[1]
                 else:
                     last_val = nan
             elif field == 'open':
@@ -1622,7 +1620,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
                     last_val = sum(
                         np.array(range(1173, 1172 + idx + 1)) * 100)
 
-            np.testing.assert_almost_equal(window[-1], last_val,
+            np.testing.assert_almost_equal(window.iloc[-1], last_val,
                                            err_msg='field={0} minute={1}'.
                                            format(field, minute))
 
@@ -1640,14 +1638,14 @@ class MinuteEquityHistoryTestCase(WithHistory,
 
         # January 12 is a Monday, ensuring we ffill correctly when the previous
         # day is not a trading day.
-        for day_idx, day in enumerate([pd.Timestamp('2015-01-05', tz='UTC'),
-                                       pd.Timestamp('2015-01-06', tz='UTC'),
-                                       pd.Timestamp('2015-01-12', tz='UTC')]):
+        for day_idx, day in enumerate([pd.Timestamp('2015-01-05'),
+                                       pd.Timestamp('2015-01-06'),
+                                       pd.Timestamp('2015-01-12')]):
 
-            session_minutes = self.trading_calendar.minutes_for_session(day)
+            session_minutes = self.exchange_calendar.session_minutes(day)
 
-            equity_cal = self.trading_calendars[Equity]
-            equity_minutes = equity_cal.minutes_for_session(day)
+            equity_cal = self.exchange_calendars[Equity]
+            equity_minutes = equity_cal.session_minutes(day)
 
             if day_idx == 0:
                 # dedupe when session_minutes are same as equity_minutes
@@ -1697,7 +1695,7 @@ class MinuteEquityHistoryTestCase(WithHistory,
                     .format(minute, bar_count, len(window))
                 )
                 np.testing.assert_allclose(
-                    window[-1],
+                    window.iloc[-1],
                     expected,
                     err_msg="at minute {}".format(minute),
                 )
@@ -1715,22 +1713,22 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
     def make_equity_daily_bar_data(cls, country_code, sids):
         yield 1, cls.create_df_for_asset(
             cls.START_DATE,
-            pd.Timestamp('2016-01-30', tz='UTC')
+            pd.Timestamp('2016-01-30')
         )
         yield 3, cls.create_df_for_asset(
-            pd.Timestamp('2015-01-05', tz='UTC'),
-            pd.Timestamp('2015-12-31', tz='UTC'),
+            pd.Timestamp('2015-01-05'),
+            pd.Timestamp('2015-12-31'),
             interval=10,
             force_zeroes=True
         )
         yield cls.SHORT_ASSET_SID, cls.create_df_for_asset(
-            pd.Timestamp('2015-01-05', tz='UTC'),
-            pd.Timestamp('2015-01-06', tz='UTC'),
+            pd.Timestamp('2015-01-05'),
+            pd.Timestamp('2015-01-06'),
         )
 
         yield cls.AUTO_CLOSE_AFTER_END_ASSET_SID, cls.create_df_for_asset(
-            pd.Timestamp('2015-01-05', tz='UTC'),
-            pd.Timestamp('2015-01-06', tz='UTC'),
+            pd.Timestamp('2015-01-05'),
+            pd.Timestamp('2015-01-06'),
         )
 
         for sid in {2, 4, 5, 6}:
@@ -1743,7 +1741,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
     @classmethod
     def create_df_for_asset(cls, start_day, end_day, interval=1,
                             force_zeroes=False):
-        sessions = cls.trading_calendars[Equity].sessions_in_range(
+        sessions = cls.exchange_calendars[Equity].sessions_in_range(
             start_day,
             end_day,
         )
@@ -1775,9 +1773,9 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
     def test_daily_before_assets_trading(self):
         # asset2 and asset3 both started trading in 2015
 
-        days = self.trading_calendar.sessions_in_range(
-            pd.Timestamp('2014-12-15', tz='UTC'),
-            pd.Timestamp('2014-12-18', tz='UTC'),
+        days = self.exchange_calendar.sessions_in_range(
+            pd.Timestamp('2014-12-15'),
+            pd.Timestamp('2014-12-18'),
         )
 
         for idx, day in enumerate(days):
@@ -1813,11 +1811,11 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         # 10 days
 
         # get the first 30 days of 2015
-        jan5 = pd.Timestamp('2015-01-05', tz='utc')
+        jan5 = pd.Timestamp('2015-01-05')
 
         # Regardless of the calendar used for this test, equities will
         # only have data on NYSE sessions.
-        days = self.trading_calendars[Equity].sessions_window(jan5, 30)
+        days = self.exchange_calendars[Equity].sessions_window(jan5, 30)
 
         for idx, day in enumerate(days):
             self.verify_regular_dt(idx, day, 'daily')
@@ -1827,7 +1825,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         # asset2 ends on 2015-12-13
 
         bar_data = self.create_bardata(
-            simulation_dt_func=lambda: pd.Timestamp('2016-01-06', tz='UTC'),
+            simulation_dt_func=lambda: pd.Timestamp('2016-01-06'),
         )
 
         for field in OHLCP:
@@ -1843,7 +1841,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             )
 
             # third from last value should not be NaN
-            self.assertFalse(np.isnan(window[self.ASSET2][-3]))
+            self.assertFalse(np.isnan(window[self.ASSET2].iloc[-3]))
 
         volume_window = bar_data.history(
             [self.ASSET1, self.ASSET2], 'volume', 15, '1d'
@@ -1854,14 +1852,14 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             volume_window[self.ASSET2][-2:]
         )
 
-        self.assertNotEqual(0, volume_window[self.ASSET2][-3])
+        self.assertNotEqual(0, volume_window[self.ASSET2].iloc[-3])
 
     def test_daily_after_asset_stopped(self):
         # AUTO_CLOSE_AFTER_END_ASSET trades on 1/5, 1/6, auto closes on 1/7.
 
-        days = self.trading_calendar.sessions_in_range(
-            pd.Timestamp('2015-01-07', tz='UTC'),
-            pd.Timestamp('2015-01-08', tz='UTC')
+        days = self.exchange_calendar.sessions_in_range(
+            pd.Timestamp('2015-01-07'),
+            pd.Timestamp('2015-01-08')
         )
 
         # days has 1/7, 1/8
@@ -1925,7 +1923,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             # before any of the adjustments
             window1 = self.data_portal.get_history_window(
                 [asset],
-                pd.Timestamp('2015-01-05', tz='UTC'),
+                pd.Timestamp('2015-01-05'),
                 1,
                 '1d',
                 'close',
@@ -1936,7 +1934,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
             window1_volume = self.data_portal.get_history_window(
                 [asset],
-                pd.Timestamp('2015-01-05', tz='UTC'),
+                pd.Timestamp('2015-01-05'),
                 1,
                 '1d',
                 'volume',
@@ -1948,7 +1946,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             # straddling the first event
             window2 = self.data_portal.get_history_window(
                 [asset],
-                pd.Timestamp('2015-01-06', tz='UTC'),
+                pd.Timestamp('2015-01-06'),
                 2,
                 '1d',
                 'close',
@@ -1960,7 +1958,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
             window2_volume = self.data_portal.get_history_window(
                 [asset],
-                pd.Timestamp('2015-01-06', tz='UTC'),
+                pd.Timestamp('2015-01-06'),
                 2,
                 '1d',
                 'volume',
@@ -1976,7 +1974,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             # straddling both events
             window3 = self.data_portal.get_history_window(
                 [asset],
-                pd.Timestamp('2015-01-07', tz='UTC'),
+                pd.Timestamp('2015-01-07'),
                 3,
                 '1d',
                 'close',
@@ -1987,7 +1985,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
             window3_volume = self.data_portal.get_history_window(
                 [asset],
-                pd.Timestamp('2015-01-07', tz='UTC'),
+                pd.Timestamp('2015-01-07'),
                 3,
                 '1d',
                 'volume',
@@ -2005,7 +2003,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         # before any dividend
         window1 = self.data_portal.get_history_window(
             [self.DIVIDEND_ASSET],
-            pd.Timestamp('2015-01-05', tz='UTC'),
+            pd.Timestamp('2015-01-05'),
             1,
             '1d',
             'close',
@@ -2017,7 +2015,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         # straddling the first dividend
         window2 = self.data_portal.get_history_window(
             [self.DIVIDEND_ASSET],
-            pd.Timestamp('2015-01-06', tz='UTC'),
+            pd.Timestamp('2015-01-06'),
             2,
             '1d',
             'close',
@@ -2031,7 +2029,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         # straddling both dividends
         window3 = self.data_portal.get_history_window(
             [self.DIVIDEND_ASSET],
-            pd.Timestamp('2015-01-07', tz='UTC'),
+            pd.Timestamp('2015-01-07'),
             3,
             '1d',
             'close',
@@ -2064,7 +2062,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             )
 
             # third from last value should not be NaN
-            self.assertFalse(np.isnan(window[self.ASSET2][-3]))
+            self.assertFalse(np.isnan(window[self.ASSET2].iloc[-3]))
 
         volume_window = bar_data.history(
             [self.ASSET1, self.ASSET2], 'volume', 15, '1d'
@@ -2075,12 +2073,12 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
             volume_window[self.ASSET2][-2:]
         )
 
-        self.assertNotEqual(0, volume_window[self.ASSET2][-3])
+        self.assertNotEqual(0, volume_window[self.ASSET2].iloc[-3])
 
     def test_history_window_before_first_trading_day(self):
         # trading_start is 2/3/2014
         # get a history window that starts before that, and ends after that
-        second_day = self.trading_calendar.next_session_label(
+        second_day = self.exchange_calendar.next_session(
             self.TRADING_START_DT
         )
 
@@ -2111,7 +2109,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
         # Use a minute to force minute mode.
         first_minute = \
-            self.trading_calendar.schedule.market_open[self.TRADING_START_DT]
+            self.exchange_calendar.first_minutes[self.TRADING_START_DT]
 
         with self.assertRaisesRegex(HistoryWindowStartsBeforeData, exp_msg):
             self.data_portal.get_history_window(
@@ -2164,7 +2162,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
         window_1 = self.data_portal.get_history_window(
             [self.ASSET1],
-            pd.Timestamp('2014-02-07', tz='UTC'),
+            pd.Timestamp('2014-02-07'),
             4,
             "1d",
             "close",
@@ -2173,7 +2171,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
         window_2 = self.data_portal.get_history_window(
             [self.ASSET1],
-            pd.Timestamp('2014-02-05', tz='UTC'),
+            pd.Timestamp('2014-02-05'),
             4,
             "1d",
             "close",
@@ -2182,7 +2180,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
         window_3 = self.data_portal.get_history_window(
             [self.ASSET1],
-            pd.Timestamp('2014-02-07', tz='UTC'),
+            pd.Timestamp('2014-02-07'),
             4,
             "1d",
             "close",
@@ -2191,7 +2189,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
 
         window_4 = self.data_portal.get_history_window(
             [self.ASSET1],
-            pd.Timestamp('2014-01-22', tz='UTC'),
+            pd.Timestamp('2014-01-22'),
             4,
             "1d",
             "close",
@@ -2215,7 +2213,7 @@ class DailyEquityHistoryTestCase(WithHistory, zf.ZiplineTestCase):
         assert_window_prices(window_3, 23 + offsets)
 
         # Window 4 starts on the 11th day of data for ASSET 1.
-        if not self.trading_calendar.is_session('2014-01-20'):
+        if not self.exchange_calendar.is_session('2014-01-20'):
             assert_window_prices(window_4, 11 + offsets)
         else:
             # If not on the NYSE calendar, it is possible that MLK day
@@ -2230,10 +2228,10 @@ class NoPrefetchDailyEquityHistoryTestCase(DailyEquityHistoryTestCase):
 
 
 class MinuteEquityHistoryFuturesCalendarTestCase(MinuteEquityHistoryTestCase):
-    TRADING_CALENDAR_STRS = ('NYSE', 'us_futures')
-    TRADING_CALENDAR_PRIMARY_CAL = 'us_futures'
+    EXCHANGE_CALENDAR_STRS = ('NYSE', 'us_futures')
+    EXCHANGE_CALENDAR_PRIMARY_CAL = 'us_futures'
 
 
 class DailyEquityHistoryFuturesCalendarTestCase(DailyEquityHistoryTestCase):
-    TRADING_CALENDAR_STRS = ('NYSE', 'us_futures')
-    TRADING_CALENDAR_PRIMARY_CAL = 'us_futures'
+    EXCHANGE_CALENDAR_STRS = ('NYSE', 'us_futures')
+    EXCHANGE_CALENDAR_PRIMARY_CAL = 'us_futures'

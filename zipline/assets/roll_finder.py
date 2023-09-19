@@ -36,7 +36,7 @@ class RollFinder(with_metaclass(ABCMeta, object)):
         on a specific date at a specific offset.
         """
         oc = self.asset_finder.get_ordered_contracts(root_symbol)
-        session = self.trading_calendar.minute_to_session_label(dt)
+        session = self.exchange_calendar.minute_to_session(dt)
         front = oc.contract_before_auto_close(session.value)
         back = oc.contract_at_offset(front, 1, dt.value)
         if back is None:
@@ -91,15 +91,15 @@ class RollFinder(with_metaclass(ABCMeta, object)):
         front = self._get_active_contract_at_offset(root_symbol, end, 0)
         back = oc.contract_at_offset(front, 1, end.value)
         if back is not None:
-            end_session = self.trading_calendar.minute_to_session_label(end)
+            end_session = self.exchange_calendar.minute_to_session(end)
             first = self._active_contract(oc, front, back, end_session)
         else:
             first = front
         first_contract = oc.sid_to_contract[first]
         rolls = [((first_contract >> offset).contract.sid, None)]
-        tc = self.trading_calendar
-        sessions = tc.sessions_in_range(tc.minute_to_session_label(start),
-                                        tc.minute_to_session_label(end))
+        tc = self.exchange_calendar
+        sessions = tc.sessions_in_range(tc.minute_to_session(start),
+                                        tc.minute_to_session(end))
         freq = sessions.freq
         if first == front:
             # This is a bit tricky to grasp. Once we have the active contract
@@ -114,12 +114,14 @@ class RollFinder(with_metaclass(ABCMeta, object)):
             curr = first_contract << 2
         session = sessions[-1]
 
+        start = start.tz_localize(None)
+
         while session > start and curr is not None:
             front = curr.contract.sid
             back = rolls[0][0]
             prev_c = curr.prev
             while session > start:
-                prev = session - freq
+                prev = (session - freq).tz_localize(None)
                 if prev_c is not None:
                     if prev < prev_c.contract.auto_close_date:
                         break
@@ -143,8 +145,8 @@ class CalendarRollFinder(RollFinder):
     contract's rollover_date.
     """
 
-    def __init__(self, trading_calendar, asset_finder):
-        self.trading_calendar = trading_calendar
+    def __init__(self, exchange_calendar, asset_finder):
+        self.exchange_calendar = exchange_calendar
         self.asset_finder = asset_finder
 
     def _active_contract(self, oc, front, back, dt):
@@ -160,8 +162,8 @@ class VolumeRollFinder(RollFinder):
     """
     GRACE_DAYS = 7
 
-    def __init__(self, trading_calendar, asset_finder, session_reader):
-        self.trading_calendar = trading_calendar
+    def __init__(self, exchange_calendar, asset_finder, session_reader):
+        self.exchange_calendar = exchange_calendar
         self.asset_finder = asset_finder
         self.session_reader = session_reader
 
@@ -190,7 +192,7 @@ class VolumeRollFinder(RollFinder):
         front_contract = oc.sid_to_contract[front].contract
         back_contract = oc.sid_to_contract[back].contract
 
-        tc = self.trading_calendar
+        tc = self.exchange_calendar
         trading_day = tc.day
         prev = dt - trading_day
         get_value = self.session_reader.get_value
@@ -232,8 +234,8 @@ class VolumeRollFinder(RollFinder):
         # date, and a volume flip happened during that period, return the back
         # contract as the active one.
         sessions = tc.sessions_in_range(
-            tc.minute_to_session_label(gap_start),
-            tc.minute_to_session_label(gap_end),
+            tc.minute_to_session(gap_start),
+            tc.minute_to_session(gap_end),
         )
         for session in sessions:
             front_vol = get_value(front, session, 'volume')
@@ -266,10 +268,10 @@ class VolumeRollFinder(RollFinder):
         # the surrounding rolls is required. The `get_rolls` logic prevents
         # contracts from being considered active once they have rolled, so
         # incorporating that logic here prevents flip-flopping.
-        day = self.trading_calendar.day
+        day = self.exchange_calendar.day
         end_date = min(
             dt + (ROLL_DAYS_FOR_CURRENT_CONTRACT * day),
-            self.session_reader.last_available_dt,
+            self.session_reader.last_available_dt.tz_localize(dt.tzinfo),
         )
         rolls = self.get_rolls(
             root_symbol=root_symbol, start=dt, end=end_date, offset=offset,

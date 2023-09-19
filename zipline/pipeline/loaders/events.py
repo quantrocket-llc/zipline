@@ -106,7 +106,7 @@ class EventsLoader(implements(PipelineLoader)):
         self.events = {
             name: np.asarray(series)
             for name, series in (
-                events.sort_values(EVENT_DATE_FIELD_NAME).iteritems()
+                events.sort_values(EVENT_DATE_FIELD_NAME).items()
             )
         }
 

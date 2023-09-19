@@ -48,7 +48,7 @@ def create_trade(sid, price, amount, datetime, source_id="test_factory"):
 
 def date_gen(start,
              end,
-             trading_calendar,
+             exchange_calendar,
              delta=timedelta(minutes=1),
              repeats=None):
     """
@@ -70,17 +70,17 @@ def date_gen(start,
         cur = cur + delta
 
         currently_executing = \
-            (daily_delta and (cur in trading_calendar.all_sessions)) or \
-            (trading_calendar.is_open_on_minute(cur))
+            (daily_delta and (cur in exchange_calendar.sessions)) or \
+            (exchange_calendar.is_open_on_minute(cur))
 
         if currently_executing:
             return cur
         else:
             if daily_delta:
-                return trading_calendar.minute_to_session_label(cur)
+                return exchange_calendar.minute_to_session(cur).tz_localize(cur.tzinfo)
             else:
-                return trading_calendar.open_and_close_for_session(
-                    trading_calendar.minute_to_session_label(cur)
+                return exchange_calendar.session_open_close(
+                    exchange_calendar.minute_to_session(cur)
                 )[0]
 
     # yield count trade events, all on trading days, and
@@ -110,7 +110,7 @@ class SpecificEquityTrades(object):
     filter : filter to remove the sids
     """
     def __init__(self,
-                 trading_calendar,
+                 exchange_calendar,
                  asset_finder,
                  sids,
                  start,
@@ -118,7 +118,7 @@ class SpecificEquityTrades(object):
                  delta,
                  count=500):
 
-        self.trading_calendar = trading_calendar
+        self.exchange_calendar = exchange_calendar
 
         # Unpack config dictionary with default values.
         self.count = count
@@ -150,7 +150,7 @@ class SpecificEquityTrades(object):
             start=self.start,
             end=self.end,
             delta=self.delta,
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
         )
         return (
             create_trade(

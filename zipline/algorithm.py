@@ -33,7 +33,7 @@ from six import (
     itervalues,
     string_types,
 )
-from trading_calendars import get_calendar, TradingCalendar
+from zipline.utils.calendar_utils import get_calendar, ExchangeCalendar
 
 from zipline._protocol import (
     handle_non_market_minutes,
@@ -108,7 +108,6 @@ from zipline.utils.input_validation import (
     optional,
 )
 from zipline.utils.numpy_utils import int64_dtype
-from zipline.utils.pandas_utils import normalize_date
 from zipline.utils.cache import ExpiringCache
 
 import zipline.utils.events
@@ -231,7 +230,7 @@ class TradingAlgorithm(object):
                  before_trading_start=None,
                  analyze=None,
                  #
-                 trading_calendar=None,
+                 exchange_calendar=None,
                  metrics_set=None,
                  blotter=None,
                  blotter_class=None,
@@ -285,21 +284,21 @@ class TradingAlgorithm(object):
         #      one way to pass a calendar.
         #
         # We have a required sim_params argument as well as an optional
-        # trading_calendar argument, but sim_params has a trading_calendar
-        # attribute. If the user passed trading_calendar explicitly, make sure
+        # exchange_calendar argument, but sim_params has a exchange_calendar
+        # attribute. If the user passed exchange_calendar explicitly, make sure
         # it matches their sim_params. Otherwise, just use what's in their
         # sim_params.
         self.sim_params = sim_params
-        if trading_calendar is None:
-            self.trading_calendar = sim_params.trading_calendar
-        elif trading_calendar.name == sim_params.trading_calendar.name:
-            self.trading_calendar = sim_params.trading_calendar
+        if exchange_calendar is None:
+            self.exchange_calendar = sim_params.exchange_calendar
+        elif exchange_calendar.name == sim_params.exchange_calendar.name:
+            self.exchange_calendar = sim_params.exchange_calendar
         else:
             raise ValueError(
-                "Conflicting calendars: trading_calendar={}, but "
-                "sim_params.trading_calendar={}".format(
-                    trading_calendar.name,
-                    self.sim_params.trading_calendar.name,
+                "Conflicting calendars: exchange_calendar={}, but "
+                "sim_params.exchange_calendar={}".format(
+                    exchange_calendar.name,
+                    self.sim_params.exchange_calendar.name,
                 )
             )
 
@@ -454,7 +453,7 @@ class TradingAlgorithm(object):
             self.engine = SimplePipelineEngine(
                 get_loader,
                 self.asset_finder,
-                self.default_pipeline_domain(self.trading_calendar),
+                self.default_pipeline_domain(self.exchange_calendar),
             )
         else:
             self.engine = ExplodingPipelineEngine()
@@ -543,10 +542,10 @@ class TradingAlgorithm(object):
         """
         If the clock property is not set, then create one based on frequency.
         """
-        trading_o_and_c = self.trading_calendar.schedule.loc[
-            self.sim_params.sessions]
-        market_closes = trading_o_and_c['market_close']
-        market_opens = trading_o_and_c['market_open']
+        market_closes = self.exchange_calendar.schedule.loc[
+            self.sim_params.sessions, "close"
+        ]
+        market_opens = self.exchange_calendar.first_minutes.loc[self.sim_params.sessions]
 
         minutely_emission = False
 
@@ -560,23 +559,40 @@ class TradingAlgorithm(object):
             # a subset of the full 24 hour calendar, so the execution times
             # dictate a market open time of 6:31am US/Eastern and a close of
             # 5:00pm US/Eastern.
-            execution_opens = \
-                self.trading_calendar.execution_time_from_open(market_opens)
-            execution_closes = \
-                self.trading_calendar.execution_time_from_close(market_closes)
-            break_starts = trading_o_and_c['break_start']
-            break_ends = trading_o_and_c['break_end']
+            if self.exchange_calendar.name == "us_futures":
+                execution_opens = self.exchange_calendar.execution_time_from_open(
+                    market_opens
+                )
+                execution_closes = self.exchange_calendar.execution_time_from_close(
+                    market_closes
+                )
+            else:
+                execution_opens = market_opens
+                execution_closes = market_closes
+
+            break_starts = self.exchange_calendar.last_am_minutes.loc[
+                self.sim_params.sessions]
+            break_ends = self.exchange_calendar.first_pm_minutes.loc[
+                self.sim_params.sessions]
+
+            before_trading_start_minutes = execution_opens - pd.Timedelta(minutes=46)
+
         else:
             # in daily mode, we want to have one bar per session, timestamped
             # as the last minute of the session.
-            execution_closes = \
-                self.trading_calendar.execution_time_from_close(market_closes)
-            execution_opens = execution_closes
+            if self.exchange_calendar.name == "us_futures":
+                execution_closes = self.exchange_calendar.execution_time_from_close(
+                    market_closes
+                )
+                execution_opens = execution_closes
+            else:
+                execution_closes = market_closes
+                execution_opens = market_closes
+                before_trading_start_minutes = market_closes
+
             # breaks aren't applicable in daily mode
             break_starts = break_ends = pd.Series(
-                pd.NaT, index=execution_closes.index, dtype='datetime64[ns]')
-
-        before_trading_start_minutes = market_opens - pd.Timedelta(minutes=46)
+                pd.NaT, index=market_closes.index, dtype='datetime64[ns]')
 
         return MinuteSimulationClock(
             self.sim_params.sessions,
@@ -600,7 +616,7 @@ class TradingAlgorithm(object):
         return BenchmarkSource(
             benchmark_asset=benchmark_asset,
             benchmark_returns=benchmark_returns,
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
             sessions=self.sim_params.sessions,
             data_portal=self.data_portal,
             emission_rate=self.sim_params.emission_rate,
@@ -608,7 +624,7 @@ class TradingAlgorithm(object):
 
     def _create_metrics_tracker(self):
         return MetricsTracker(
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
             first_session=self.sim_params.start_session,
             last_session=self.sim_params.end_session,
             capital_base=self.sim_params.capital_base,
@@ -971,7 +987,7 @@ class TradingAlgorithm(object):
         # Note that the ExchangeTradingSchedule is currently the only
         # TradingSchedule class, so this is unlikely to be hit
         if calendar is None:
-            calendar = self.trading_calendar
+            calendar = self.exchange_calendar
 
         self.add_event(
             make_eventrule(date_rule, time_rule, calendar, half_days),
@@ -1166,7 +1182,7 @@ class TradingAlgorithm(object):
         # Make sure the asset exists, and that there is a last price for it.
         # FIXME: we should use BarData's can_trade logic here, but I haven't
         # yet found a good way to do that.
-        normalized_date = normalize_date(self.datetime)
+        normalized_date = self.exchange_calendar.minute_to_session(self.datetime)
 
         if normalized_date < asset.start_date:
             raise CannotOrderDelistedAsset(
@@ -1208,7 +1224,7 @@ class TradingAlgorithm(object):
                     " Use 'sid()' or 'symbol()' methods to look up an Asset."
             )
 
-        normalized_date = normalize_date(self.get_datetime())
+        normalized_date = self.exchange_calendar.minute_to_session(self.get_datetime())
 
         if normalized_date < asset.start_date:
             raise CannotOrderDelistedAsset(
@@ -1477,6 +1493,9 @@ class TradingAlgorithm(object):
         Any logic that should happen exactly once at the start of each datetime
         group should happen here.
         """
+        if dt.tzinfo is None:
+            dt = dt.tz_localize(self.exchange_calendar.tz)
+
         self.datetime = dt
         self.blotter.set_date(dt)
 
@@ -1498,9 +1517,8 @@ class TradingAlgorithm(object):
             The current simulation datetime converted to ``tz``.
         """
         dt = self.datetime
-        assert dt.tzinfo == pytz.utc, "Algorithm should have a utc datetime"
-        if tz is not None:
-            dt = dt.astimezone(tz)
+        assert dt.tzinfo is not None, "Algorithm should have a timezone"
+        dt = dt.astimezone(tz or 'utc')
         return dt
 
     @api_method # document in zipline.api.pyi
@@ -2298,12 +2316,12 @@ class TradingAlgorithm(object):
         Internal implementation of `pipeline_output`.
         """
         # normalize algo datetime to session label; this requires converting
-        # to calendar tz, normalizing to midnight, then localizing back to UTC.
+        # to calendar tz, normalizing to midnight.
         # Otherwise, the normalized date could be wrong with a country like Japan
         # because the UTC time falls before midnight on the previous date.
         today = self.get_datetime().tz_convert(
-            self.trading_calendar.tz).normalize().tz_localize(
-                None).tz_localize("UTC")
+            self.exchange_calendar.tz).normalize().tz_localize(
+                None)
 
         # In daily mode, we want the pipeline output that is timestamped to the *next*
         # session, not the current session. Explanation: In daily mode, the day's OHLC
@@ -2316,7 +2334,7 @@ class TradingAlgorithm(object):
         # two days instead of one, because today's pipeline output contains yesterday's values,
         # and orders placed based on those values won't be executed until tomorrow's close.
         if self.sim_params.data_frequency == "daily":
-            today = self.trading_calendar.next_session_label(today)
+            today = self.exchange_calendar.next_session(today)
 
         try:
             data = self._pipeline_cache.get(name, today)
@@ -2355,7 +2373,7 @@ class TradingAlgorithm(object):
         --------
         PipelineEngine.run_pipeline
         """
-        sessions = self.trading_calendar.all_sessions
+        sessions = self.exchange_calendar.sessions
 
         # Load data starting from the previous trading day...
         start_date_loc = sessions.get_loc(start_session)

@@ -53,7 +53,7 @@ FROM {0}
 WHERE sid IN ({1}) AND effective_date >= {2} AND effective_date <= {3}
 """
 
-EPOCH = Timestamp(0, tz='UTC')
+EPOCH = Timestamp(0)
 
 cdef set _get_sids_from_table(object db,
                               str tablename,
@@ -177,7 +177,7 @@ cpdef load_adjustments_from_sqlite(object adjustments_db,
         SQLiteAdjustmentWriter.
     dates : pd.DatetimeIndex
         Dates for which adjustments are needed.
-    assets : pd.Int64Index
+    assets : pd.Index[int]
         Assets for which adjustments are needed.
     should_include_splits : bool
         Whether split adjustments should be included.

@@ -32,14 +32,14 @@ from zipline._testing import (
 from zipline._testing.fixtures import (
     WithDataPortal,
     WithSimParams,
-    WithTradingCalendars,
+    WithExchangeCalendars,
     ZiplineTestCase,
 )
 
-class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
+class TestBenchmark(WithDataPortal, WithSimParams, WithExchangeCalendars,
                     ZiplineTestCase):
-    START_DATE = pd.Timestamp('2006-01-03', tz='utc')
-    END_DATE = pd.Timestamp('2006-12-29', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-12-29')
 
     @classmethod
     def make_equity_info(cls):
@@ -63,8 +63,8 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
                 },
                 3: {
                     'symbol': 'C',
-                    'start_date': pd.Timestamp('2006-05-26', tz='utc'),
-                    'end_date': pd.Timestamp('2006-08-09', tz='utc'),
+                    'start_date': pd.Timestamp('2006-05-26'),
+                    'end_date': pd.Timestamp('2006-08-09'),
                     "exchange": "TEST",
                     'real_sid': '3',
                     'currency': 'USD'
@@ -84,7 +84,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
     @classmethod
     def make_adjustment_writer_equity_daily_bar_reader(cls):
         return MockDailyBarReader(
-            dates=cls.trading_calendar.sessions_in_range(
+            dates=cls.exchange_calendar.sessions_in_range(
                 cls.START_DATE,
                 cls.END_DATE,
             ),
@@ -110,7 +110,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
 
         source = BenchmarkSource(
             self.asset_finder.retrieve_asset(1),
-            self.trading_calendar,
+            self.exchange_calendar,
             days_to_use,
             self.data_portal
         )
@@ -131,7 +131,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
         for idx, day in enumerate(days_to_use[1:]):
             self.assertEqual(
                 source.get_value(day),
-                manually_calculated[idx + 1]
+                manually_calculated.iloc[idx + 1]
             )
 
         # compare a slice of the data
@@ -148,7 +148,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
         with self.assertRaises(BenchmarkAssetNotAvailableTooEarly) as exc:
             BenchmarkSource(
                 benchmark,
-                self.trading_calendar,
+                self.exchange_calendar,
                 self.sim_params.sessions[1:],
                 self.data_portal
             )
@@ -162,7 +162,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
         with self.assertRaises(BenchmarkAssetNotAvailableTooLate) as exc2:
             BenchmarkSource(
                 benchmark,
-                self.trading_calendar,
+                self.exchange_calendar,
                 self.sim_params.sessions[120:],
                 self.data_portal
             )
@@ -176,19 +176,19 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
     def test_asset_IPOed_same_day(self):
         # gotta get some minute data up in here.
         # add sid 4 for a couple of days
-        minutes = self.trading_calendar.minutes_for_sessions_in_range(
+        minutes = self.exchange_calendar.sessions_minutes(
             self.sim_params.sessions[0],
             self.sim_params.sessions[5]
         )
 
         tmp_reader = tmp_bcolz_equity_minute_bar_reader(
-            self.trading_calendar,
-            self.trading_calendar.all_sessions,
+            self.exchange_calendar,
+            self.exchange_calendar.sessions,
             create_minute_bar_data(minutes, [2]),
         )
         with tmp_reader as reader:
             data_portal = DataPortal(
-                self.asset_finder, self.trading_calendar,
+                self.asset_finder, self.exchange_calendar,
                 first_trading_day=reader.first_trading_day,
                 equity_minute_reader=reader,
                 equity_daily_reader=self.bcolz_equity_daily_bar_reader,
@@ -197,7 +197,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
 
             source = BenchmarkSource(
                 self.asset_finder.retrieve_asset(2),
-                self.trading_calendar,
+                self.exchange_calendar,
                 self.sim_params.sessions,
                 data_portal
             )
@@ -218,7 +218,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
             for idx, day in enumerate(days_to_use[1:]):
                 self.assertEqual(
                     source.get_value(day),
-                    manually_calculated[idx + 1]
+                    manually_calculated.iloc[idx + 1]
                 )
 
     def test_no_stock_dividends_allowed(self):
@@ -228,7 +228,7 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithTradingCalendars,
         with self.assertRaises(InvalidBenchmarkAsset) as exc:
             BenchmarkSource(
                 self.asset_finder.retrieve_asset(4),
-                self.trading_calendar,
+                self.exchange_calendar,
                 self.sim_params.sessions,
                 self.data_portal
             )

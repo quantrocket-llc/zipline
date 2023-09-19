@@ -11,7 +11,7 @@ import zipline._testing.test_algorithms as zta
 
 
 def T(s):
-    return pd.Timestamp(s, tz='UTC')
+    return pd.Timestamp(s)
 
 
 class TestOrderMethods(zf.WithConstantEquityMinuteBarData,

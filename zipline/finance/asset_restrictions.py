@@ -243,7 +243,10 @@ class HistoricalRestrictions(Restrictions):
     def _is_restricted_for_asset(self, asset, dt):
         state = RESTRICTION_STATES.ALLOWED
         for r in self._restrictions_by_asset.get(asset, ()):
-            if r.effective_date > dt:
+            r_effective_date = r.effective_date
+            if r_effective_date.tzinfo is None:
+                r_effective_date = r_effective_date.tz_localize(dt.tzinfo)
+            if r_effective_date > dt:
                 break
             state = r.state
         return state == RESTRICTION_STATES.FROZEN

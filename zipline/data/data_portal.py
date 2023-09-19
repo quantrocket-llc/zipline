@@ -93,7 +93,7 @@ class DataPortal(object):
     ----------
     asset_finder : zipline.assets.assets.AssetFinder
         The AssetFinder instance used to resolve assets.
-    trading_calendar: trading_calendars.TradingCalendar
+    exchange_calendar: exchange_calendars.ExchangeCalendar
         The calendar instance used to provide minute->session information.
     first_trading_day : pd.Timestamp
         The first trading day for the simulation.
@@ -125,7 +125,7 @@ class DataPortal(object):
     """
     def __init__(self,
                  asset_finder,
-                 trading_calendar,
+                 exchange_calendar,
                  first_trading_day,
                  equity_daily_reader=None,
                  equity_minute_reader=None,
@@ -137,7 +137,7 @@ class DataPortal(object):
                  minute_history_prefetch_length=_DEF_M_HIST_PREFETCH,
                  daily_history_prefetch_length=_DEF_D_HIST_PREFETCH):
 
-        self.trading_calendar = trading_calendar
+        self.exchange_calendar = exchange_calendar
 
         self.asset_finder = asset_finder
 
@@ -188,7 +188,7 @@ class DataPortal(object):
             future_daily_reader)
 
         self._roll_finders = {
-            'calendar': CalendarRollFinder(self.trading_calendar,
+            'calendar': CalendarRollFinder(self.exchange_calendar,
                                            self.asset_finder),
         }
 
@@ -211,7 +211,7 @@ class DataPortal(object):
         if aligned_future_session_reader is not None:
             aligned_session_readers[Future] = aligned_future_session_reader
             self._roll_finders['volume'] = VolumeRollFinder(
-                self.trading_calendar,
+                self.exchange_calendar,
                 self.asset_finder,
                 aligned_future_session_reader,
             )
@@ -222,14 +222,14 @@ class DataPortal(object):
                 )
 
         _dispatch_minute_reader = AssetDispatchMinuteBarReader(
-            self.trading_calendar,
+            self.exchange_calendar,
             self.asset_finder,
             aligned_minute_readers,
             self._last_available_minute,
         )
 
         _dispatch_session_reader = AssetDispatchSessionBarReader(
-            self.trading_calendar,
+            self.exchange_calendar,
             self.asset_finder,
             aligned_session_readers,
             self._last_available_session,
@@ -241,12 +241,12 @@ class DataPortal(object):
         }
 
         self._daily_aggregator = DailyHistoryAggregator(
-            self.trading_calendar.schedule.market_open,
+            self.exchange_calendar.first_minutes,
             _dispatch_minute_reader,
-            self.trading_calendar
+            self.exchange_calendar
         )
         self._history_loader = DailyHistoryLoader(
-            self.trading_calendar,
+            self.exchange_calendar,
             _dispatch_session_reader,
             self._adjustment_reader,
             self.asset_finder,
@@ -254,7 +254,7 @@ class DataPortal(object):
             prefetch_length=daily_history_prefetch_length,
         )
         self._minute_history_loader = MinuteHistoryLoader(
-            self.trading_calendar,
+            self.exchange_calendar,
             _dispatch_minute_reader,
             self._adjustment_reader,
             self.asset_finder,
@@ -265,16 +265,15 @@ class DataPortal(object):
         self._first_trading_day = first_trading_day
 
         # Get the first trading minute
-        self._first_trading_minute, _ = (
-            self.trading_calendar.open_and_close_for_session(
-                self._first_trading_day
-            )
-            if self._first_trading_day is not None else (None, None)
+        self._first_trading_minute = (
+            self.exchange_calendar.session_first_minute(self._first_trading_day)
+            if self._first_trading_day is not None
+            else (None, None)
         )
 
         # Store the locs of the first day and first minute
         self._first_trading_day_loc = (
-            self.trading_calendar.all_sessions.get_loc(self._first_trading_day)
+            self.exchange_calendar.sessions.get_loc(self._first_trading_day)
             if self._first_trading_day is not None else None
         )
 
@@ -282,18 +281,18 @@ class DataPortal(object):
         if reader is None:
             return
 
-        if reader.trading_calendar.name == self.trading_calendar.name:
+        if reader.exchange_calendar.name == self.exchange_calendar.name:
             return reader
         elif reader.data_frequency == 'minute':
             return ReindexMinuteBarReader(
-                self.trading_calendar,
+                self.exchange_calendar,
                 reader,
                 self._first_available_session,
                 self._last_available_session
             )
         elif reader.data_frequency == 'session':
             return ReindexSessionBarReader(
-                self.trading_calendar,
+                self.exchange_calendar,
                 reader,
                 self._first_available_session,
                 self._last_available_session
@@ -322,7 +321,7 @@ class DataPortal(object):
         if field not in BASE_FIELDS:
             raise KeyError("Invalid column: " + str(field))
 
-        if dt < asset.start_date or \
+        if dt < asset.start_date.tz_localize(dt.tzinfo) or \
                 (session_label > asset.end_date):
             if field == "volume":
                 return 0
@@ -396,7 +395,7 @@ class DataPortal(object):
                     .format(type(assets))
                 )
 
-        session_label = self.trading_calendar.minute_to_session_label(dt)
+        session_label = self.exchange_calendar.minute_to_session(dt)
 
         if assets_is_scalar:
             return self._get_single_asset_value(
@@ -448,7 +447,7 @@ class DataPortal(object):
             'last_traded' the value will be a Timestamp.
         """
         return self._get_single_asset_value(
-            self.trading_calendar.minute_to_session_label(dt),
+            self.exchange_calendar.minute_to_session(dt),
             asset,
             field,
             dt,
@@ -491,9 +490,9 @@ class DataPortal(object):
                 asset, self._splits_dict, "SPLITS"
             )
             for adj_dt, adj in split_adjustments:
-                if dt < adj_dt <= perspective_dt:
+                if dt < adj_dt.tz_localize(dt.tzinfo) <= perspective_dt:
                     adjustments_for_asset.append(split_adj_factor(adj))
-                elif adj_dt > perspective_dt:
+                elif adj_dt.tz_localize(dt.tzinfo) > perspective_dt:
                     break
 
             if field != 'volume':
@@ -501,18 +500,18 @@ class DataPortal(object):
                     asset, self._mergers_dict, "MERGERS"
                 )
                 for adj_dt, adj in merger_adjustments:
-                    if dt < adj_dt <= perspective_dt:
+                    if dt < adj_dt.tz_localize(dt.tzinfo) <= perspective_dt:
                         adjustments_for_asset.append(adj)
-                    elif adj_dt > perspective_dt:
+                    elif adj_dt.tz_localize(dt.tzinfo) > perspective_dt:
                         break
 
                 dividend_adjustments = self._get_adjustment_list(
                     asset, self._dividends_dict, "DIVIDENDS",
                 )
                 for adj_dt, adj in dividend_adjustments:
-                    if dt < adj_dt <= perspective_dt:
+                    if dt < adj_dt.tz_localize(dt.tzinfo) <= perspective_dt:
                         adjustments_for_asset.append(adj)
-                    elif adj_dt > perspective_dt:
+                    elif adj_dt.tz_localize(dt.tzinfo) > perspective_dt:
                         break
 
             ratio = reduce(mul, adjustments_for_asset, 1.0)
@@ -640,15 +639,15 @@ class DataPortal(object):
                                 spot_value=value
                             )
                     else:
-                        found_dt -= self.trading_calendar.day
+                        found_dt -= self.exchange_calendar.day
                 except NoDataAfterDate:
-                    found_dt -= self.trading_calendar.day
+                    found_dt -= self.exchange_calendar.day
                 except NoDataOnDate:
                     return np.nan
 
     @remember_last
     def _get_days_for_window(self, end_date, bar_count):
-        tds = self.trading_calendar.all_sessions
+        tds = self.exchange_calendar.sessions
         end_loc = tds.get_loc(end_date)
         start_loc = end_loc - bar_count + 1
         if start_loc < self._first_trading_day_loc:
@@ -671,7 +670,7 @@ class DataPortal(object):
         Internal method that returns a dataframe containing history bars
         of daily frequency for the given sids.
         """
-        session = self.trading_calendar.minute_to_session_label(end_dt)
+        session = self.exchange_calendar.minute_to_session(end_dt)
         days_for_window = self._get_days_for_window(session, bar_count)
 
         if len(assets) == 0:
@@ -739,17 +738,17 @@ class DataPortal(object):
             return daily_data
 
     def _handle_minute_history_out_of_bounds(self, bar_count):
-        cal = self.trading_calendar
+        cal = self.exchange_calendar
 
         first_trading_minute_loc = (
-            cal.all_minutes.get_loc(
+            cal.minutes.get_loc(
                 self._first_trading_minute
             )
             if self._first_trading_minute is not None else None
         )
 
-        suggested_start_day = cal.minute_to_session_label(
-            cal.all_minutes[
+        suggested_start_day = cal.minute_to_session(
+            cal.minutes[
                 first_trading_minute_loc + bar_count
             ] + cal.day
         )
@@ -768,7 +767,7 @@ class DataPortal(object):
         """
         # get all the minutes for this window
         try:
-            minutes_for_window = self.trading_calendar.minutes_window(
+            minutes_for_window = self.exchange_calendar.minutes_window(
                 end_dt, -bar_count
             )
         except KeyError:
@@ -870,7 +869,7 @@ class DataPortal(object):
                 # volume in today's minute bars yet, we need to use the
                 # previous day's ffilled daily price. Using today's daily price
                 # could yield a value from later today.
-                history_start -= self.trading_calendar.day
+                history_start -= self.exchange_calendar.day
 
             initial_values = []
             for asset in df.columns[assets_with_leading_nan]:
@@ -897,17 +896,17 @@ class DataPortal(object):
                 initial_values,
                 dtype=np.float64
             )
-            df.fillna(method='ffill', inplace=True)
+            df.ffill(inplace=True)
 
             # forward-filling will incorrectly produce values after the end of
             # an asset's lifetime, so write NaNs back over the asset's
             # auto_close_date.
             normed_index = df.index.normalize()
             for asset in df.columns:
-                if asset.auto_close_date and history_end >= asset.auto_close_date:
+                if asset.auto_close_date and history_end >= asset.auto_close_date.tz_localize(history_end.tzinfo):
                     # if the window extends past the asset's auto_close_date, set
                     # all post-auto_close_date values to NaN in that asset's series
-                    df.loc[normed_index > asset.auto_close_date, asset] = nan
+                    df.loc[normed_index > asset.auto_close_date.tz_localize(history_end.tzinfo), asset] = nan
         return df
 
     def _get_minute_window_data(self, assets, field, minutes_for_window):
@@ -1134,7 +1133,7 @@ class DataPortal(object):
             is the next upcoming contract and so on.
         """
         rf = self._roll_finders[continuous_future.roll_style]
-        session = self.trading_calendar.minute_to_session_label(dt)
+        session = self.exchange_calendar.minute_to_session(dt)
         contract_center = rf.get_contract_center(
             continuous_future.root_symbol, session,
             continuous_future.offset)

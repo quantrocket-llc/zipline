@@ -25,8 +25,8 @@ class TestAPIShim(WithCreateBarData,
                   WithMakeAlgo,
                   ZiplineTestCase):
 
-    START_DATE = pd.Timestamp("2016-01-05", tz='UTC')
-    END_DATE = pd.Timestamp("2016-01-28", tz='UTC')
+    START_DATE = pd.Timestamp("2016-01-05")
+    END_DATE = pd.Timestamp("2016-01-28")
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
 
     sids = ASSET_FINDER_EQUITY_SIDS = 1, 2, 3
@@ -35,7 +35,7 @@ class TestAPIShim(WithCreateBarData,
     def make_equity_minute_bar_data(cls):
         for sid in cls.sids:
             yield sid, create_minute_df_for_asset(
-                cls.trading_calendar,
+                cls.exchange_calendar,
                 cls.SIM_PARAMS_START,
                 cls.SIM_PARAMS_END,
             )
@@ -44,7 +44,7 @@ class TestAPIShim(WithCreateBarData,
     def make_equity_daily_bar_data(cls, country_code, sids):
         for sid in sids:
             yield sid, create_daily_df_for_asset(
-                cls.trading_calendar,
+                cls.exchange_calendar,
                 cls.SIM_PARAMS_START,
                 cls.SIM_PARAMS_END,
             )

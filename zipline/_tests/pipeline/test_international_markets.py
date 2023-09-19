@@ -6,7 +6,7 @@ from parameterized import parameterized
 import numpy as np
 import pandas as pd
 
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline.assets.synthetic import make_rotating_equity_info
 from zipline.data.in_memory_daily_bars import InMemoryDailyBarReader
@@ -21,13 +21,13 @@ from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.pipeline.loaders.equity_pricing_loader import EquityPricingLoader
 from zipline.pipeline.loaders.synthetic import NullAdjustmentReader
 from zipline._testing.predicates import assert_equal
-from zipline._testing.core import parameter_space, random_tick_prices
+from zipline._testing.core import random_tick_prices
 
 import zipline._testing.fixtures as zf
 
 
 def T(s):
-    return pd.Timestamp(s, tz='UTC')
+    return pd.Timestamp(s)
 
 
 class WithInternationalDailyBarData(zf.WithAssetFinder):
@@ -241,7 +241,7 @@ class InternationalEquityTestCase(WithInternationalPricingPipelineEngine,
         start, end = sessions[[-17, -10]]
         result = self.run_pipeline(pipe, start, end)
 
-        all_assets = self.assets_by_calendar[calendar]
+        all_assets = [a for a in self.all_assets if a.country_code == name]
 
         # We expect the index of the result to contain all assets that were
         # alive during the interval between our start and end (not including

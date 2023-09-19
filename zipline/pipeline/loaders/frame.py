@@ -12,7 +12,6 @@ from pandas import (
     DataFrame,
     DatetimeIndex,
     Index,
-    Int64Index,
     to_datetime
 )
 from zipline.lib.adjusted_array import AdjustedArray
@@ -47,7 +46,7 @@ class DataFrameLoader(implements(PipelineLoader)):
         The column whose data is loadable by this loader.
     baseline : pandas.DataFrame
         A DataFrame with index of type DatetimeIndex and columns of type
-        Int64Index.  Dates should be labelled with the first date on which a
+        Index[int].  Dates should be labelled with the first date on which a
         value would be **available** to an algorithm.  This means that OHLCV
         data should generally be shifted back by a trading day before being
         supplied to this class.
@@ -90,7 +89,7 @@ class DataFrameLoader(implements(PipelineLoader)):
         self.adjustments = adjustments
         self.adjustment_apply_dates = DatetimeIndex(adjustments.apply_date)
         self.adjustment_end_dates = DatetimeIndex(adjustments.end_date)
-        self.adjustment_sids = Int64Index(adjustments.sid)
+        self.adjustment_sids = Index(adjustments.sid, dtype="int64")
 
     def format_adjustments(self, dates, assets):
         """
@@ -147,7 +146,7 @@ class DataFrameLoader(implements(PipelineLoader)):
             apply_date, sid, value, kind, start_date, end_date = row
             if apply_date != previous_apply_date:
                 # Get the next apply date if no exact match.
-                row_loc = dates.get_loc(apply_date, method='bfill')
+                row_loc = dates.get_indexer([apply_date], method="bfill")[0]
                 current_date_adjustments = out[row_loc] = []
                 previous_apply_date = apply_date
 

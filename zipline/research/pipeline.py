@@ -29,7 +29,7 @@ from zipline.research.exceptions import ValidationError, RequestedEndDateAfterBu
 from zipline.research._asset import asset_finder_cache
 from zipline.research.bundle import _get_bundle
 from quantrocket.zipline import get_default_bundle
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 
 def run_pipeline(
@@ -126,7 +126,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     )
 
     calendar_name = bundles.bundles[bundle].calendar_name
-    trading_calendar = get_calendar(calendar_name)
+    exchange_calendar = get_calendar(calendar_name)
 
     start_date = pd.Timestamp(start_date)
 
@@ -146,8 +146,8 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     else:
         end_date = end_date.tz_localize("UTC")
 
-    first_session = max(bundles.bundles[bundle].start_session, trading_calendar.first_session)
-    second_session = trading_calendar.next_session_label(first_session)
+    first_session = max(bundles.bundles[bundle].start_session, exchange_calendar.first_session)
+    second_session = exchange_calendar.next_session(first_session)
     if start_date < second_session:
         raise ValidationError(
             f"start_date cannot be earlier than {second_session.date().isoformat()} "
@@ -155,7 +155,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
 
     # Roll-forward start_date to valid session
     for i in range(100):
-        if trading_calendar.is_session(start_date):
+        if exchange_calendar.is_session(start_date):
             break
         start_date += pd.Timedelta(days=1)
     else:
@@ -163,7 +163,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
 
     # Roll-forward end_date to valid session
     for i in range(100):
-        if trading_calendar.is_session(end_date):
+        if exchange_calendar.is_session(end_date):
             break
         end_date += pd.Timedelta(days=1)
     else:
@@ -177,7 +177,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     # confusing errors that can occur when a user runs a pipeline through a certain
     # end date but hasn't updated their bundle to that end date)
     bundle_end_date = bundle_data.asset_finder.get_bundle_end_date()
-    max_end_date = trading_calendar.next_session_label(bundle_end_date)
+    max_end_date = exchange_calendar.next_session(bundle_end_date)
     if max_end_date < end_date:
         if requested_end_date:
             raise RequestedEndDateAfterBundleEndDate(
@@ -199,12 +199,12 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
 
     pipeline_loader = QuantRocketPipelineLoaderRouter(
         sids_to_real_sids=asset_finder.sids_to_real_sids,
-        calendar=trading_calendar,
+        calendar=exchange_calendar,
         default_loader=default_pipeline_loader,
         default_loader_columns=EquityPricing.columns
     )
 
-    calendar_domain = domain.get_domain_from_calendar(trading_calendar)
+    calendar_domain = domain.get_domain_from_calendar(exchange_calendar)
 
     kwargs = {}
 
@@ -314,8 +314,8 @@ def get_forward_returns(
     except KeyError:
         raise ValidationError(f"bundle {bundle} not found")
 
-    trading_calendar = get_calendar(calendar_name)
-    freq = trading_calendar.day
+    exchange_calendar = get_calendar(calendar_name)
+    freq = exchange_calendar.day
 
     if not periods:
         periods = [1]

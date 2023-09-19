@@ -27,7 +27,7 @@ from numpy import (
 from pandas import (
     DataFrame,
     date_range,
-    Int64Index,
+    Index,
 )
 
 from zipline.pipeline import Factor, Filter
@@ -73,7 +73,7 @@ class NumericalExpressionTestCase(TestCase):
 
     def setUp(self):
         self.dates = date_range('2014-01-01', periods=5, freq='D')
-        self.assets = Int64Index(range(5))
+        self.assets = Index(range(5), dtype="int64")
         self.f = F()
         self.g = G()
         self.h = H()

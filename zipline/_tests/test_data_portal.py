@@ -42,10 +42,10 @@ class DataPortalTestBase(WithDataPortal,
 
     ASSET_FINDER_EQUITY_SIDS = (1, 2, 3)
     DIVIDEND_ASSET_SID = 3
-    START_DATE = pd.Timestamp('2016-08-01', tz='utc')
-    END_DATE = pd.Timestamp('2016-08-08', tz='utc')
+    START_DATE = pd.Timestamp('2016-08-01')
+    END_DATE = pd.Timestamp('2016-08-08')
 
-    TRADING_CALENDAR_STRS = ('NYSE', 'us_futures')
+    EXCHANGE_CALENDAR_STRS = ('NYSE', 'us_futures')
 
     EQUITY_DAILY_BAR_SOURCE_FROM_MINUTE = True
 
@@ -84,9 +84,9 @@ class DataPortalTestBase(WithDataPortal,
 
     @classmethod
     def make_equity_minute_bar_data(cls):
-        trading_calendar = cls.trading_calendars[Equity]
+        exchange_calendar = cls.exchange_calendars[Equity]
         # No data on first day.
-        dts = trading_calendar.minutes_for_session(cls.trading_days[0])
+        dts = exchange_calendar.session_minutes(cls.trading_days[0])
         dfs = []
         dfs.append(pd.DataFrame(
             {
@@ -97,7 +97,7 @@ class DataPortalTestBase(WithDataPortal,
                 'volume': full(len(dts), 0),
             },
             index=dts))
-        dts = trading_calendar.minutes_for_session(cls.trading_days[1])
+        dts = exchange_calendar.session_minutes(cls.trading_days[1])
         dfs.append(pd.DataFrame(
             {
                 'open': append(100.5, full(len(dts) - 1, nan)),
@@ -107,7 +107,7 @@ class DataPortalTestBase(WithDataPortal,
                 'volume': append(1000, full(len(dts) - 1, nan)),
             },
             index=dts))
-        dts = trading_calendar.minutes_for_session(cls.trading_days[2])
+        dts = exchange_calendar.session_minutes(cls.trading_days[2])
         dfs.append(pd.DataFrame(
             {
                 'open': [nan, 103.50, 102.50, 104.50, 101.50, nan],
@@ -118,7 +118,7 @@ class DataPortalTestBase(WithDataPortal,
             },
             index=dts[:6]
         ))
-        dts = trading_calendar.minutes_for_session(cls.trading_days[3])
+        dts = exchange_calendar.session_minutes(cls.trading_days[3])
         dfs.append(pd.DataFrame(
             {
                 'open': full(len(dts), nan),
@@ -147,12 +147,12 @@ class DataPortalTestBase(WithDataPortal,
 
     @classmethod
     def make_future_minute_bar_data(cls):
-        trading_calendar = cls.trading_calendars[Future]
+        exchange_calendar = cls.exchange_calendars[Future]
         trading_sessions = cls.trading_sessions['us_futures']
         # No data on first day, future asset intentionally not on the same
         # dates as equities, so that cross-wiring of results do not create a
         # false positive.
-        dts = trading_calendar.minutes_for_session(trading_sessions[1])
+        dts = exchange_calendar.session_minutes(trading_sessions[1])
         dfs = []
         dfs.append(pd.DataFrame(
             {
@@ -163,7 +163,7 @@ class DataPortalTestBase(WithDataPortal,
                 'volume': full(len(dts), 0),
             },
             index=dts))
-        dts = trading_calendar.minutes_for_session(trading_sessions[2])
+        dts = exchange_calendar.session_minutes(trading_sessions[2])
         dfs.append(pd.DataFrame(
             {
                 'open': append(200.5, full(len(dts) - 1, nan)),
@@ -173,7 +173,7 @@ class DataPortalTestBase(WithDataPortal,
                 'volume': append(2000, full(len(dts) - 1, nan)),
             },
             index=dts))
-        dts = trading_calendar.minutes_for_session(trading_sessions[3])
+        dts = exchange_calendar.session_minutes(trading_sessions[3])
         dfs.append(pd.DataFrame(
             {
                 'open': [nan, 203.50, 202.50, 204.50, 201.50, nan],
@@ -184,7 +184,7 @@ class DataPortalTestBase(WithDataPortal,
             },
             index=dts[:6]
         ))
-        dts = trading_calendar.minutes_for_session(trading_sessions[4])
+        dts = exchange_calendar.session_minutes(trading_sessions[4])
         dfs.append(pd.DataFrame(
             {
                 'open': full(len(dts), nan),
@@ -197,7 +197,7 @@ class DataPortalTestBase(WithDataPortal,
         asset10000_df = pd.concat(dfs)
         yield 10000, asset10000_df
 
-        missing_dts = trading_calendar.minutes_for_session(trading_sessions[0])
+        missing_dts = exchange_calendar.session_minutes(trading_sessions[0])
         asset10001_df = pd.DataFrame(
             {
                 'open': 1.00549,
@@ -236,17 +236,17 @@ class DataPortalTestBase(WithDataPortal,
         )
 
     def test_get_last_traded_equity_minute(self):
-        trading_calendar = self.trading_calendars[Equity]
+        exchange_calendar = self.exchange_calendars[Equity]
         # Case: Missing data at front of data set, and request dt is before
         # first value.
-        dts = trading_calendar.minutes_for_session(self.trading_days[0])
+        dts = exchange_calendar.session_minutes(self.trading_days[0])
         asset = self.asset_finder.retrieve_asset(1)
         self.assertTrue(
             self.data_portal.get_last_traded_dt(
                 asset, dts[0], 'minute') is pd.NaT)
 
         # Case: Data on requested dt.
-        dts = trading_calendar.minutes_for_session(self.trading_days[2])
+        dts = exchange_calendar.session_minutes(self.trading_days[2])
 
         self.assertEqual(dts[1],
                          self.data_portal.get_last_traded_dt(
@@ -259,16 +259,16 @@ class DataPortalTestBase(WithDataPortal,
 
     def test_get_last_traded_future_minute(self):
         asset = self.asset_finder.retrieve_asset(10000)
-        trading_calendar = self.trading_calendars[Future]
+        exchange_calendar = self.exchange_calendars[Future]
         # Case: Missing data at front of data set, and request dt is before
         # first value.
-        dts = trading_calendar.minutes_for_session(self.trading_days[0])
+        dts = exchange_calendar.session_minutes(self.trading_days[0])
         self.assertTrue(
             self.data_portal.get_last_traded_dt(
                 asset, dts[0], 'minute') is pd.NaT)
 
         # Case: Data on requested dt.
-        dts = trading_calendar.minutes_for_session(self.trading_days[3])
+        dts = exchange_calendar.session_minutes(self.trading_days[3])
 
         self.assertEqual(dts[1],
                          self.data_portal.get_last_traded_dt(
@@ -298,9 +298,9 @@ class DataPortalTestBase(WithDataPortal,
                              asset, self.trading_days[3], 'daily'))
 
     def test_get_spot_value_equity_minute(self):
-        trading_calendar = self.trading_calendars[Equity]
+        exchange_calendar = self.exchange_calendars[Equity]
         asset = self.asset_finder.retrieve_asset(1)
-        dts = trading_calendar.minutes_for_session(self.trading_days[2])
+        dts = exchange_calendar.session_minutes(self.trading_days[2])
 
         # Case: Get data on exact dt.
         dt = dts[1]
@@ -337,9 +337,9 @@ class DataPortalTestBase(WithDataPortal,
         assert_almost_equal(array(list(expected.values())), result)
 
     def test_get_spot_value_future_minute(self):
-        trading_calendar = self.trading_calendars[Future]
+        exchange_calendar = self.exchange_calendars[Future]
         asset = self.asset_finder.retrieve_asset(10000)
-        dts = trading_calendar.minutes_for_session(self.trading_days[3])
+        dts = exchange_calendar.session_minutes(self.trading_days[3])
 
         # Case: Get data on exact dt.
         dt = dts[1]
@@ -378,8 +378,8 @@ class DataPortalTestBase(WithDataPortal,
     def test_get_spot_value_multiple_assets(self):
         equity = self.asset_finder.retrieve_asset(1)
         future = self.asset_finder.retrieve_asset(10000)
-        trading_calendar = self.trading_calendars[Future]
-        dts = trading_calendar.minutes_for_session(self.trading_days[3])
+        exchange_calendar = self.exchange_calendars[Future]
+        dts = exchange_calendar.session_minutes(self.trading_days[3])
 
         # We expect the outputs to be lists of spot values.
         expected = pd.DataFrame(
@@ -404,7 +404,7 @@ class DataPortalTestBase(WithDataPortal,
                      field=['close', 'price'])
     def test_get_adjustments(self, data_frequency, field):
         asset = self.asset_finder.retrieve_asset(self.DIVIDEND_ASSET_SID)
-        calendar = self.trading_calendars[Equity]
+        calendar = self.exchange_calendars[Equity]
         day = calendar.day
         dividend_date = self.trading_days[2]
 
@@ -438,7 +438,7 @@ class DataPortalTestBase(WithDataPortal,
                                 .format(dt, perspective_dt))
 
     def test_get_last_traded_dt_minute(self):
-        minutes = self.nyse_calendar.minutes_for_session(
+        minutes = self.nyse_calendar.session_minutes(
             self.trading_days[2])
         equity = self.asset_finder.retrieve_asset(1)
         result = self.data_portal.get_last_traded_dt(equity,
@@ -456,8 +456,8 @@ class DataPortalTestBase(WithDataPortal,
                          "return that as the last trade on the fifth.")
 
         future = self.asset_finder.retrieve_asset(10000)
-        calendar = self.trading_calendars[Future]
-        minutes = calendar.minutes_for_session(self.trading_days[3])
+        calendar = self.exchange_calendars[Future]
+        minutes = calendar.session_minutes(self.trading_days[3])
         result = self.data_portal.get_last_traded_dt(future,
                                                      minutes[3],
                                                      'minute')
@@ -484,7 +484,7 @@ class DataPortalTestBase(WithDataPortal,
         cf = self.data_portal.asset_finder.create_continuous_future(
             'BUZ', 0, 'calendar', None,
         )
-        minutes = self.nyse_calendar.minutes_for_session(self.trading_days[0])
+        minutes = self.nyse_calendar.session_minutes(self.trading_days[0])
 
         if frequency == '1m':
             minute = minutes[0]
@@ -492,7 +492,7 @@ class DataPortalTestBase(WithDataPortal,
             expected_future_volume = 100
             data_frequency = 'minute'
         else:
-            minute = minutes[0].normalize()
+            minute = minutes[0].normalize().tz_localize(None)
             expected_equity_volume = 100 * US_EQUITIES_MINUTES_PER_DAY
             expected_future_volume = 100 * FUTURES_MINUTES_PER_DAY
             data_frequency = 'daily'

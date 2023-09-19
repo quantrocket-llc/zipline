@@ -1,37 +1,10 @@
+import inspect
 from collections import OrderedDict
 from contextlib import contextmanager
 import datetime
 from functools import partial
 import re
 
-from nose.tools import (  # noqa
-    assert_almost_equal,
-    assert_almost_equals,
-    assert_dict_contains_subset,
-    assert_false,
-    assert_greater,
-    assert_greater_equal,
-    assert_in,
-    assert_is,
-    assert_is_instance,
-    assert_is_none,
-    assert_is_not,
-    assert_is_not_none,
-    assert_less,
-    assert_less_equal,
-    assert_multi_line_equal,
-    assert_not_almost_equal,
-    assert_not_almost_equals,
-    assert_not_equal,
-    assert_not_equals,
-    assert_not_in,
-    assert_not_is_instance,
-    assert_raises,
-    assert_raises_regexp,
-    assert_regexp_matches,
-    assert_true,
-    assert_tuple_equal,
-)
 import numpy as np
 import pandas as pd
 from pandas.testing import (
@@ -41,7 +14,7 @@ from pandas.testing import (
 )
 from six import iteritems, viewkeys
 from six.moves import zip_longest
-from toolz import dissoc, keyfilter
+from toolz import keyfilter
 import toolz.curried.operator as op
 
 from zipline.assets import Asset
@@ -49,7 +22,7 @@ from zipline.dispatch import dispatch
 from zipline.lib.adjustment import Adjustment
 from zipline.lib.labelarray import LabelArray
 from zipline._testing.core import ensure_doctest
-from zipline.utils.compat import getargspec, mappingproxy
+from zipline.utils.compat import mappingproxy
 from zipline.utils.formatting import s
 from zipline.utils.functional import dzip_exact, instance
 from zipline.utils.math_utils import tolerant_equals
@@ -149,7 +122,7 @@ def keywords(func):
         return keywords(func.__init__)
     elif isinstance(func, partial):
         return keywords(func.func)
-    return getargspec(func).args
+    return inspect.getfullargspec(func).args
 
 
 def filter_kwargs(f, kwargs):

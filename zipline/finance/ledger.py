@@ -261,7 +261,7 @@ class PositionTracker(object):
         self._dirty_stats = True
 
         if handle_non_market_minutes:
-            previous_minute = data_portal.trading_calendar.previous_minute(dt)
+            previous_minute = data_portal.exchange_calendar.previous_minute(dt)
             get_price = partial(
                 data_portal.get_adjusted_value,
                 field='price',
@@ -428,7 +428,7 @@ class Ledger(object):
 
     def end_of_session(self, session_ix):
         # save the daily returns time-series
-        self.daily_returns_series[session_ix] = self.todays_returns
+        self.daily_returns_series.iloc[session_ix] = self.todays_returns
 
     def sync_last_sale_prices(self,
                               dt,

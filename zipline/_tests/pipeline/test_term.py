@@ -38,8 +38,6 @@ from zipline._testing import parameter_space
 from zipline._testing.fixtures import WithTradingSessions, ZiplineTestCase
 from zipline._testing.predicates import (
     assert_equal,
-    assert_raises,
-    assert_raises_regex,
     assert_regex,
 )
 from zipline.utils.numpy_utils import (
@@ -158,12 +156,12 @@ def to_dict(l):
 
 class DependencyResolutionTestCase(WithTradingSessions, ZiplineTestCase):
 
-    TRADING_CALENDAR_STRS = ('NYSE',)
-    START_DATE = pd.Timestamp('2014-01-02', tz='UTC')
-    END_DATE = pd.Timestamp('2014-12-31', tz='UTC')
+    EXCHANGE_CALENDAR_STRS = ('NYSE',)
+    START_DATE = pd.Timestamp('2014-01-02')
+    END_DATE = pd.Timestamp('2014-12-31')
 
-    execution_plan_start = pd.Timestamp('2014-06-01', tz='UTC')
-    execution_plan_end = pd.Timestamp('2014-06-30', tz='UTC')
+    execution_plan_start = pd.Timestamp('2014-06-01')
+    execution_plan_end = pd.Timestamp('2014-06-30')
 
     DOMAIN = US_EQUITIES
 
@@ -490,7 +488,7 @@ class ObjectIdentityTestCase(TestCase):
         self.assertEqual(f.inputs, tuple(SomeFactor.inputs))
 
     def test_parameterized_term_non_hashable_arg(self):
-        with assert_raises(TypeError) as e:
+        with self.assertRaises(TypeError) as e:
             self.SomeFactorParameterized(a=[], b=1)
         assert_equal(
             str(e.exception),
@@ -498,7 +496,7 @@ class ObjectIdentityTestCase(TestCase):
             " 'a', but got [] instead.",
         )
 
-        with assert_raises(TypeError) as e:
+        with self.assertRaises(TypeError) as e:
             self.SomeFactorParameterized(a=1, b=[])
         assert_equal(
             str(e.exception),
@@ -506,7 +504,7 @@ class ObjectIdentityTestCase(TestCase):
             " 'b', but got [] instead.",
         )
 
-        with assert_raises(TypeError) as e:
+        with self.assertRaises(TypeError) as e:
             self.SomeFactorParameterized(a=[], b=[])
         assert_regex(
             str(e.exception),

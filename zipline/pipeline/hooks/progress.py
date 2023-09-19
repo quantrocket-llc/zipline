@@ -463,6 +463,7 @@ class TestingProgressPublisher(object):
         'current_chunk_bounds',
         'current_work',
     ])
+    __test__ = False # don't collect this class as a test case
 
     def __init__(self):
         self.trace = []

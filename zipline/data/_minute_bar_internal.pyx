@@ -1,4 +1,4 @@
-from numpy cimport ndarray, long_t
+from numpy cimport ndarray, longlong_t as long_t
 from numpy import searchsorted
 from cpython cimport bool
 cimport cython

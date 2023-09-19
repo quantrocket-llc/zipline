@@ -57,7 +57,7 @@ class PrecomputedLoader(implements(PipelineLoader)):
         coerce to a DatetimeIndex.
     sids : iterable[int-like]
         Column labels for input data.  Can be anything that pd.DataFrame will
-        coerce to an Int64Index.
+        coerce to an Index[int].
     real_sids : iterable[str], optional
         real sids corresponding to sids. If provided, these will be passed to
         SecuritiesMasterPipelineLoader, to allow use of StaticSids
@@ -198,7 +198,7 @@ class SeededRandomLoader(PrecomputedLoader):
         """
         Return uniformly-distributed dates in 2014.
         """
-        start = Timestamp('2014', tz='UTC').asm8
+        start = Timestamp('2014').asm8
         offsets = self.state.randint(
             low=0,
             high=364,
@@ -219,22 +219,20 @@ class SeededRandomLoader(PrecomputedLoader):
 
 OHLCV = ('open', 'high', 'low', 'close', 'volume')
 OHLC = ('open', 'high', 'low', 'close')
-PSEUDO_EPOCH = Timestamp('2000-01-01', tz='UTC')
+PSEUDO_EPOCH = Timestamp('2000-01-01')
 
 
 def asset_start(asset_info, asset):
     ret = asset_info.loc[asset]['start_date']
-    if ret.tz is None:
-        ret = ret.tz_localize('UTC')
-    assert ret.tzname() == 'UTC', "Unexpected non-UTC timestamp"
+    if ret.tz is not None:
+        raise ValueError("asset start_date must be tz-naive")
     return ret
 
 
 def asset_end(asset_info, asset):
     ret = asset_info.loc[asset]['end_date']
-    if ret.tz is None:
-        ret = ret.tz_localize('UTC')
-    assert ret.tzname() == 'UTC', "Unexpected non-UTC timestamp"
+    if ret.tz is not None:
+        raise ValueError("asset end_date must be tz-naive")
     return ret
 
 
@@ -292,12 +290,18 @@ def make_bar_data(asset_info, calendar, holes=None):
 
         See docstring for a description of the data format.
         """
+        start = asset_start(asset_info, asset_id)
+        end = asset_end(asset_info, asset_id)
+        pseudo_epoch = PSEUDO_EPOCH
+
+        if calendar.tz is not None:
+            start = start.tz_localize(calendar.tz)
+            end = end.tz_localize(calendar.tz)
+            pseudo_epoch = pseudo_epoch.tz_localize(calendar.tz)
+
         # Get the dates for which this asset existed according to our asset
         # info.
-        datetimes = calendar[calendar.slice_indexer(
-            asset_start(asset_info, asset_id),
-            asset_end(asset_info, asset_id),
-        )]
+        datetimes = calendar[calendar.slice_indexer(start, end)]
 
         data = full(
             (len(datetimes), len(US_EQUITY_PRICING_BCOLZ_COLUMNS)),
@@ -309,7 +313,7 @@ def make_bar_data(asset_info, calendar, holes=None):
         data[:, :5] += arange(5, dtype=uint32) * 1000
 
         # Add days since Jan 1 2001 for OHLCV columns.
-        data[:, :5] += array((datetimes - PSEUDO_EPOCH).days)[:, None].astype(uint32)
+        data[:, :5] += array((datetimes - pseudo_epoch).days)[:, None].astype(uint32)
 
         frame = DataFrame(
             data,
@@ -339,7 +343,10 @@ def expected_bar_value(asset_id, date, colname):
     """
     from_asset = asset_id * 100000
     from_colname = OHLCV.index(colname) * 1000
-    from_date = (date - PSEUDO_EPOCH).days
+    pseudo_epoch = PSEUDO_EPOCH
+    if date.tz is not None:
+        pseudo_epoch = PSEUDO_EPOCH.tz_localize(date.tz)
+    from_date = (date - pseudo_epoch).days
     return from_asset + from_colname + from_date
 
 
@@ -383,8 +390,8 @@ def expected_bar_values_2d(dates,
         if asset not in asset_info.index:
             continue
 
-        start = asset_start(asset_info, asset)
-        end = asset_end(asset_info, asset)
+        start = asset_start(asset_info, asset).tz_localize(dates.tz)
+        end = asset_end(asset_info, asset).tz_localize(dates.tz)
         for i, date in enumerate(dates):
             # No value expected for dates outside the asset's start/end
             # date.

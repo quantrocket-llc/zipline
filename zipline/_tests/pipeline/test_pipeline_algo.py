@@ -28,7 +28,7 @@ from pandas import (
     Timestamp,
 )
 from six import iteritems, itervalues
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline.api import (
     attach_pipeline,
@@ -84,10 +84,9 @@ def rolling_vwap(df, length):
 
 
 class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
-    START_DATE = pd.Timestamp('2014-01-01', tz='utc')
-    END_DATE = pd.Timestamp('2014-02-01', tz='utc')
-    dates = date_range(START_DATE, END_DATE, freq=get_calendar("NYSE").day,
-                       tz='utc')
+    START_DATE = pd.Timestamp('2014-01-01')
+    END_DATE = pd.Timestamp('2014-02-01')
+    dates = date_range(START_DATE, END_DATE, freq=get_calendar("NYSE").day)
 
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
     DATA_PORTAL_USE_MINUTE_DATA = False
@@ -162,7 +161,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
         cls.last_asset_end = max(cls.equity_info.end_date)
         cls.assets = cls.asset_finder.retrieve_all(cls.asset_finder.sids)
 
-        cls.trading_day = cls.trading_calendar.day
+        cls.trading_day = cls.exchange_calendar.day
 
         # Add a split for 'A' on its second date.
         cls.split_asset = cls.assets[0]
@@ -182,7 +181,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
         cls.default_sim_params = SimulationParameters(
             start_session=cls.first_asset_start,
             end_session=cls.last_asset_end,
-            trading_calendar=cls.trading_calendar,
+            exchange_calendar=cls.exchange_calendar,
             emission_rate='daily',
             data_frequency='daily',
         )
@@ -359,7 +358,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
 
         def handle_data(context, data):
             results = pipeline_output('test')
-            date = get_datetime().normalize()
+            date = self.exchange_calendar.minute_to_session(get_datetime())
             for asset in self.assets:
                 # Assets should appear iff they exist today and
                 # tomorrow (tomorrow because Pipeline returns tomorrow's
@@ -418,7 +417,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
 
         def before_trading_start(context, data):
             results = pipeline_output('test')
-            date = get_datetime().normalize()
+            date = self.exchange_calendar.minute_to_session(get_datetime())
             for asset in self.assets:
                 # Assets should appear iff they exist today and
                 # yesterday
@@ -433,7 +432,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
         sim_params = SimulationParameters(
             start_session=self.default_sim_params.start_session,
             end_session=self.default_sim_params.end_session,
-            trading_calendar=self.trading_calendar,
+            exchange_calendar=self.exchange_calendar,
             emission_rate='daily',
             data_frequency='minute',
         )
@@ -461,7 +460,7 @@ class ClosesAndVolumes(WithMakeAlgo, ZiplineTestCase):
         def handle_data(context, data):
             closes = pipeline_output('test_close')
             volumes = pipeline_output('test_volume')
-            date = get_datetime().normalize()
+            date = self.exchange_calendar.minute_to_session(get_datetime())
             for asset in self.assets:
                 # Assets should appear iff they exist today and yesterday.
                 exists_today = self.exists(date, asset)
@@ -524,8 +523,8 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
     BRK_A = 3
     ASSET_FINDER_EQUITY_SIDS = AAPL, MSFT, BRK_A
     ASSET_FINDER_EQUITY_SYMBOLS = 'AAPL', 'MSFT', 'BRK_A'
-    START_DATE = Timestamp('2014', tz='UTC')
-    END_DATE = Timestamp('2014-08-29', tz='UTC')
+    START_DATE = Timestamp('2014')
+    END_DATE = Timestamp('2014-08-29')
 
     SIM_PARAMS_DATA_FREQUENCY = 'daily'
     DATA_PORTAL_USE_MINUTE_DATA = False
@@ -586,8 +585,8 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
             cls.bcolz_equity_daily_bar_reader,
             cls.adjustment_reader,
         )
-        cls.dates = cls.raw_data[cls.AAPL].index.tz_localize('UTC')
-        cls.AAPL_split_date = Timestamp("2014-06-09", tz='UTC')
+        cls.dates = cls.raw_data[cls.AAPL].index.tz_localize(None)
+        cls.AAPL_split_date = Timestamp("2014-06-09")
         cls.assets = cls.asset_finder.retrieve_all(
             cls.ASSET_FINDER_EQUITY_SIDS
         )
@@ -636,7 +635,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
                         raw_vwap[:split_loc - 1],
                         adj_vwap[split_loc - 1:]
                     ]
-                ).shift(1, self.trading_calendar.day)
+                ).shift(1, self.exchange_calendar.day)
 
         # Make sure all the expected vwaps have the same dates.
         vwap_dates = vwaps[1][self.AAPL].index
@@ -650,11 +649,11 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
         # price of the previous day.
         split_date = split_date.tz_localize(None)
         before_split = vwaps[1][AAPL].loc[split_date -
-                                          self.trading_calendar.day]
+                                          self.exchange_calendar.day]
         assert_almost_equal(before_split, 647.3499, decimal=2)
         assert_almost_equal(
             before_split,
-            raw[AAPL].loc[split_date - (2 * self.trading_calendar.day),
+            raw[AAPL].loc[split_date - (2 * self.exchange_calendar.day),
                           'close'],
             decimal=2,
         )
@@ -666,14 +665,14 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
         assert_almost_equal(
             on_split,
             raw[AAPL].loc[split_date -
-                          self.trading_calendar.day, 'close'] / split_ratio,
+                          self.exchange_calendar.day, 'close'] / split_ratio,
             decimal=2,
         )
 
         # length 1 vwap on the day after the split should be the as-traded
         # close on the split day.
         after_split = vwaps[1][AAPL].loc[split_date +
-                                         self.trading_calendar.day]
+                                         self.exchange_calendar.day]
         assert_almost_equal(after_split, 93.69999, decimal=2)
         assert_almost_equal(
             after_split,
@@ -713,8 +712,8 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
             attach_pipeline(pipeline, 'test')
 
         def handle_data(context, data):
-            today = normalize_date(get_datetime())
-            tomorrow = self.trading_calendar.next_session_label(today)
+            today = self.exchange_calendar.minute_to_session(get_datetime())
+            tomorrow = self.exchange_calendar.next_session(today)
             results = pipeline_output('test')
             expect_over_300 = {
                 AAPL: tomorrow < self.AAPL_split_date,
@@ -749,7 +748,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
                 end_session=self.dates[-1],
                 data_frequency='daily',
                 emission_rate='daily',
-                trading_calendar=self.trading_calendar,
+                exchange_calendar=self.exchange_calendar,
             )
         )
 
@@ -784,7 +783,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
                 end_session=self.dates[-1],
                 data_frequency='daily',
                 emission_rate='daily',
-                trading_calendar=self.trading_calendar,
+                exchange_calendar=self.exchange_calendar,
             )
         )
 
@@ -822,7 +821,7 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
                 end_session=latest_dt,
                 data_frequency='daily',
                 emission_rate='daily',
-                trading_calendar=self.trading_calendar,
+                exchange_calendar=self.exchange_calendar,
             )
         )
 
@@ -832,8 +831,8 @@ class PipelineAlgorithmTestCase(WithMakeAlgo,
 class PipelineSequenceTestCase(WithMakeAlgo, ZiplineTestCase):
 
     # run algorithm for 3 days
-    START_DATE = pd.Timestamp('2014-12-29', tz='utc')
-    END_DATE = pd.Timestamp('2014-12-31', tz='utc')
+    START_DATE = pd.Timestamp('2014-12-29')
+    END_DATE = pd.Timestamp('2014-12-31')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
     def get_pipeline_loader(self):

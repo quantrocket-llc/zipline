@@ -60,6 +60,7 @@ from functools import partial
 
 from six import iteritems, with_metaclass, viewkeys
 from numpy import array, arange
+import numpy as np
 from pandas import DataFrame, MultiIndex
 from toolz import groupby
 
@@ -225,7 +226,7 @@ def default_populate_initial_workspace(initial_workspace,
     dates : pd.DatetimeIndex
         All of the dates being requested in this pipeline run including
         the extra dates for look back windows.
-    assets : pd.Int64Index
+    assets : pd.Index[int]
         All of the assets that exist for the window being computed.
 
     Returns
@@ -342,7 +343,7 @@ class SimplePipelineEngine(PipelineEngine):
         """
         domain = self.resolve_domain(pipeline)
         ranges = compute_date_range_chunks(
-            domain.all_sessions(),
+            domain.sessions(),
             start_date,
             end_date,
             chunksize,
@@ -488,7 +489,7 @@ class SimplePipelineEngine(PipelineEngine):
             that existed for at least one day between `start_date` and
             `end_date`.
         """
-        sessions = domain.all_sessions()
+        sessions = domain.sessions()
 
         if start_date not in sessions:
             raise ValueError(
@@ -678,7 +679,7 @@ class SimplePipelineEngine(PipelineEngine):
             Dependency graph of the terms to be executed.
         dates : pd.DatetimeIndex
             Row labels for our root mask.
-        sids : pd.Int64Index
+        sids : pd.Index[int]
             Column labels for our root mask.
         workspace : dict
             Map from term -> output.
@@ -878,6 +879,13 @@ class SimplePipelineEngine(PipelineEngine):
             # As of Mon May 2 15:38:47 2016, we only use this to convert
             # LabelArrays into categoricals.
             final_columns[name] = terms[name].postprocess(data[name][mask])
+
+            # terms with multiple outputs are stored as recarrays, but
+            # recarrays have numpy void dtypes when used as DataFrame columns,
+            # and pandas does not support void dtypes, so cast them to lists
+            # of tuples.
+            if isinstance(final_columns[name], np.recarray):
+                final_columns[name] = final_columns[name].tolist()
 
         resolved_assets = array(self._finder.retrieve_all(assets))
         index = _pipeline_output_index(dates, resolved_assets, mask)

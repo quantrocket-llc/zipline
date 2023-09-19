@@ -25,7 +25,7 @@ class SimulationParameters(object):
     def __init__(self,
                  start_session,
                  end_session,
-                 trading_calendar,
+                 exchange_calendar,
                  capital_base=DEFAULT_CAPITAL_BASE,
                  emission_rate='daily',
                  data_frequency='daily',
@@ -34,13 +34,13 @@ class SimulationParameters(object):
         assert type(start_session) == pd.Timestamp
         assert type(end_session) == pd.Timestamp
 
-        assert trading_calendar is not None, \
+        assert exchange_calendar is not None, \
             "Must pass in trading calendar!"
         assert start_session <= end_session, \
             "Period start falls after period end."
-        assert start_session <= trading_calendar.last_trading_session, \
+        assert start_session.tz_localize(None) <= exchange_calendar.last_session, \
             "Period start falls after the last known trading day."
-        assert end_session >= trading_calendar.first_trading_session, \
+        assert end_session.tz_localize(None) >= exchange_calendar.first_session, \
             "Period end falls before the first known trading day."
 
         # chop off any minutes or hours on the given start and end dates,
@@ -56,29 +56,29 @@ class SimulationParameters(object):
         # copied to algorithm's environment for runtime access
         self._arena = arena
 
-        self._trading_calendar = trading_calendar
+        self._exchange_calendar = exchange_calendar
 
-        if not trading_calendar.is_session(self._start_session):
+        if not exchange_calendar.is_session(self._start_session.tz_localize(None)):
             # if the start date is not a valid session in this calendar,
             # push it forward to the first valid session
-            self._start_session = trading_calendar.minute_to_session_label(
+            self._start_session = exchange_calendar.minute_to_session(
                 self._start_session
             )
 
-        if not trading_calendar.is_session(self._end_session):
+        if not exchange_calendar.is_session(self._end_session.tz_localize(None)):
             # if the end date is not a valid session in this calendar,
             # pull it backward to the last valid session before the given
             # end date.
-            self._end_session = trading_calendar.minute_to_session_label(
+            self._end_session = exchange_calendar.minute_to_session(
                 self._end_session, direction="previous"
             )
 
-        self._first_open = trading_calendar.open_and_close_for_session(
-            self._start_session
-        )[0]
-        self._last_close = trading_calendar.open_and_close_for_session(
-            self._end_session
-        )[1]
+        self._first_open = exchange_calendar.session_first_minute(
+            self._start_session.tz_localize(None)
+        )
+        self._last_close = exchange_calendar.session_close(
+            self._end_session.tz_localize(None)
+        )
 
     @property
     def capital_base(self):
@@ -121,13 +121,13 @@ class SimulationParameters(object):
         return self._last_close
 
     @property
-    def trading_calendar(self):
-        return self._trading_calendar
+    def exchange_calendar(self):
+        return self._exchange_calendar
 
     @property
     @remember_last
     def sessions(self):
-        return self._trading_calendar.sessions_in_range(
+        return self._exchange_calendar.sessions_in_range(
             self.start_session,
             self.end_session
         )
@@ -139,7 +139,7 @@ class SimulationParameters(object):
         return SimulationParameters(
             start_session,
             end_session,
-            self._trading_calendar,
+            self._exchange_calendar,
             capital_base=self.capital_base,
             emission_rate=self.emission_rate,
             data_frequency=data_frequency,
@@ -156,7 +156,7 @@ class SimulationParameters(object):
     emission_rate={emission_rate},
     first_open={first_open},
     last_close={last_close},
-    trading_calendar={trading_calendar}
+    exchange_calendar={exchange_calendar}
 )\
 """.format(class_name=self.__class__.__name__,
            start_session=self.start_session,
@@ -166,4 +166,4 @@ class SimulationParameters(object):
            emission_rate=self.emission_rate,
            first_open=self.first_open,
            last_close=self.last_close,
-           trading_calendar=self._trading_calendar)
+           exchange_calendar=self._exchange_calendar)

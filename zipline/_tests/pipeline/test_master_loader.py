@@ -37,7 +37,7 @@ class SecuritiesMasterLoaderTestCase(unittest.TestCase):
         domain = sid.domain
         columns = [sid, symbol]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 
@@ -94,7 +94,7 @@ class SecuritiesMasterLoaderTestCase(unittest.TestCase):
         domain = sid.domain
         columns = [sid]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
         array = loader.load_adjusted_array(

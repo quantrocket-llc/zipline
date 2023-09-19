@@ -30,7 +30,7 @@ class AssetDispatchBarReader(with_metaclass(ABCMeta)):
 
     Parameters
     ----------
-    - trading_calendar : trading_calendars.TradingCalendar
+    - exchange_calendar : exchange_calendars.ExchangeCalendar
     - asset_finder : zipline.assets.AssetFinder
     - readers : dict
         A dict mapping Asset type to the corresponding
@@ -41,25 +41,24 @@ class AssetDispatchBarReader(with_metaclass(ABCMeta)):
     """
     def __init__(
         self,
-        trading_calendar,
+        exchange_calendar,
         asset_finder,
         readers,
         last_available_dt=None,
     ):
-        self._trading_calendar = trading_calendar
+        self._exchange_calendar = exchange_calendar
         self._asset_finder = asset_finder
         self._readers = readers
-        # if no timezone given, assume utc
-        if last_available_dt and not last_available_dt.tzinfo:
-            last_available_dt = last_available_dt.tz_localize('utc')
+        if last_available_dt and last_available_dt.tzinfo:
+            last_available_dt = last_available_dt.tz_localize(None)
         self._last_available_dt = last_available_dt
 
         for t, r in iteritems(self._readers):
-            assert trading_calendar == r.trading_calendar, \
-                "All readers must share target trading_calendar. " \
+            assert exchange_calendar == r.exchange_calendar, \
+                "All readers must share target exchange_calendar. " \
                 "Reader={0} for type={1} uses calendar={2} which does not " \
                 "match the desired shared calendar={3} ".format(
-                    r, t, r.trading_calendar, trading_calendar)
+                    r, t, r.exchange_calendar, exchange_calendar)
 
     @abstractmethod
     def _dt_window_size(self, start_dt, end_dt):
@@ -80,8 +79,8 @@ class AssetDispatchBarReader(with_metaclass(ABCMeta)):
         return out
 
     @property
-    def trading_calendar(self):
-        return self._trading_calendar
+    def exchange_calendar(self):
+        return self._exchange_calendar
 
     @lazyval
     def last_available_dt(self):
@@ -137,16 +136,16 @@ class AssetDispatchBarReader(with_metaclass(ABCMeta)):
 class AssetDispatchMinuteBarReader(AssetDispatchBarReader):
 
     def _dt_window_size(self, start_dt, end_dt):
-        return len(self.trading_calendar.minutes_in_range(start_dt, end_dt))
+        return len(self.exchange_calendar.minutes_in_range(start_dt, end_dt))
 
 
 class AssetDispatchSessionBarReader(AssetDispatchBarReader):
 
     def _dt_window_size(self, start_dt, end_dt):
-        return len(self.trading_calendar.sessions_in_range(start_dt, end_dt))
+        return len(self.exchange_calendar.sessions_in_range(start_dt, end_dt))
 
     @lazyval
     def sessions(self):
-        return self.trading_calendar.sessions_in_range(
+        return self.exchange_calendar.sessions_in_range(
             self.first_trading_day,
             self.last_available_dt)

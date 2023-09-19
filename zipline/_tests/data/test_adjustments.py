@@ -10,7 +10,7 @@ from zipline._testing import parameter_space
 from zipline._testing.predicates import assert_equal
 from zipline._testing.fixtures import (
     WithInstanceTmpDir,
-    WithTradingCalendars,
+    WithExchangeCalendars,
     ZiplineTestCase,
 )
 
@@ -18,7 +18,7 @@ from zipline._testing.fixtures import (
 nat = pd.Timestamp('nat')
 
 
-class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
+class TestSQLiteAdjustmentsWriter(WithExchangeCalendars,
                                   WithInstanceTmpDir,
                                   ZiplineTestCase):
 
@@ -52,7 +52,7 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
 
         return InMemoryDailyBarReader(
             frames,
-            self.trading_calendar,
+            self.exchange_calendar,
             currency_codes=pd.Series(index=sids, data='USD'),
         )
 
@@ -70,7 +70,7 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
             frames[key] = nan_frame
         return InMemoryDailyBarReader(
             frames,
-            self.trading_calendar,
+            self.exchange_calendar,
             currency_codes=pd.Series(index=close.columns, data='USD'),
         )
 
@@ -83,16 +83,16 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
 
     def test_calculate_dividend_ratio(self):
         first_date_ix = 200
-        dates = self.trading_calendar.all_sessions[
+        dates = self.exchange_calendar.sessions[
             first_date_ix:first_date_ix + 3
         ]
 
         before_pricing_data = \
-            (dates[0] - self.trading_calendar.day)
+            (dates[0] - self.exchange_calendar.day)
         one_day_past_pricing_data = \
-            (dates[-1] + self.trading_calendar.day)
+            (dates[-1] + self.exchange_calendar.day)
         ten_days_past_pricing_data = \
-            (dates[-1] + self.trading_calendar.day * 10)
+            (dates[-1] + self.exchange_calendar.day * 10)
 
         def T(n):
             return dates[n]
@@ -146,7 +146,7 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
         # they appear unchanged in the dividends payouts
         ix = first_date_ix
         for col in 'declared_date', 'record_date', 'pay_date':
-            extra_dates = self.trading_calendar.all_sessions[
+            extra_dates = self.exchange_calendar.sessions[
                 ix:ix + len(dividends)
             ]
             ix += len(dividends)
@@ -203,7 +203,7 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
 
     def _test_identity(self, name):
         sids = np.arange(5)
-        dates = self.trading_calendar.all_sessions
+        dates = self.exchange_calendar.sessions
 
         def T(n):
             return dates[n]
@@ -234,7 +234,7 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
 
     def test_stock_dividends(self):
         sids = np.arange(5)
-        dates = self.trading_calendar.all_sessions
+        dates = self.exchange_calendar.sessions
 
         def T(n):
             return dates[n]
@@ -272,7 +272,7 @@ class TestSQLiteAdjustmentsWriter(WithTradingCalendars,
         """Test that dataframe dtypes are preserved for empty tables.
         """
         sids = np.arange(5)
-        dates = self.trading_calendar.all_sessions
+        dates = self.exchange_calendar.sessions
 
         if convert_dates:
             date_dtype = np.dtype('M8[ns]')

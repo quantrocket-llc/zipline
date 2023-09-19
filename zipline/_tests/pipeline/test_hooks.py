@@ -23,7 +23,7 @@ from zipline._testing.fixtures import (
     ZiplineTestCase,
     WithSeededRandomPipelineEngine,
 )
-from zipline._testing.predicates import assert_almost_equal, instance_of
+from zipline._testing.predicates import instance_of
 
 
 class TrivialFactor(CustomFactor):
@@ -228,8 +228,8 @@ class ProgressHooksTestCase(WithSeededRandomPipelineEngine, ZiplineTestCase):
     """
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
-    START_DATE = pd.Timestamp('2014-01-02', tz='UTC')
-    END_DATE = pd.Timestamp('2014-01-31', tz='UTC')
+    START_DATE = pd.Timestamp('2014-01-02')
+    END_DATE = pd.Timestamp('2014-01-31')
 
     # Don't populate PREPOPULATED_TERM for days after this cutoff.
     # This is used to test that we correctly compute progress when the number
@@ -410,7 +410,7 @@ class ProgressHooksTestCase(WithSeededRandomPipelineEngine, ZiplineTestCase):
                 chunk_stop,
             )
             end_progress = chunk_trace[-1].percent_complete
-            assert_almost_equal(
+            self.assertAlmostEqual(
                 end_progress,
                 expected_end_progress,
             )

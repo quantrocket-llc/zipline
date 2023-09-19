@@ -419,6 +419,8 @@ class MinLeverage(AccountControl):
         Make validation checks if we are after the deadline.
         Fail if the leverage is less than the min leverage.
         """
-        if (algo_datetime > self.deadline and
-                account.leverage < self.min_leverage):
+        if (
+            algo_datetime > self.deadline.tz_localize(algo_datetime.tzinfo)
+            and account.leverage < self.min_leverage
+        ):
             self.fail()

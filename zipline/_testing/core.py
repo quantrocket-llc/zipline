@@ -1,3 +1,4 @@
+import inspect
 from abc import ABCMeta, abstractmethod, abstractproperty
 from contextlib import contextmanager
 import gzip
@@ -10,13 +11,10 @@ import json
 import operator
 import os
 from os.path import abspath, dirname, join, realpath
-import shutil
 import sys
-import tempfile
 from traceback import format_exception
 
 from mock import patch
-from nose.tools import nottest
 from numpy.testing import assert_allclose, assert_array_equal
 import pandas as pd
 from six import itervalues, iteritems, with_metaclass
@@ -24,11 +22,11 @@ from six.moves import filter, map
 from sqlalchemy import create_engine
 from testfixtures import TempDirectory
 from toolz import concat, curry
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline.assets import AssetFinder, AssetDBWriter
 from zipline.assets.synthetic import make_simple_equity_info
-from zipline.utils.compat import getargspec, wraps
+from zipline.utils.compat import wraps
 from zipline.data.data_portal import DataPortal
 from zipline.data.minute_bars import (
     BcolzMinuteBarReader,
@@ -55,12 +53,15 @@ from zipline.utils.sentinel import sentinel
 import numpy as np
 from numpy import float64
 
+def nottest(obj):
+    obj.__test__ = False
+    return obj
 
-EPOCH = pd.Timestamp(0, tz='UTC')
+EPOCH = pd.Timestamp(0)
 
 
 def seconds_to_timestamp(seconds):
-    return pd.Timestamp(seconds, unit='s', tz='UTC')
+    return pd.Timestamp(seconds, unit='s')
 
 
 def to_utc(time_str):
@@ -78,7 +79,7 @@ def str_to_seconds(s):
     >>> str_to_seconds('2014-01-01')
     1388534400
     """
-    return timedelta_to_integral_seconds(pd.Timestamp(s, tz='UTC') - EPOCH)
+    return timedelta_to_integral_seconds(pd.Timestamp(s) - EPOCH)
 
 
 def drain_zipline(test, zipline):
@@ -280,7 +281,7 @@ def make_trade_data_for_asset_info(dates,
         # Normalize here so the we still generate non-NaN values on the minutes
         # for an asset's last trading day.
         for i, date in enumerate(dates.normalize()):
-            if not (start_date <= date <= end_date):
+            if not (start_date <= date.tz_localize(None) <= end_date):
                 prices[i, j] = 0
                 volumes[i, j] = 0
 
@@ -379,18 +380,18 @@ class ExplodingObject(object):
         raise UnexpectedAttributeAccess(name)
 
 
-def write_minute_data(trading_calendar, tempdir, minutes, sids):
-    first_session = trading_calendar.minute_to_session_label(
+def write_minute_data(exchange_calendar, tempdir, minutes, sids):
+    first_session = exchange_calendar.minute_to_session(
         minutes[0], direction="none"
     )
-    last_session = trading_calendar.minute_to_session_label(
+    last_session = exchange_calendar.minute_to_session(
         minutes[-1], direction="none"
     )
 
-    sessions = trading_calendar.sessions_in_range(first_session, last_session)
+    sessions = exchange_calendar.sessions_in_range(first_session, last_session)
 
     write_bcolz_minute_data(
-        trading_calendar,
+        exchange_calendar,
         sessions,
         tempdir.path,
         create_minute_bar_data(minutes, sids),
@@ -429,9 +430,9 @@ def create_daily_bar_data(sessions, sids):
         )
 
 
-def write_daily_data(tempdir, sim_params, sids, trading_calendar):
+def write_daily_data(tempdir, sim_params, sids, exchange_calendar):
     path = os.path.join(tempdir.path, "testdaily.bcolz")
-    BcolzDailyBarWriter(path, trading_calendar,
+    BcolzDailyBarWriter(path, exchange_calendar,
                         sim_params.start_session,
                         sim_params.end_session).write(
         create_daily_bar_data(sim_params.sessions, sids),
@@ -441,56 +442,56 @@ def write_daily_data(tempdir, sim_params, sids, trading_calendar):
 
 
 def create_data_portal(asset_finder, tempdir, sim_params, sids,
-                       trading_calendar, adjustment_reader=None):
+                       exchange_calendar, adjustment_reader=None):
     if sim_params.data_frequency == "daily":
         daily_path = write_daily_data(tempdir, sim_params, sids,
-                                      trading_calendar)
+                                      exchange_calendar)
 
         equity_daily_reader = BcolzDailyBarReader(daily_path)
 
         return DataPortal(
-            asset_finder, trading_calendar,
+            asset_finder, exchange_calendar,
             first_trading_day=equity_daily_reader.first_trading_day,
             equity_daily_reader=equity_daily_reader,
             adjustment_reader=adjustment_reader
         )
     else:
-        minutes = trading_calendar.minutes_in_range(
+        minutes = exchange_calendar.minutes_in_range(
             sim_params.first_open,
             sim_params.last_close
         )
 
-        minute_path = write_minute_data(trading_calendar, tempdir, minutes,
+        minute_path = write_minute_data(exchange_calendar, tempdir, minutes,
                                         sids)
 
         equity_minute_reader = BcolzMinuteBarReader(minute_path)
 
         return DataPortal(
-            asset_finder, trading_calendar,
+            asset_finder, exchange_calendar,
             first_trading_day=equity_minute_reader.first_trading_day,
             equity_minute_reader=equity_minute_reader,
             adjustment_reader=adjustment_reader
         )
 
 
-def write_bcolz_minute_data(trading_calendar, days, path, data):
+def write_bcolz_minute_data(exchange_calendar, days, path, data):
     BcolzMinuteBarWriter(
         path,
-        trading_calendar,
+        exchange_calendar,
         days[0],
         days[-1],
         US_EQUITIES_MINUTES_PER_DAY
     ).write(data)
 
 
-def create_minute_df_for_asset(trading_calendar,
+def create_minute_df_for_asset(exchange_calendar,
                                start_dt,
                                end_dt,
                                interval=1,
                                start_val=1,
                                minute_blacklist=None):
 
-    asset_minutes = trading_calendar.minutes_for_sessions_in_range(
+    asset_minutes = exchange_calendar.sessions_minutes(
         start_dt, end_dt
     )
     minutes_count = len(asset_minutes)
@@ -529,9 +530,9 @@ def create_minute_df_for_asset(trading_calendar,
     return df
 
 
-def create_daily_df_for_asset(trading_calendar, start_day, end_day,
+def create_daily_df_for_asset(exchange_calendar, start_day, end_day,
                               interval=1):
-    days = trading_calendar.sessions_in_range(start_day, end_day)
+    days = exchange_calendar.sessions_in_range(start_day, end_day)
     days_count = len(days)
     days_arr = np.arange(days_count) + 2
 
@@ -585,12 +586,12 @@ def trades_by_sid_to_dfs(trades_by_sid, index):
         )
 
 
-def create_data_portal_from_trade_history(asset_finder, trading_calendar,
+def create_data_portal_from_trade_history(asset_finder, exchange_calendar,
                                           tempdir, sim_params, trades_by_sid):
     if sim_params.data_frequency == "daily":
         path = os.path.join(tempdir.path, "testdaily.bcolz")
         writer = BcolzDailyBarWriter(
-            path, trading_calendar,
+            path, exchange_calendar,
             sim_params.start_session,
             sim_params.end_session
         )
@@ -601,12 +602,12 @@ def create_data_portal_from_trade_history(asset_finder, trading_calendar,
         equity_daily_reader = BcolzDailyBarReader(path)
 
         return DataPortal(
-            asset_finder, trading_calendar,
+            asset_finder, exchange_calendar,
             first_trading_day=equity_daily_reader.first_trading_day,
             equity_daily_reader=equity_daily_reader,
         )
     else:
-        minutes = trading_calendar.minutes_in_range(
+        minutes = exchange_calendar.minutes_in_range(
             sim_params.first_open,
             sim_params.last_close
         )
@@ -641,7 +642,7 @@ def create_data_portal_from_trade_history(asset_finder, trading_calendar,
             }).set_index("dt")
 
         write_bcolz_minute_data(
-            trading_calendar,
+            exchange_calendar,
             sim_params.sessions,
             tempdir.path,
             assets
@@ -650,20 +651,20 @@ def create_data_portal_from_trade_history(asset_finder, trading_calendar,
         equity_minute_reader = BcolzMinuteBarReader(tempdir.path)
 
         return DataPortal(
-            asset_finder, trading_calendar,
+            asset_finder, exchange_calendar,
             first_trading_day=equity_minute_reader.first_trading_day,
             equity_minute_reader=equity_minute_reader,
         )
 
 
 class FakeDataPortal(DataPortal):
-    def __init__(self, asset_finder, trading_calendar=None,
+    def __init__(self, asset_finder, exchange_calendar=None,
                  first_trading_day=None):
-        if trading_calendar is None:
-            trading_calendar = get_calendar("NYSE")
+        if exchange_calendar is None:
+            exchange_calendar = get_calendar("NYSE")
 
         super(FakeDataPortal, self).__init__(asset_finder,
-                                             trading_calendar,
+                                             exchange_calendar,
                                              first_trading_day)
 
     def get_spot_value(self, asset, field, dt, data_frequency):
@@ -680,8 +681,8 @@ class FakeDataPortal(DataPortal):
 
     def get_history_window(self, assets, end_dt, bar_count, frequency, field,
                            data_frequency, ffill=True):
-        end_idx = self.trading_calendar.all_sessions.searchsorted(end_dt)
-        days = self.trading_calendar.all_sessions[
+        end_idx = self.exchange_calendar.sessions.searchsorted(end_dt)
+        days = self.exchange_calendar.sessions[
             (end_idx - bar_count + 1):(end_idx + 1)
         ]
 
@@ -693,7 +694,7 @@ class FakeDataPortal(DataPortal):
 
         if frequency == "1m" and not df.empty:
             df = df.reindex(
-                self.trading_calendar.minutes_for_sessions_in_range(
+                self.exchange_calendar.sessions_minutes(
                     df.index[0],
                     df.index[-1],
                 ),
@@ -1097,10 +1098,10 @@ def parameter_space(__fail_fast=_FAIL_FAST_DEFAULT, **params):
     """
     def decorator(f):
 
-        argspec = getargspec(f)
+        argspec = inspect.getfullargspec(f)
         if argspec.varargs:
             raise AssertionError("parameter_space() doesn't support *args")
-        if argspec.keywords:
+        if argspec.varkw:
             raise AssertionError("parameter_space() doesn't support **kwargs")
         if argspec.defaults:
             raise AssertionError("parameter_space() doesn't support defaults.")
@@ -1163,7 +1164,7 @@ def create_empty_dividends_frame():
                 ('sid', 'int32'),
             ],
         ),
-        index=pd.DatetimeIndex([], tz='UTC'),
+        index=pd.DatetimeIndex([]),
     )
 
 
@@ -1192,12 +1193,12 @@ def make_alternating_boolean_array(shape, first_value=True):
     array([[ True, False,  True, False],
            [False,  True, False,  True],
            [ True, False,  True, False],
-           [False,  True, False,  True]], dtype=bool)
+           [False,  True, False,  True]])
     >>> make_alternating_boolean_array((4,3), first_value=False)
     array([[False,  True, False],
            [ True, False,  True],
            [False,  True, False],
-           [ True, False,  True]], dtype=bool)
+           [ True, False,  True]])
     """
     if len(shape) != 2:
         raise ValueError(
@@ -1222,15 +1223,15 @@ def make_cascading_boolean_array(shape, first_value=True):
     array([[ True,  True,  True, False],
            [ True,  True, False, False],
            [ True, False, False, False],
-           [False, False, False, False]], dtype=bool)
+           [False, False, False, False]])
     >>> make_cascading_boolean_array((4,2))
     array([[ True, False],
            [False, False],
            [False, False],
-           [False, False]], dtype=bool)
+           [False, False]])
     >>> make_cascading_boolean_array((2,4))
     array([[ True,  True,  True, False],
-           [ True,  True, False, False]], dtype=bool)
+           [ True,  True, False, False]])
     """
     if len(shape) != 2:
         raise ValueError(
@@ -1297,13 +1298,13 @@ def patch_os_environment(remove=None, **values):
     remove = remove or []
     for key in remove:
         old_values[key] = os.environ.pop(key)
-    for key, value in values.iteritems():
+    for key, value in values.items():
         old_values[key] = os.getenv(key)
         os.environ[key] = value
     try:
         yield
     finally:
-        for old_key, old_value in old_values.iteritems():
+        for old_key, old_value in old_values.items():
             if old_value is None:
                 # Value was not present when we entered, so del it out if it's
                 # still present.
@@ -1371,7 +1372,7 @@ class tmp_bcolz_equity_minute_bar_reader(_TmpBarReader):
 
     Parameters
     ----------
-    cal : TradingCalendar
+    cal : ExchangeCalendar
         The trading calendar for which we're writing data.
     days : pd.DatetimeIndex
         The days to write for.
@@ -1394,7 +1395,7 @@ class tmp_bcolz_equity_daily_bar_reader(_TmpBarReader):
 
     Parameters
     ----------
-    cal : TradingCalendar
+    cal : ExchangeCalendar
         The trading calendar for which we're writing data.
     days : pd.DatetimeIndex
         The days to write for.

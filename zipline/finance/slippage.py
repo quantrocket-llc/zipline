@@ -46,6 +46,7 @@ Usage Guide:
 """
 from __future__ import division
 
+import warnings
 from typing import Union
 from abc import abstractmethod
 import math
@@ -603,9 +604,18 @@ class MarketImpactBase(SlippageModel):
 
             # Exclude the first value of the percent change array because it is
             # always just NaN.
-            close_volatility = close_history[:-1].pct_change()[1:].std(
-                skipna=False,
-            )
+            with warnings.catch_warnings():
+                # Suppress pandas >=2.1 FutureWarning:
+                #    The default fill_method='pad' in DataFrame.pct_change is deprecated
+                #    and will be removed in a future version. Call ffill before calling
+                #    pct_change to retain current behavior and silence this warning.
+                # The suggested fix doesn't help because prices has leading NaNs, which
+                # aren't filled by ffill(). Can likely remove in pandas 3.x.
+                warnings.simplefilter("ignore", category=FutureWarning)
+                close_volatility = close_history[:-1].ffill().pct_change()[1:].std(
+                    skipna=False,
+                )
+
             values = {
                 'volume': volume_history[:-1].mean(),
                 'close': close_volatility * SQRT_252,

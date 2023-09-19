@@ -41,7 +41,7 @@ class IBKRShortableSharesLoaderTestCase(unittest.TestCase):
         domain = last_qty.domain
         columns = [last_qty, min_qty]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 
@@ -102,7 +102,7 @@ class IBKRShortableSharesLoaderTestCase(unittest.TestCase):
         domain = last_qty.domain
         columns = [last_qty, min_qty]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 
@@ -149,7 +149,7 @@ class IBKRBorrowFeesLoaderTestCase(unittest.TestCase):
         domain = fees.domain
         columns = [fees]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
         def _mock_get_ibkr_borrow_fees_reindexed_like(
@@ -197,7 +197,7 @@ class IBKRBorrowFeesLoaderTestCase(unittest.TestCase):
         domain = fees.domain
         columns = [fees]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
         def mock_get_ibkr_borrow_fees_reindexed_like(

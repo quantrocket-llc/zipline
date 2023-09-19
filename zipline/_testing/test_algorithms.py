@@ -71,9 +71,7 @@ The algorithm must expose methods:
     and trade events.
 
 """
-import numpy as np
-
-from nose.tools import assert_raises
+import pytest
 
 from six import itervalues
 
@@ -100,6 +98,7 @@ class TestAlgorithm(TradingAlgorithm):
     to verify the orders sent/received, transactions created, and positions
     at the close of a simulation.
     """
+    __test__ = False # don't collect this class as a test case
 
     def initialize(self,
                    sid,
@@ -244,46 +243,46 @@ class InvalidOrderAlgorithm(TradingAlgorithm):
         for style in [MarketOrder(), LimitOrder(10, asset=self.asset),
                       StopOrder(10), StopLimitOrder(10, 10, asset=self.asset)]:
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order(self.asset, 10, limit_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order(self.asset, 10, stop_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_value(self.asset, 300, limit_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_value(self.asset, 300, stop_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_percent(self.asset, .1, limit_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_percent(self.asset, .1, stop_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_target(self.asset, 100, limit_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_target(self.asset, 100, stop_price=10, style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_target_value(self.asset, 100,
                                    limit_price=10,
                                    style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_target_value(self.asset, 100,
                                    stop_price=10,
                                    style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_target_percent(self.asset, .2,
                                      limit_price=10,
                                      style=style)
 
-            with assert_raises(UnsupportedOrderParameters):
+            with pytest.raises(UnsupportedOrderParameters):
                 order_target_percent(self.asset, .2,
                                      stop_price=10,
                                      style=style)

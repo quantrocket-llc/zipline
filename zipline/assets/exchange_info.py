@@ -1,4 +1,4 @@
-from trading_calendars import get_calendar, TradingCalendar
+from zipline.utils.calendar_utils import get_calendar, ExchangeCalendar
 
 
 class ExchangeInfo(object):
@@ -35,7 +35,7 @@ class ExchangeInfo(object):
         )
 
     @property
-    def calendar(self) -> 'TradingCalendar':
+    def calendar(self) -> 'ExchangeCalendar':
         return get_calendar(self.canonical_name)
 
     def __eq__(self, other):

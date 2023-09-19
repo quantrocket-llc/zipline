@@ -40,14 +40,17 @@ class ContinuousFutureSessionBarReader(SessionBarReader):
             )
 
         num_sessions = len(
-            self.trading_calendar.sessions_in_range(start_date, end_date)
+            self.exchange_calendar.sessions_in_range(start_date, end_date)
         )
         shape = num_sessions, len(assets)
 
         results = []
 
-        tc = self._bar_reader.trading_calendar
-        sessions = tc.sessions_in_range(start_date, end_date)
+        tc = self._bar_reader.exchange_calendar
+        sessions = tc.sessions_in_range(
+            start_date.normalize().tz_localize(None),
+            end_date.normalize().tz_localize(None),
+        )
 
         # Get partitions
         partitions_by_asset = {}
@@ -106,12 +109,12 @@ class ContinuousFutureSessionBarReader(SessionBarReader):
         return self._bar_reader.last_available_dt
 
     @property
-    def trading_calendar(self):
+    def exchange_calendar(self):
         """
-        Returns the trading_calendar used to read
+        Returns the exchange_calendar used to read
         the data.  Can be None (if the writer didn't specify it).
         """
-        return self._bar_reader.trading_calendar
+        return self._bar_reader.exchange_calendar
 
     @property
     def first_trading_day(self):
@@ -223,9 +226,9 @@ class ContinuousFutureMinuteBarReader(SessionBarReader):
         """
         rolls_by_asset = {}
 
-        tc = self.trading_calendar
-        start_session = tc.minute_to_session_label(start_date)
-        end_session = tc.minute_to_session_label(end_date)
+        tc = self.exchange_calendar
+        start_session = tc.minute_to_session(start_date)
+        end_session = tc.minute_to_session(end_date)
 
         for asset in assets:
             rf = self._roll_finders[asset.roll_style]
@@ -234,8 +237,10 @@ class ContinuousFutureMinuteBarReader(SessionBarReader):
                 start_session,
                 end_session, asset.offset)
 
-        sessions = tc.sessions_in_range(start_date, end_date)
-
+        sessions = tc.sessions_in_range(
+            start_date.normalize().tz_localize(None),
+            end_date.normalize().tz_localize(None),
+        )
         minutes = tc.minutes_in_range(start_date, end_date)
         num_minutes = len(minutes)
         shape = num_minutes, len(assets)
@@ -253,16 +258,16 @@ class ContinuousFutureMinuteBarReader(SessionBarReader):
                 sid, roll_date = roll
                 start_loc = minutes.searchsorted(start)
                 if roll_date is not None:
-                    _, end = tc.open_and_close_for_session(
-                        roll_date - sessions.freq)
+                    end = tc.session_close(roll_date - sessions.freq)
                     end_loc = minutes.searchsorted(end)
                 else:
                     end = end_date
                     end_loc = len(minutes) - 1
                 partitions.append((sid, start, end, start_loc, end_loc))
                 if roll[-1] is not None:
-                    start, _ = tc.open_and_close_for_session(
-                        tc.minute_to_session_label(minutes[end_loc + 1]))
+                    start = tc.session_first_minute(
+                        tc.minute_to_session(minutes[end_loc + 1])
+                    )
 
         for column in columns:
             if column != 'volume':
@@ -292,12 +297,12 @@ class ContinuousFutureMinuteBarReader(SessionBarReader):
         return self._bar_reader.last_available_dt
 
     @property
-    def trading_calendar(self):
+    def exchange_calendar(self):
         """
-        Returns the trading_calendar used to read
+        Returns the exchange_calendar used to read
         the data.  Can be None (if the writer didn't specify it).
         """
-        return self._bar_reader.trading_calendar
+        return self._bar_reader.exchange_calendar
 
     @property
     def first_trading_day(self):

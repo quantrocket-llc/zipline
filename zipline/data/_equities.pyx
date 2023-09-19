@@ -76,7 +76,7 @@ cpdef _compute_row_slices(dict asset_starts_absolute,
         Start index in our calendar of the dates for which we're querying.
     query_end : intp
         End index in our calendar of the dates for which we're querying.
-    requested_assets : pandas.Int64Index
+    requested_assets : pandas.Index[int]
         The assets for which we want to load data.
 
     Returns

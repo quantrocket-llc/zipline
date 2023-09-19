@@ -58,9 +58,9 @@ class NDaysAgoClassifier(CustomClassifier):
 
 class ComputeExtraRowsTestCase(WithTradingSessions, ZiplineTestCase):
 
-    DATA_MIN_DAY = pd.Timestamp('2012-06', tz='UTC')
-    DATA_MAX_DAY = pd.Timestamp('2015', tz='UTC')
-    TRADING_CALENDAR_STRS = ('NYSE', 'LSE', 'TSX')
+    DATA_MIN_DAY = pd.Timestamp('2012-06')
+    DATA_MAX_DAY = pd.Timestamp('2015')
+    EXCHANGE_CALENDAR_STRS = ('NYSE', 'LSE', 'TSX')
 
     # Test with different window_lengths to ensure that window length is not
     # used when calculating exra rows for the top-level term.
@@ -89,7 +89,7 @@ class ComputeExtraRowsTestCase(WithTradingSessions, ZiplineTestCase):
     ]
 
     @parameter_space(
-        calendar_name=TRADING_CALENDAR_STRS,
+        calendar_name=EXCHANGE_CALENDAR_STRS,
         base_terms=[
             (factor1, factor11, factor91),
             (filter1, filter11, filter91),
@@ -220,7 +220,7 @@ class ComputeExtraRowsTestCase(WithTradingSessions, ZiplineTestCase):
             )
 
     @parameter_space(
-        calendar_name=TRADING_CALENDAR_STRS,
+        calendar_name=EXCHANGE_CALENDAR_STRS,
         base_terms=[
             (factor1, factor11, factor91),
             (filter1, filter11, filter91),
@@ -327,7 +327,7 @@ class ComputeExtraRowsTestCase(WithTradingSessions, ZiplineTestCase):
             )
 
     @parameter_space(
-        calendar_name=TRADING_CALENDAR_STRS,
+        calendar_name=EXCHANGE_CALENDAR_STRS,
         base_terms=[
             (factor1, factor11, factor91),
             (filter1, filter11, filter91),
@@ -434,7 +434,7 @@ class ComputeExtraRowsTestCase(WithTradingSessions, ZiplineTestCase):
             )
 
     @parameter_space(
-        calendar_name=TRADING_CALENDAR_STRS,
+        calendar_name=EXCHANGE_CALENDAR_STRS,
         base_terms=[
             (factor1, factor11, factor91),
             (filter1, filter11, filter91),
@@ -596,10 +596,10 @@ class DownsampledPipelineTestCase(WithSeededRandomPipelineEngine,
                                   ZiplineTestCase):
 
     # Extend into the last few days of 2013 to test year/quarter boundaries.
-    START_DATE = pd.Timestamp('2013-12-15', tz='UTC')
+    START_DATE = pd.Timestamp('2013-12-15')
 
     # Extend into the first few days of 2015 to test year/quarter boundaries.
-    END_DATE = pd.Timestamp('2015-01-06', tz='UTC')
+    END_DATE = pd.Timestamp('2015-01-06')
 
     ASSET_FINDER_EQUITY_SIDS = tuple(range(10))
     DOMAIN = US_EQUITIES
@@ -613,8 +613,8 @@ class DownsampledPipelineTestCase(WithSeededRandomPipelineEngine,
         return cls.DOMAIN
 
     @classproperty
-    def all_sessions(cls):
-        return cls.DOMAIN.all_sessions()
+    def sessions(cls):
+        return cls.DOMAIN.sessions()
 
     def check_downsampled_term(self, term):
 
@@ -626,9 +626,9 @@ class DownsampledPipelineTestCase(WithSeededRandomPipelineEngine,
         # 16 17 18 19 20 21 22
         # 23 24 25 26 27 28 29
         # 30
-        all_sessions = self.all_sessions
-        compute_dates = all_sessions[
-            all_sessions.slice_indexer('2014-06-05', '2015-01-06')
+        sessions = self.sessions
+        compute_dates = sessions[
+            sessions.slice_indexer('2014-06-05', '2015-01-06')
         ]
         start_date, end_date = compute_dates[[0, -1]]
 
@@ -643,8 +643,8 @@ class DownsampledPipelineTestCase(WithSeededRandomPipelineEngine,
         # target period.
         raw_term_results = self.run_pipeline(
             Pipeline({'term': term}),
-            start_date=pd.Timestamp('2014-01-02', tz='UTC'),
-            end_date=pd.Timestamp('2015-01-06', tz='UTC'),
+            start_date=pd.Timestamp('2014-01-02'),
+            end_date=pd.Timestamp('2015-01-06'),
         )['term'].unstack()
 
         expected_results = {
@@ -749,7 +749,7 @@ class DownsampledCAPipelineTestCase(DownsampledPipelineTestCase):
 
 class TestDownsampledRowwiseOperation(WithAssetFinder, ZiplineTestCase):
 
-    T = partial(pd.Timestamp, tz='utc')
+    T = partial(pd.Timestamp)
     START_DATE = T('2014-01-01')
     END_DATE = T('2014-02-01')
     HALF_WAY_POINT = T('2014-01-15')

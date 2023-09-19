@@ -1,12 +1,11 @@
 import os
-import unittest
 
 from parameterized import parameterized
 import pandas as pd
-import sqlalchemy as sa
 from toolz import valmap
 import toolz.curried.operator as op
-from trading_calendars import TradingCalendar, get_calendar
+from exchange_calendars import ExchangeCalendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline.assets.synthetic import make_simple_equity_info
 from zipline.data.bundles import UnknownBundle
@@ -22,16 +21,7 @@ from zipline._testing import (
 )
 from zipline._testing.fixtures import WithInstanceTmpDir, ZiplineTestCase, \
     WithDefaultDateBounds
-from zipline._testing.predicates import (
-    assert_equal,
-    assert_false,
-    assert_in,
-    assert_is,
-    assert_is_instance,
-    assert_is_none,
-    assert_raises,
-    assert_true,
-)
+from zipline._testing.predicates import assert_equal
 from zipline.utils.cache import dataframe_cache
 from zipline.utils.functional import apply
 import zipline.utils.paths as pth
@@ -44,8 +34,8 @@ class BundleCoreTestCase(WithInstanceTmpDir,
                          WithDefaultDateBounds,
                          ZiplineTestCase):
 
-    START_DATE = pd.Timestamp('2014-01-06', tz='utc')
-    END_DATE = pd.Timestamp('2014-01-10', tz='utc')
+    START_DATE = pd.Timestamp('2014-01-06')
+    END_DATE = pd.Timestamp('2014-01-10')
 
     def init_instance_fixtures(self):
         super(BundleCoreTestCase, self).init_instance_fixtures()
@@ -64,8 +54,8 @@ class BundleCoreTestCase(WithInstanceTmpDir,
             def ingest(*args):
                 pass
 
-            assert_in(name, self.bundles)
-            assert_is(self.bundles[name].ingest, ingest)
+            self.assertIn(name, self.bundles)
+            self.assertIs(self.bundles[name].ingest, ingest)
 
         self._check_bundles(set('abcde'))
 
@@ -77,8 +67,8 @@ class BundleCoreTestCase(WithInstanceTmpDir,
         @subtest(((c,) for c in 'abcde'), 'name')
         def _(name):
             self.register(name, ingest)
-            assert_in(name, self.bundles)
-            assert_is(self.bundles[name].ingest, ingest)
+            self.assertIn(name, self.bundles)
+            self.assertIs(self.bundles[name].ingest, ingest)
 
         assert_equal(
             valmap(op.attrgetter('ingest'), self.bundles),
@@ -92,7 +82,7 @@ class BundleCoreTestCase(WithInstanceTmpDir,
         for name in names:
             self.unregister(name)
 
-        assert_false(self.bundles)
+        self.assertFalse(self.bundles)
 
     def test_register_no_create(self):
         called = [False]
@@ -108,19 +98,19 @@ class BundleCoreTestCase(WithInstanceTmpDir,
                           end_session,
                           cache,
                           output_dir):
-            assert_is_none(asset_db_writer)
-            assert_is_none(minute_bar_writer)
-            assert_is_none(daily_bar_writer)
-            assert_is_none(adjustment_writer)
+            self.assertIsNone(asset_db_writer)
+            self.assertIsNone(minute_bar_writer)
+            self.assertIsNone(daily_bar_writer)
+            self.assertIsNone(adjustment_writer)
             called[0] = True
 
         self.ingest('bundle', self.environ)
-        assert_true(called[0])
+        self.assertTrue(called[0])
 
     def test_ingest(self):
         calendar = get_calendar('XNYS')
         sessions = calendar.sessions_in_range(self.START_DATE, self.END_DATE)
-        minutes = calendar.minutes_for_sessions_in_range(
+        minutes = calendar.sessions_minutes(
             self.START_DATE, self.END_DATE,
         )
 
@@ -164,15 +154,15 @@ class BundleCoreTestCase(WithInstanceTmpDir,
                           end_session,
                           cache,
                           output_dir):
-            assert_is(environ, self.environ)
+            self.assertIs(environ, self.environ)
 
             asset_db_writer.write(equities=equities)
             minute_bar_writer.write(minute_bar_data)
             daily_bar_writer.write(daily_bar_data)
             adjustment_writer.write(splits=splits)
 
-            assert_is_instance(calendar, TradingCalendar)
-            assert_is_instance(cache, dataframe_cache)
+            self.assertIsInstance(calendar, ExchangeCalendar)
+            self.assertIsInstance(cache, dataframe_cache)
 
         self.ingest('bundle', environ=self.environ)
         bundle = self.load('bundle', environ=self.environ)
@@ -259,7 +249,7 @@ class BundleCoreTestCase(WithInstanceTmpDir,
 
     @parameterized.expand([('load',),])
     def test_bundle_doesnt_exist(self, fnname):
-        with assert_raises(UnknownBundle) as e:
+        with self.assertRaises(UnknownBundle) as e:
             getattr(self, fnname)('ayy', environ=self.environ)
 
         assert_equal(e.exception.name, 'ayy')
@@ -268,12 +258,12 @@ class BundleCoreTestCase(WithInstanceTmpDir,
         # register but do not ingest data
         self.register('bundle', lambda *args: None)
 
-        ts = pd.Timestamp('2014', tz='UTC')
+        ts = pd.Timestamp('2014')
 
-        with assert_raises(ValueError) as e:
+        with self.assertRaises(ValueError) as e:
             self.load('bundle', timestamp=ts, environ=self.environ)
 
-        assert_in(
+        self.assertIn(
             "no data for bundle 'bundle' on or before %s" % ts,
             str(e.exception),
         )
@@ -297,8 +287,8 @@ class BundleCoreTestCase(WithInstanceTmpDir,
         if not self.bundles:
             @self.register('bundle',
                            calendar_name='NYSE',
-                           start_session=pd.Timestamp('2014', tz='UTC'),
-                           end_session=pd.Timestamp('2014', tz='UTC'))
+                           start_session=pd.Timestamp('2014'),
+                           end_session=pd.Timestamp('2014'))
             def _(environ,
                   asset_db_writer,
                   minute_bar_writer,
@@ -315,7 +305,7 @@ class BundleCoreTestCase(WithInstanceTmpDir,
         self.ingest('bundle', environ=self.environ)
         assert_equal(len(_wrote_to), 1, msg='ingest was called more than once')
         ingestions = self._list_bundle()
-        assert_in(
+        self.assertIn(
             _wrote_to[0],
             ingestions,
             msg='output_dir was not in the bundle directory',

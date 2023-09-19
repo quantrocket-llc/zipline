@@ -115,7 +115,7 @@ def make_simple_equity_info(sids,
             'exchange': exchange,
             'currency': currencies
         },
-        index=sids,
+        index=list(sids),
         columns=(
             'start_date',
             'end_date',
@@ -266,7 +266,7 @@ def make_future_info(first_sid,
         month_codes = CMES_CODE_TO_MONTH
 
     year_strs = list(map(str, years))
-    years = [pd.Timestamp(s, tz='UTC') for s in year_strs]
+    years = [pd.Timestamp(s) for s in year_strs]
 
     # Pairs of string/date like ('K06', 2006-05-01) sorted by year/month
     # `MonthBegin(month_num - 1)` since the year already starts at month 1.

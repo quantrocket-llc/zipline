@@ -23,7 +23,6 @@ from numpy import (
     nan,
 )
 from pandas import (
-    DatetimeIndex,
     NaT,
     read_csv,
     to_datetime,
@@ -31,7 +30,7 @@ from pandas import (
 )
 from six import iteritems, viewkeys
 from toolz import compose
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline.data.session_bars import CurrencyAwareSessionBarReader
 from zipline.data.bar_reader import (
@@ -118,12 +117,12 @@ class BcolzDailyBarWriter(object):
     ----------
     filename : str
         The location at which we should write our output.
-    calendar : trading_calendars.TradingCalendar
+    calendar : exchange_calendars.ExchangeCalendar
         Calendar to use to compute asset calendar offsets.
     start_session: pd.Timestamp
-        Midnight UTC session label.
+        Session label.
     end_session: pd.Timestamp
-        Midnight UTC session label.
+        Session label.
 
     See Also
     --------
@@ -276,39 +275,29 @@ class BcolzDailyBarWriter(object):
             last_row[asset_key] = total_rows + nrows - 1
             total_rows += nrows
 
-            table_day_to_session = compose(
-                self._calendar.minute_to_session_label,
-                partial(Timestamp, unit='s', tz='UTC'),
-            )
-            asset_first_day = table_day_to_session(table['day'][0])
-            asset_last_day = table_day_to_session(table['day'][-1])
+            asset_first_day = Timestamp(table["day"][0], unit="s").normalize()
+            asset_last_day = Timestamp(table["day"][-1], unit="s").normalize()
 
             asset_sessions = sessions[
                 sessions.slice_indexer(asset_first_day, asset_last_day)
             ]
-            assert len(table) == len(asset_sessions), (
-                'Got {} rows for daily bars table with first day={}, last '
-                'day={}, expected {} rows.\n'
-                'Missing sessions: {}\n'
-                'Extra sessions: {}'.format(
-                    len(table),
-                    asset_first_day.date(),
-                    asset_last_day.date(),
-                    len(asset_sessions),
-                    asset_sessions.difference(
-                        to_datetime(
-                            np.array(table['day']),
-                            unit='s',
-                            utc=True,
-                        )
-                    ).tolist(),
-                    to_datetime(
-                        np.array(table['day']),
-                        unit='s',
-                        utc=True,
-                    ).difference(asset_sessions).tolist(),
+            if len(table) != len(asset_sessions):
+
+                missing_sessions = asset_sessions.difference(
+                    to_datetime(np.array(table["day"]), unit="s")
+                ).tolist()
+
+                extra_sessions = (
+                    to_datetime(np.array(table["day"]), unit="s")
+                    .difference(asset_sessions)
+                    .tolist()
                 )
-            )
+                raise AssertionError(
+                    f"Got {len(table)} rows for daily bars table with "
+                    f"first day={asset_first_day.date()}, last "
+                    f"day={asset_last_day.date()}, expected {len(asset_sessions)} rows.\n"
+                    f"Missing sessions: {missing_sessions}\nExtra sessions: {extra_sessions}"
+                )
 
             # Calculate the number of trading days between the first date
             # in the stored data and the first date of **this** asset. This
@@ -453,10 +442,10 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
         """
 
         start_session_ns = self._table.attrs['start_session_ns']
-        start_session = Timestamp(start_session_ns, tz='UTC')
+        start_session = Timestamp(start_session_ns)
 
         end_session_ns = self._table.attrs['end_session_ns']
-        end_session = Timestamp(end_session_ns, tz='UTC')
+        end_session = Timestamp(end_session_ns)
 
         sessions = self.calendar.sessions_in_range(start_session, end_session)
 
@@ -470,7 +459,7 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
         """
 
         start_session_ns = self._table.attrs['start_session_ns']
-        start_session = Timestamp(start_session_ns, tz='UTC')
+        start_session = Timestamp(start_session_ns)
 
         sessions = self.calendar.sessions_in_range(start_session, self.calendar.last_session)
 
@@ -509,13 +498,12 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
             return Timestamp(
                 self._table.attrs['first_trading_day'],
                 unit='s',
-                tz='UTC'
             )
         except KeyError:
             return None
 
     @lazyval
-    def trading_calendar(self):
+    def exchange_calendar(self):
         if 'calendar_name' in self._table.attrs.attrs:
             return get_calendar(self._table.attrs['calendar_name'])
         else:
@@ -536,7 +524,7 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
             Index of first date for which we want data.
         end_idx : int
             Index of last date for which we want data.
-        assets : pandas.Int64Index
+        assets : pandas.Index[int]
             Assets for which we want to compute row indices
 
         Returns

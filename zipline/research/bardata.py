@@ -24,7 +24,7 @@ from zipline.research.bundle import _get_bundle
 from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.protocol import BarData
 from quantrocket.zipline import get_default_bundle, get_bundle_config
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 def get_data(
     dt: str,
@@ -93,20 +93,20 @@ def get_data(
         data_frequency = config["data_frequency"]
 
     calendar_name = bundles.bundles[bundle].calendar_name
-    trading_calendar = get_calendar(calendar_name)
+    exchange_calendar = get_calendar(calendar_name)
 
-    session_minute = pd.Timestamp(dt, tz=trading_calendar.tz)
+    session_minute = pd.Timestamp(dt, tz=exchange_calendar.tz)
     session = session_minute.normalize().tz_localize(None).tz_localize("UTC")
 
-    first_session = max(bundles.bundles[bundle].start_session, trading_calendar.first_session)
+    first_session = max(bundles.bundles[bundle].start_session, exchange_calendar.first_session)
     if session < first_session:
         raise ValidationError(
             f"date cannot be earlier than {first_session.date().isoformat()} for this bundle")
 
-    if not trading_calendar.is_session(session):
+    if not exchange_calendar.is_session(session):
         raise ValidationError(f"requested date {session.date().isoformat()} is not in {calendar_name} calendar")
 
-    if data_frequency == "minute" and not trading_calendar.is_open_on_minute(session_minute):
+    if data_frequency == "minute" and not exchange_calendar.is_open_on_minute(session_minute):
         raise ValidationError(f"requested time {session_minute.isoformat()} is not in {calendar_name} calendar")
 
     if data_frequency == "minute":
@@ -119,7 +119,7 @@ def get_data(
 
     data_portal = DataPortal(
         asset_finder,
-        trading_calendar=trading_calendar,
+        exchange_calendar=exchange_calendar,
         first_trading_day=bundle_data.equity_minute_bar_reader.first_trading_day,
         equity_minute_reader=equity_minute_reader,
         equity_daily_reader=bundle_data.equity_daily_bar_reader,
@@ -131,7 +131,7 @@ def get_data(
         data_portal=data_portal,
         simulation_dt_func=lambda: session_minute,
         data_frequency=data_frequency,
-        trading_calendar=trading_calendar,
+        exchange_calendar=exchange_calendar,
         restrictions=NoRestrictions()
     )
 

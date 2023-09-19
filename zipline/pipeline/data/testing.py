@@ -15,7 +15,7 @@ from zipline.utils.numpy_utils import (
 
 
 class TestingDataSet(DataSet):
-    # Tell nose this isn't a test case.
+    # Tell pytest this isn't a test case.
     __test__ = False
 
     bool_col = Column(dtype=bool_dtype, missing_value=False)

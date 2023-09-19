@@ -23,7 +23,7 @@ from six import iteritems, string_types
 from cpython cimport bool
 from collections.abc import Iterable
 
-from trading_calendars.errors import InvalidCalendarName
+from exchange_calendars.errors import InvalidCalendarName
 from zipline.assets import (
     AssetConvertible,
     PricingDataAssociable,
@@ -153,13 +153,13 @@ cdef class BarData:
     cdef object restrictions
     cdef dict _views
     cdef bool _daily_mode
-    cdef object _trading_calendar
+    cdef object _exchange_calendar
     cdef object _is_restricted
 
     cdef bool _adjust_minutes
 
     def __init__(self, data_portal, simulation_dt_func, data_frequency,
-                 trading_calendar, restrictions):
+                 exchange_calendar, restrictions):
         self.data_portal = data_portal
         self.simulation_dt_func = simulation_dt_func
         self.data_frequency = data_frequency
@@ -169,7 +169,7 @@ cdef class BarData:
 
         self._adjust_minutes = False
 
-        self._trading_calendar = trading_calendar
+        self._exchange_calendar = exchange_calendar
         self._is_restricted = restrictions.is_restricted
 
     cdef _get_current_minute(self):
@@ -188,12 +188,12 @@ cdef class BarData:
 
         if self._adjust_minutes:
             dt = \
-                self.data_portal.trading_calendar.previous_minute(dt)
+                self.data_portal.exchange_calendar.previous_minute(dt)
 
         if self._daily_mode:
             # if we're in daily mode, take the given dt (which is the last
             # minute of the session) and get the session label for it.
-            dt = self.data_portal.trading_calendar.minute_to_session_label(dt)
+            dt = self.data_portal.exchange_calendar.minute_to_session(dt)
 
         return dt
 
@@ -473,7 +473,7 @@ cdef class BarData:
         if self._is_restricted(asset, adjusted_dt):
             return False
 
-        session_label = self._trading_calendar.minute_to_session_label(dt)
+        session_label = self._exchange_calendar.minute_to_session(dt)
 
         if not asset.is_alive_for_session(session_label):
             # asset isn't alive
@@ -483,13 +483,18 @@ cdef class BarData:
             return False
 
         if not self._daily_mode:
+            # TODO: Why, in the following block, do
+            # we get the next open minute from the simulation calendar if the exchange
+            # is currently closed, rather than just passing the current minute to
+            # the asset exchange calendar?
+
             # Find the next market minute for this calendar, and check if this
             # asset's exchange is open at that minute.
-            if self._trading_calendar.is_open_on_minute(dt):
+            if self._exchange_calendar.is_open_on_minute(dt):
                 dt_to_use_for_exchange_check = dt
             else:
                 dt_to_use_for_exchange_check = \
-                    self._trading_calendar.next_open(dt)
+                    self._exchange_calendar.next_open(dt)
 
             try:
                 is_exchange_open = asset.is_exchange_open(dt_to_use_for_exchange_check)
@@ -753,14 +758,14 @@ cdef class BarData:
 
     property current_session:
         def __get__(self):
-            return self._trading_calendar.minute_to_session_label(
+            return self._exchange_calendar.minute_to_session(
                 self.simulation_dt_func(),
                 direction="next"
             )
 
     property current_session_minutes:
         def __get__(self):
-            return self._trading_calendar.minutes_for_session(
+            return self._exchange_calendar.session_minutes(
                 self.current_session
             )
 

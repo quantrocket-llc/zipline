@@ -129,7 +129,7 @@ class StartOfPeriodLedgerField(object):
     def start_of_simulation(self,
                             ledger,
                             emission_rate,
-                            trading_calendar,
+                            exchange_calendar,
                             sessions,
                             benchmark_source):
         self._start_of_simulation = self._get_ledger_field(ledger)
@@ -185,7 +185,7 @@ class BenchmarkReturnsAndVolatility(object):
     def start_of_simulation(self,
                             ledger,
                             emission_rate,
-                            trading_calendar,
+                            exchange_calendar,
                             sessions,
                             benchmark_source):
         daily_returns_series = benchmark_source.daily_returns(
@@ -210,8 +210,8 @@ class BenchmarkReturnsAndVolatility(object):
                 'does not exist in daily emission rate',
             )
         else:
-            open_ = trading_calendar.session_open(sessions[0])
-            close = trading_calendar.session_close(sessions[-1])
+            open_ = exchange_calendar.session_open(sessions[0])
+            close = exchange_calendar.session_close(sessions[-1])
             returns = benchmark_source.get_range(open_, close)
             self._minute_cumulative_returns = (
                 (1 + returns).cumprod() - 1
@@ -264,7 +264,7 @@ class PNL(object):
     def start_of_simulation(self,
                             ledger,
                             emission_rate,
-                            trading_calendar,
+                            exchange_calendar,
                             sessions,
                             benchmark_source):
         self._previous_pnl = 0.0
@@ -304,7 +304,7 @@ class CashFlow(object):
     def start_of_simulation(self,
                             ledger,
                             emission_rate,
-                            trading_calendar,
+                            exchange_calendar,
                             sessions,
                             benchmark_source):
         self._previous_cash_flow = 0.0
@@ -441,7 +441,7 @@ class AlphaBeta(object):
     def start_of_simulation(self,
                             ledger,
                             emission_rate,
-                            trading_calendar,
+                            exchange_calendar,
                             sessions,
                             benchmark_source):
         self._daily_returns_array = benchmark_source.daily_returns(
@@ -550,7 +550,7 @@ class _ClassicRiskMetrics(object):
     def start_of_simulation(self,
                             ledger,
                             emission_rate,
-                            trading_calendar,
+                            exchange_calendar,
                             sessions,
                             benchmark_source):
         self._leverages = np.full_like(sessions, np.nan, dtype='float64')
@@ -615,9 +615,13 @@ class _ClassicRiskMetrics(object):
         ]
 
         # Benchmark needs to be masked to the same dates as the algo returns
+        benchmark_ret_tzinfo = benchmark_returns.index.tzinfo
         benchmark_returns = benchmark_returns[
-            (benchmark_returns.index >= start_session) &
-            (benchmark_returns.index <= algorithm_returns.index[-1])
+            (benchmark_returns.index >= start_session.tz_localize(benchmark_ret_tzinfo))
+            & (
+                benchmark_returns.index
+                <= algorithm_returns.index[-1].tz_localize(benchmark_ret_tzinfo)
+            )
         ]
 
         benchmark_period_returns = ep.cum_returns(benchmark_returns).iloc[-1]
@@ -686,7 +690,6 @@ class _ClassicRiskMetrics(object):
         if months.size < months_per:
             return
 
-        end_date = end_date.tz_convert(None)
         for period_timestamp in months:
             # to_period loses tz info, this step silences a warning
             if period_timestamp.tz:
@@ -696,8 +699,8 @@ class _ClassicRiskMetrics(object):
                 break
 
             yield cls.risk_metric_period(
-                start_session=period.start_time.tz_localize("UTC"),
-                end_session=min(period.end_time.tz_localize("UTC"), end_session),
+                start_session=period.start_time,
+                end_session=min(period.end_time, end_session),
                 algorithm_returns=algorithm_returns,
                 benchmark_returns=benchmark_returns,
                 algorithm_leverages=algorithm_leverages,
@@ -740,7 +743,7 @@ class _ClassicRiskMetrics(object):
     def end_of_simulation(self,
                           packet,
                           ledger,
-                          trading_calendar,
+                          exchange_calendar,
                           sessions,
                           data_portal,
                           benchmark_source):

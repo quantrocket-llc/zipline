@@ -79,9 +79,9 @@ class BarReader(with_metaclass(ABCMeta, object)):
         pass
 
     @abstractproperty
-    def trading_calendar(self):
+    def exchange_calendar(self):
         """
-        Returns the zipline.utils.calendar.trading_calendar used to read
+        Returns the zipline.utils.calendar.exchange_calendar used to read
         the data.  Can be None (if the writer didn't specify it).
         """
         pass

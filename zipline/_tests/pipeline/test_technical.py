@@ -112,7 +112,7 @@ class AroonTestCase(ZiplineTestCase):
     ])
     def test_aroon_basic(self, lows, highs, expected_out):
         aroon = Aroon(window_length=self.window_length)
-        today = pd.Timestamp('2014', tz='utc')
+        today = pd.Timestamp('2014')
         assets = pd.Index(np.arange(self.nassets, dtype=np.int64))
         shape = (self.nassets,)
         out = np.recarray(shape=shape, dtype=self.dtype,
@@ -206,7 +206,7 @@ class TestFastStochasticOscillator(ZiplineTestCase):
 class IchimokuKinkoHyoTestCase(ZiplineTestCase):
     def test_ichimoku_kinko_hyo(self):
         window_length = 52
-        today = pd.Timestamp('2014', tz='utc')
+        today = pd.Timestamp('2014')
         nassets = 5
         assets = pd.Index(np.arange(nassets))
         days_col = np.arange(window_length)[:, np.newaxis]
@@ -474,7 +474,7 @@ class MovingAverageConvergenceDivergenceTestCase(ZiplineTestCase):
             signal_period=signal_period,
         )
 
-        today = pd.Timestamp('2016', tz='utc')
+        today = pd.Timestamp('2016')
         assets = pd.Index(np.arange(nassets))
         out = np.empty(shape=(nassets,), dtype=np.float64)
         close = rng.rand(macd.window_length, nassets)
@@ -608,7 +608,7 @@ class AnnualizedVolatilityTestCase(ZiplineTestCase):
         """
         nassets = 3
         ann_vol = AnnualizedVolatility()
-        today = pd.Timestamp('2016', tz='utc')
+        today = pd.Timestamp('2016')
         assets = np.arange(nassets, dtype=np.float64)
         returns = np.full((ann_vol.window_length, nassets),
                           0.004,
@@ -630,7 +630,7 @@ class AnnualizedVolatilityTestCase(ZiplineTestCase):
         """
         nassets = 3
         ann_vol = AnnualizedVolatility()
-        today = pd.Timestamp('2016', tz='utc')
+        today = pd.Timestamp('2016')
         assets = np.arange(nassets, dtype=np.float64)
         returns = np.random.normal(loc=0.001,
                                    scale=0.01,

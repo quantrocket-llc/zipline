@@ -4,7 +4,7 @@ Tests BoundColumn attributes and methods.
 import operator
 
 from parameterized import parameterized
-from pandas import Timestamp, DataFrame
+from pandas import Timestamp, DataFrame, to_datetime
 from pandas.testing import assert_frame_equal
 
 from zipline.lib.labelarray import LabelArray
@@ -62,6 +62,10 @@ class LatestTestCase(WithSeededRandomPipelineEngine,
                 index=self.trading_days[slice_],
                 columns=self.assets,
             )
+            if column.dtype.kind == 'M':
+                # convert to nanosecond resolution to match expected output
+                expected = expected.astype('datetime64[ns]')
+
         expected.index.set_names("date", inplace=True)
         expected.columns.set_names("asset", inplace=True)
         return expected

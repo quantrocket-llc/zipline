@@ -63,7 +63,7 @@ def load_adjustments_from_sqlite(adjustments_db,
         SQLiteAdjustmentWriter.
     dates : pd.DatetimeIndex
         Dates for which adjustments are needed.
-    assets : pd.Int64Index
+    assets : pd.Index[int]
         Assets for which adjustments are needed.
     should_include_splits : bool
         Whether split adjustments should be included.

@@ -3,6 +3,7 @@ import pandas as pd
 from zipline.errors import NoFurtherDataError
 from zipline.pipeline.common import TS_FIELD_NAME, SID_FIELD_NAME
 from zipline.utils.numpy_utils import categorical_dtype
+from zipline.utils.date_utils import make_utc_aware
 
 
 def is_sorted_ascending(a):
@@ -64,8 +65,11 @@ def next_event_indexer(all_dates,
     # side='right' here ensures that we include the event date itself
     # if it's in all_dates.
     dt_ixs = all_dates.searchsorted(event_dates.tolist(), side='right')
-    ts_ixs = data_query_cutoff.searchsorted(event_timestamps.tolist(), side='right')
-
+    ts_ixs = data_query_cutoff.searchsorted(
+        # pd.to_datetime(event_timestamps, utc=True), side="right"
+        make_utc_aware(pd.DatetimeIndex(event_timestamps)),
+        side="right",
+    )
     # Walk backward through the events, writing the index of the event into
     # slots ranging from the event's timestamp to its asof.  This depends for
     # correctness on the fact that event_dates is sorted in ascending order,
@@ -122,8 +126,10 @@ def previous_event_indexer(data_query_cutoff_times,
 
     eff_dts = np.maximum(event_dates, event_timestamps)
     sid_ixs = all_sids.searchsorted(event_sids.tolist())
-    dt_ixs = data_query_cutoff_times.searchsorted(eff_dts.tolist(), side='right')
-
+    dt_ixs = data_query_cutoff_times.searchsorted(
+        make_utc_aware(pd.DatetimeIndex(eff_dts)),
+        side="right",
+    )
     # Walk backwards through the events, writing the index of the event into
     # slots ranging from max(event_date, event_timestamp) to the start of the
     # previously-written event.  This depends for correctness on the fact that
@@ -157,7 +163,7 @@ def last_in_date_group(df,
         the correct last item is chosen from each group.
     data_query_cutoff_times : pd.DatetimeIndex
         The dates to use for grouping and reindexing.
-    assets : pd.Int64Index
+    assets : pd.Index[int]
         The assets that should be included in the column multiindex.
     reindex : bool
         Whether or not the DataFrame should be reindexed against the date

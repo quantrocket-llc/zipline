@@ -9,7 +9,7 @@ import pandas as pd
 from six import with_metaclass, iteritems, itervalues
 import responses
 from toolz import flip, groupby, merge
-from trading_calendars import (
+from zipline.utils.calendar_utils import (
     get_calendar,
     register_calendar_alias,
 )
@@ -290,8 +290,8 @@ class WithDefaultDateBounds(with_metaclass(DebugMROMeta, object)):
         The date bounds to be used for fixtures that want to have consistent
         dates.
     """
-    START_DATE = pd.Timestamp('2006-01-03', tz='utc')
-    END_DATE = pd.Timestamp('2006-12-29', tz='utc')
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-12-29')
 
 class WithAssetFinder(WithDefaultDateBounds):
     """
@@ -448,58 +448,58 @@ class WithAssetFinder(WithDefaultDateBounds):
 
 
 # TODO_SS: The API here doesn't make sense in a multi-country test scenario.
-class WithTradingCalendars(object):
+class WithExchangeCalendars(object):
     """
-    ZiplineTestCase mixin providing cls.trading_calendar,
-    cls.all_trading_calendars, cls.trading_calendar_for_asset_type as a
+    ZiplineTestCase mixin providing cls.exchange_calendar,
+    cls.all_exchange_calendars, cls.exchange_calendar_for_asset_type as a
     class-level fixture.
 
     After ``init_class_fixtures`` has been called:
-    - `cls.trading_calendar` is populated with a default of the nyse trading
+    - `cls.exchange_calendar` is populated with a default of the nyse trading
     calendar for compatibility with existing tests
-    - `cls.all_trading_calendars` is populated with the trading calendars
+    - `cls.all_exchange_calendars` is populated with the trading calendars
     keyed by name,
-    - `cls.trading_calendar_for_asset_type` is populated with the trading
+    - `cls.exchange_calendar_for_asset_type` is populated with the trading
     calendars keyed by the asset type which uses the respective calendar.
 
     Attributes
     ----------
-    TRADING_CALENDAR_STRS : iterable
+    EXCHANGE_CALENDAR_STRS : iterable
         iterable of identifiers of the calendars to use.
-    TRADING_CALENDAR_FOR_ASSET_TYPE : dict
+    EXCHANGE_CALENDAR_FOR_ASSET_TYPE : dict
         A dictionary which maps asset type names to the calendar associated
         with that asset type.
     """
-    TRADING_CALENDAR_STRS = ('NYSE',)
-    TRADING_CALENDAR_FOR_ASSET_TYPE = {Equity: 'NYSE', Future: 'us_futures'}
+    EXCHANGE_CALENDAR_STRS = ('NYSE',)
+    EXCHANGE_CALENDAR_FOR_ASSET_TYPE = {Equity: 'NYSE', Future: 'us_futures'}
     # For backwards compatibility, exisitng tests and fixtures refer to
-    # `trading_calendar` with the assumption that the value is the NYSE
+    # `exchange_calendar` with the assumption that the value is the NYSE
     # calendar.
-    TRADING_CALENDAR_PRIMARY_CAL = 'NYSE'
+    EXCHANGE_CALENDAR_PRIMARY_CAL = 'NYSE'
 
     @classmethod
     def init_class_fixtures(cls):
-        super(WithTradingCalendars, cls).init_class_fixtures()
+        super(WithExchangeCalendars, cls).init_class_fixtures()
 
-        cls.trading_calendars = {}
+        cls.exchange_calendars = {}
 
         for cal_str in (
-            set(cls.TRADING_CALENDAR_STRS) |
-            {cls.TRADING_CALENDAR_PRIMARY_CAL}
+            set(cls.EXCHANGE_CALENDAR_STRS) |
+            {cls.EXCHANGE_CALENDAR_PRIMARY_CAL}
         ):
             # Set name to allow aliasing.
             calendar = get_calendar(cal_str)
             setattr(cls,
                     '{0}_calendar'.format(cal_str.lower()), calendar)
-            cls.trading_calendars[cal_str] = calendar
+            cls.exchange_calendars[cal_str] = calendar
 
-        type_to_cal = iteritems(cls.TRADING_CALENDAR_FOR_ASSET_TYPE)
+        type_to_cal = iteritems(cls.EXCHANGE_CALENDAR_FOR_ASSET_TYPE)
         for asset_type, cal_str in type_to_cal:
             calendar = get_calendar(cal_str)
-            cls.trading_calendars[asset_type] = calendar
+            cls.exchange_calendars[asset_type] = calendar
 
-        cls.trading_calendar = (
-            cls.trading_calendars[cls.TRADING_CALENDAR_PRIMARY_CAL]
+        cls.exchange_calendar = (
+            cls.exchange_calendars[cls.EXCHANGE_CALENDAR_PRIMARY_CAL]
         )
 
 
@@ -518,7 +518,7 @@ def read_checked_in_benchmark_data():
 
 
 class WithBenchmarkReturns(WithDefaultDateBounds,
-                           WithTradingCalendars):
+                           WithExchangeCalendars):
     """
     ZiplineTestCase mixin providing cls.benchmark_returns as a class-level
     attribute.
@@ -601,7 +601,7 @@ class WithSimParams(WithDefaultDateBounds):
             capital_base=cls.SIM_PARAMS_CAPITAL_BASE,
             data_frequency=cls.SIM_PARAMS_DATA_FREQUENCY,
             emission_rate=cls.SIM_PARAMS_EMISSION_RATE,
-            trading_calendar=cls.trading_calendar,
+            exchange_calendar=cls.exchange_calendar,
             arena="backtest"
         )
         kwargs.update(overrides)
@@ -613,7 +613,7 @@ class WithSimParams(WithDefaultDateBounds):
         cls.sim_params = cls.make_simparams()
 
 
-class WithTradingSessions(WithDefaultDateBounds, WithTradingCalendars):
+class WithTradingSessions(WithDefaultDateBounds, WithExchangeCalendars):
     """
     ZiplineTestCase mixin providing cls.trading_days, cls.all_trading_sessions
     as a class-level fixture.
@@ -651,17 +651,17 @@ class WithTradingSessions(WithDefaultDateBounds, WithTradingCalendars):
 
         cls.trading_sessions = {}
 
-        for cal_str in cls.TRADING_CALENDAR_STRS:
-            trading_calendar = cls.trading_calendars[cal_str]
+        for cal_str in cls.EXCHANGE_CALENDAR_STRS:
+            exchange_calendar = cls.exchange_calendars[cal_str]
 
             start_date = cls.DATA_MIN_DAY
             end_date = cls.DATA_MAX_DAY
-            if not start_date.tzinfo:
-                start_date = start_date.tz_localize('utc')
-            if not end_date.tzinfo:
-                end_date = end_date.tz_localize('utc')
+            if start_date.tzinfo:
+                start_date = start_date.tz_localize(None)
+            if end_date.tzinfo:
+                end_date = end_date.tz_localize(None)
 
-            sessions = trading_calendar.sessions_in_range(
+            sessions = exchange_calendar.sessions_in_range(
                 start_date, end_date)
             # Set name for aliasing.
             setattr(cls,
@@ -715,7 +715,7 @@ class WithInstanceTmpDir(object):
         )
 
 
-class WithEquityDailyBarData(WithAssetFinder, WithTradingCalendars):
+class WithEquityDailyBarData(WithAssetFinder, WithExchangeCalendars):
     """
     ZiplineTestCase mixin providing cls.make_equity_daily_bar_data.
 
@@ -771,7 +771,7 @@ class WithEquityDailyBarData(WithAssetFinder, WithTradingCalendars):
         for asset in assets:
             yield asset.sid, minute_frame_to_session_frame(
                 minute_data[asset.sid],
-                cls.trading_calendars[Equity])
+                cls.exchange_calendars[Equity])
 
     @classmethod
     def make_equity_daily_bar_data(cls, country_code, sids):
@@ -825,30 +825,37 @@ class WithEquityDailyBarData(WithAssetFinder, WithTradingCalendars):
     @classmethod
     def init_class_fixtures(cls):
         super(WithEquityDailyBarData, cls).init_class_fixtures()
-        trading_calendar = cls.trading_calendars[Equity]
+        exchange_calendar = cls.exchange_calendars[Equity]
 
-        if trading_calendar.is_session(cls.EQUITY_DAILY_BAR_START_DATE):
+        if exchange_calendar.is_session(cls.EQUITY_DAILY_BAR_START_DATE.normalize().tz_localize(None)):
             first_session = cls.EQUITY_DAILY_BAR_START_DATE
         else:
-            first_session = trading_calendar.minute_to_session_label(
+            first_session = exchange_calendar.minute_to_session(
                 pd.Timestamp(cls.EQUITY_DAILY_BAR_START_DATE)
             )
 
         if cls.EQUITY_DAILY_BAR_LOOKBACK_DAYS > 0:
-            first_session = trading_calendar.sessions_window(
+            first_session = exchange_calendar.sessions_window(
                 first_session,
-                -1 * cls.EQUITY_DAILY_BAR_LOOKBACK_DAYS
+                -1 * (cls.EQUITY_DAILY_BAR_LOOKBACK_DAYS + 1)
             )[0]
 
-        days = trading_calendar.sessions_in_range(
-            first_session,
-            cls.EQUITY_DAILY_BAR_END_DATE,
+        if first_session.tzinfo is not None:
+            first_session = first_session.tz_localize(None)
+
+        EQUITY_DAILY_BAR_END_DATE = cls.EQUITY_DAILY_BAR_END_DATE
+        if EQUITY_DAILY_BAR_END_DATE.tzinfo is not None:
+            EQUITY_DAILY_BAR_END_DATE = cls.EQUITY_DAILY_BAR_END_DATE.tz_localize(None)
+
+        days = exchange_calendar.sessions_in_range(
+            first_session.normalize(),
+            EQUITY_DAILY_BAR_END_DATE.normalize(),
         )
 
         cls.equity_daily_bar_days = days
 
 
-class WithFutureDailyBarData(WithAssetFinder, WithTradingCalendars):
+class WithFutureDailyBarData(WithAssetFinder, WithExchangeCalendars):
     """
     ZiplineTestCase mixin providing cls.make_future_daily_bar_data.
 
@@ -902,7 +909,7 @@ class WithFutureDailyBarData(WithAssetFinder, WithTradingCalendars):
         for asset in assets:
             yield asset.sid, minute_frame_to_session_frame(
                 minute_data[asset.sid],
-                cls.trading_calendars[Future])
+                cls.exchange_calendars[Future])
 
     @classmethod
     def make_future_daily_bar_data(cls):
@@ -919,24 +926,24 @@ class WithFutureDailyBarData(WithAssetFinder, WithTradingCalendars):
     @classmethod
     def init_class_fixtures(cls):
         super(WithFutureDailyBarData, cls).init_class_fixtures()
-        trading_calendar = cls.trading_calendars[Future]
+        exchange_calendar = cls.exchange_calendars[Future]
         if cls.FUTURE_DAILY_BAR_USE_FULL_CALENDAR:
-            days = trading_calendar.all_sessions
+            days = exchange_calendar.sessions
         else:
-            if trading_calendar.is_session(cls.FUTURE_DAILY_BAR_START_DATE):
+            if exchange_calendar.is_session(cls.FUTURE_DAILY_BAR_START_DATE):
                 first_session = cls.FUTURE_DAILY_BAR_START_DATE
             else:
-                first_session = trading_calendar.minute_to_session_label(
+                first_session = exchange_calendar.minute_to_session(
                     pd.Timestamp(cls.FUTURE_DAILY_BAR_START_DATE)
                 )
 
             if cls.FUTURE_DAILY_BAR_LOOKBACK_DAYS > 0:
-                first_session = trading_calendar.sessions_window(
+                first_session = exchange_calendar.sessions_window(
                     first_session,
                     -1 * cls.FUTURE_DAILY_BAR_LOOKBACK_DAYS
                 )[0]
 
-            days = trading_calendar.sessions_in_range(
+            days = exchange_calendar.sessions_in_range(
                 first_session,
                 cls.FUTURE_DAILY_BAR_END_DATE,
             )
@@ -1023,9 +1030,9 @@ class WithBcolzEquityDailyBarReader(WithEquityDailyBarData, WithTmpDir):
             cls.BCOLZ_DAILY_BAR_COUNTRY_CODE
         )
 
-        trading_calendar = cls.trading_calendars[Equity]
+        exchange_calendar = cls.exchange_calendars[Equity]
         cls.bcolz_daily_bar_ctable = t = getattr(
-            BcolzDailyBarWriter(p, trading_calendar, days[0], days[-1]),
+            BcolzDailyBarWriter(p, exchange_calendar, days[0], days[-1]),
             cls._write_method_name,
         )(
             cls.make_equity_daily_bar_data(
@@ -1113,9 +1120,9 @@ class WithBcolzFutureDailyBarReader(WithFutureDailyBarData, WithTmpDir):
         cls.future_bcolz_daily_bar_path = p
         days = cls.future_daily_bar_days
 
-        trading_calendar = cls.trading_calendars[Future]
+        exchange_calendar = cls.exchange_calendars[Future]
         cls.future_bcolz_daily_bar_ctable = t = getattr(
-            BcolzDailyBarWriter(p, trading_calendar, days[0], days[-1]),
+            BcolzDailyBarWriter(p, exchange_calendar, days[0], days[-1]),
             cls.BCOLZ_FUTURE_DAILY_BAR_WRITE_METHOD_NAME,
         )(
             cls.make_future_daily_bar_data(),
@@ -1144,22 +1151,21 @@ def _trading_days_for_minute_bars(calendar,
                                   start_date,
                                   end_date,
                                   lookback_days):
-    first_session = calendar.minute_to_session_label(start_date)
+
+    first_session = calendar.minute_to_session(start_date)
 
     if lookback_days > 0:
         first_session = calendar.sessions_window(
             first_session,
-            -1 * lookback_days
+            -1 * (lookback_days + 1)
         )[0]
 
-    if not first_session.tzinfo:
-        first_session = first_session.tz_localize('utc')
-    if not end_date.tzinfo:
-        end_date = end_date.tz_localize('utc')
+    if end_date.tzinfo:
+        end_date = end_date.tz_localize(None)
 
-    return calendar.sessions_in_range(first_session, end_date)
+    return calendar.sessions_in_range(first_session, end_date.normalize())
 
-class WithEquityMinuteBarData(WithAssetFinder, WithTradingCalendars):
+class WithEquityMinuteBarData(WithAssetFinder, WithExchangeCalendars):
     """
     ZiplineTestCase mixin providing cls.equity_minute_bar_days.
 
@@ -1197,9 +1203,9 @@ class WithEquityMinuteBarData(WithAssetFinder, WithTradingCalendars):
 
     @classmethod
     def make_equity_minute_bar_data(cls):
-        trading_calendar = cls.trading_calendars[Equity]
+        exchange_calendar = cls.exchange_calendars[Equity]
         return create_minute_bar_data(
-            trading_calendar.minutes_for_sessions_in_range(
+            exchange_calendar.sessions_minutes(
                 cls.equity_minute_bar_days[0],
                 cls.equity_minute_bar_days[-1],
             ),
@@ -1209,16 +1215,16 @@ class WithEquityMinuteBarData(WithAssetFinder, WithTradingCalendars):
     @classmethod
     def init_class_fixtures(cls):
         super(WithEquityMinuteBarData, cls).init_class_fixtures()
-        trading_calendar = cls.trading_calendars[Equity]
+        exchange_calendar = cls.exchange_calendars[Equity]
         cls.equity_minute_bar_days = _trading_days_for_minute_bars(
-            trading_calendar,
+            exchange_calendar,
             cls.EQUITY_MINUTE_BAR_START_DATE,
             cls.EQUITY_MINUTE_BAR_END_DATE,
             cls.EQUITY_MINUTE_BAR_LOOKBACK_DAYS
         )
 
 
-class WithFutureMinuteBarData(WithAssetFinder, WithTradingCalendars):
+class WithFutureMinuteBarData(WithAssetFinder, WithExchangeCalendars):
     """
     ZiplineTestCase mixin providing cls.future_minute_bar_days.
 
@@ -1257,9 +1263,9 @@ class WithFutureMinuteBarData(WithAssetFinder, WithTradingCalendars):
 
     @classmethod
     def make_future_minute_bar_data(cls):
-        trading_calendar = get_calendar('us_futures')
+        exchange_calendar = get_calendar('us_futures')
         return create_minute_bar_data(
-            trading_calendar.minutes_for_sessions_in_range(
+            exchange_calendar.sessions_minutes(
                 cls.future_minute_bar_days[0],
                 cls.future_minute_bar_days[-1],
             ),
@@ -1269,9 +1275,9 @@ class WithFutureMinuteBarData(WithAssetFinder, WithTradingCalendars):
     @classmethod
     def init_class_fixtures(cls):
         super(WithFutureMinuteBarData, cls).init_class_fixtures()
-        trading_calendar = get_calendar('us_futures')
+        exchange_calendar = get_calendar('us_futures')
         cls.future_minute_bar_days = _trading_days_for_minute_bars(
-            trading_calendar,
+            exchange_calendar,
             cls.FUTURE_MINUTE_BAR_START_DATE,
             cls.FUTURE_MINUTE_BAR_END_DATE,
             cls.FUTURE_MINUTE_BAR_LOOKBACK_DAYS
@@ -1326,7 +1332,7 @@ class WithBcolzEquityMinuteBarReader(WithEquityMinuteBarData, WithTmpDir):
 
         writer = BcolzMinuteBarWriter(
             p,
-            cls.trading_calendars[Equity],
+            cls.exchange_calendars[Equity],
             days[0],
             days[-1],
             US_EQUITIES_MINUTES_PER_DAY
@@ -1380,14 +1386,14 @@ class WithBcolzFutureMinuteBarReader(WithFutureMinuteBarData, WithTmpDir):
     @classmethod
     def init_class_fixtures(cls):
         super(WithBcolzFutureMinuteBarReader, cls).init_class_fixtures()
-        trading_calendar = get_calendar('us_futures')
+        exchange_calendar = get_calendar('us_futures')
         cls.bcolz_future_minute_bar_path = p = \
             cls.make_bcolz_future_minute_bar_rootdir_path()
         days = cls.future_minute_bar_days
 
         writer = BcolzMinuteBarWriter(
             p,
-            trading_calendar,
+            exchange_calendar,
             days[0],
             days[-1],
             FUTURES_MINUTES_PER_DAY,
@@ -1409,10 +1415,10 @@ class WithConstantEquityMinuteBarData(WithEquityMinuteBarData):
 
     @classmethod
     def make_equity_minute_bar_data(cls):
-        trading_calendar = cls.trading_calendars[Equity]
+        exchange_calendar = cls.exchange_calendars[Equity]
 
         sids = cls.asset_finder.equities_sids
-        minutes = trading_calendar.minutes_for_sessions_in_range(
+        minutes = exchange_calendar.sessions_minutes(
             cls.equity_minute_bar_days[0],
             cls.equity_minute_bar_days[-1],
         )
@@ -1440,10 +1446,10 @@ class WithConstantFutureMinuteBarData(WithFutureMinuteBarData):
 
     @classmethod
     def make_future_minute_bar_data(cls):
-        trading_calendar = cls.trading_calendars[Future]
+        exchange_calendar = cls.exchange_calendars[Future]
 
         sids = cls.asset_finder.futures_sids
-        minutes = trading_calendar.minutes_for_sessions_in_range(
+        minutes = exchange_calendar.sessions_minutes(
             cls.future_minute_bar_days[0],
             cls.future_minute_bar_days[-1],
         )
@@ -1751,7 +1757,7 @@ class WithDataPortal(WithAdjustmentReader,
 
         return DataPortal(
             self.asset_finder,
-            self.trading_calendar,
+            self.exchange_calendar,
             first_trading_day=self.DATA_PORTAL_FIRST_TRADING_DAY,
             equity_daily_reader=(
                 self.bcolz_equity_daily_bar_reader
@@ -1775,7 +1781,7 @@ class WithDataPortal(WithAdjustmentReader,
             ),
             future_daily_reader=(
                 MinuteResampleSessionBarReader(
-                    self.bcolz_future_minute_bar_reader.trading_calendar,
+                    self.bcolz_future_minute_bar_reader.exchange_calendar,
                     self.bcolz_future_minute_bar_reader)
                 if self.DATA_PORTAL_USE_MINUTE_DATA else None
             ),
@@ -1817,7 +1823,7 @@ class WithCreateBarData(WithDataPortal):
             self.data_portal,
             simulation_dt_func,
             self.CREATE_BARDATA_DATA_FREQUENCY,
-            self.trading_calendar,
+            self.exchange_calendar,
             restrictions or NoRestrictions()
         )
 
@@ -1828,8 +1834,8 @@ class WithMakeAlgo(WithBenchmarkReturns,
     """
     ZiplineTestCase mixin that provides a ``make_algo`` method.
     """
-    START_DATE = pd.Timestamp('2014-12-29', tz='UTC')
-    END_DATE = pd.Timestamp('2015-1-05', tz='UTC')
+    START_DATE = pd.Timestamp('2014-12-29')
+    END_DATE = pd.Timestamp('2015-1-05')
     SIM_PARAMS_DATA_FREQUENCY = 'minute'
     DEFAULT_ALGORITHM_CLASS = TradingAlgorithm
 
@@ -1910,6 +1916,7 @@ class WithWerror(object):
     def init_class_fixtures(cls):
         cls.enter_class_context(warnings.catch_warnings())
         warnings.simplefilter('error')
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
 
         super(WithWerror, cls).init_class_fixtures()
 
@@ -2061,6 +2068,9 @@ def fast_get_loc_ffilled(dts, dt):
     """
     Equivalent to dts.get_loc(dt, method='ffill'), but with reasonable
     microperformance.
+
+    Index.get_loc(dt, method='ffill') was removed in pandas 2.0, so now
+    this function is equivalent to dts.get_indexer([dt], method="ffill")[0]
     """
     ix = dts.searchsorted(dt, side='right') - 1
     if ix < 0:

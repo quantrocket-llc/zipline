@@ -50,7 +50,7 @@ class SharadarFundamentalsLoaderTestCase(unittest.TestCase):
         domain = art_eps.domain
         columns = [art_eps, art_previous_eps, art_reportperiod, arq_eps, arq_revenue]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 
@@ -173,7 +173,7 @@ class SharadarFundamentalsLoaderTestCase(unittest.TestCase):
         domain = arq_eps.domain
         columns = [arq_eps, arq_revenue]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 
@@ -219,7 +219,7 @@ class SharadarInstitutionsLoaderTestCase(unittest.TestCase):
         domain = total_val.domain
         columns = [total_val, fund_val]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 
@@ -271,7 +271,7 @@ class SharadarInstitutionsLoaderTestCase(unittest.TestCase):
         domain = total_val.domain
         columns = [total_val, fund_val]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 
@@ -315,7 +315,7 @@ class SharadarSP500LoaderTestCase(unittest.TestCase):
         domain = in_sp500.domain
         columns = [in_sp500]
         dates = pd.date_range(start="2022-07-25", periods=2)
-        sids= pd.Int64Index([1, 2])
+        sids= pd.Index([1, 2])
         mask = np.array([[True, True], [True, True]])
 
 

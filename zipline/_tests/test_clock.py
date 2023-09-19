@@ -2,8 +2,7 @@ from datetime import time
 from unittest import TestCase
 import pandas as pd
 from pandas.testing import assert_index_equal
-from trading_calendars import get_calendar
-from trading_calendars.utils.pandas_utils import days_at_time
+from zipline.utils.calendar_utils import get_calendar, days_at_time
 
 from zipline.gens.sim_engine import (
     MinuteSimulationClock,
@@ -21,22 +20,24 @@ class TestClock(TestCase):
 
         # july 15 is friday, so there are 3 sessions in this range (15, 18, 19)
         cls.sessions = cls.nyse_calendar.sessions_in_range(
-            pd.Timestamp("2016-07-15", tz="utc"),
-            pd.Timestamp("2016-07-19", tz="utc")
+            pd.Timestamp("2016-07-15"),
+            pd.Timestamp("2016-07-19")
         )
 
-        trading_o_and_c = cls.nyse_calendar.schedule.loc[cls.sessions]
-        cls.opens = trading_o_and_c['market_open']
-        cls.closes = trading_o_and_c['market_close']
-        cls.break_starts = trading_o_and_c['break_start']
-        cls.break_ends = trading_o_and_c['break_end']
+        cls.opens = cls.nyse_calendar.first_minutes.loc[cls.sessions]
+        cls.closes = cls.nyse_calendar.schedule.loc[
+            cls.sessions, "close"
+        ]
+
+        cls.break_starts = cls.nyse_calendar.last_am_minutes.loc[cls.sessions]
+        cls.break_ends = cls.nyse_calendar.first_pm_minutes.loc[cls.sessions]
 
     def test_bts_before_session(self):
         clock = MinuteSimulationClock(
             self.sessions,
             self.opens,
             self.closes,
-            days_at_time(self.sessions, time(6, 17), "US/Eastern"),
+            days_at_time(self.sessions, time(6, 17), "US/Eastern", day_offset=0),
             self.break_starts,
             self.break_ends,
             False
@@ -45,11 +46,11 @@ class TestClock(TestCase):
         all_events = list(clock)
 
         def _check_session_bts_first(session_label, events, bts_dt):
-            minutes = self.nyse_calendar.minutes_for_session(session_label)
+            minutes = self.nyse_calendar.session_minutes(session_label)
 
             self.assertEqual(393, len(events))
 
-            self.assertEqual(events[0], (session_label, SESSION_START))
+            self.assertEqual(events[0], (session_label.tz_localize("UTC"), SESSION_START))
             self.assertEqual(events[1], (bts_dt, BEFORE_TRADING_START_BAR))
             for i in range(2, 392):
                 self.assertEqual(events[i], (minutes[i - 2], BAR))
@@ -105,11 +106,11 @@ class TestClock(TestCase):
 
     def verify_bts_during_session(self, bts_time, bts_session_times, bts_idx):
         def _check_session_bts_during(session_label, events, bts_dt):
-            minutes = self.nyse_calendar.minutes_for_session(session_label)
+            minutes = self.nyse_calendar.session_minutes(session_label)
 
             self.assertEqual(393, len(events))
 
-            self.assertEqual(events[0], (session_label, SESSION_START))
+            self.assertEqual(events[0], (session_label.tz_localize("UTC"), SESSION_START))
 
             for i in range(1, bts_idx):
                 self.assertEqual(events[i], (minutes[i - 1], BAR))
@@ -128,7 +129,7 @@ class TestClock(TestCase):
             self.sessions,
             self.opens,
             self.closes,
-            days_at_time(self.sessions, bts_time, "US/Eastern"),
+            days_at_time(self.sessions, bts_time, "US/Eastern", day_offset=0),
             self.break_starts,
             self.break_ends,
             False
@@ -159,7 +160,7 @@ class TestClock(TestCase):
             self.sessions,
             self.opens,
             self.closes,
-            days_at_time(self.sessions, time(19, 5), "US/Eastern"),
+            days_at_time(self.sessions, time(19, 5), "US/Eastern", day_offset=0),
             self.break_starts,
             self.break_ends,
             False
@@ -172,10 +173,10 @@ class TestClock(TestCase):
         # 390 BARs, and then SESSION_END
 
         def _check_session_bts_after(session_label, events):
-            minutes = self.nyse_calendar.minutes_for_session(session_label)
+            minutes = self.nyse_calendar.session_minutes(session_label)
 
             self.assertEqual(392, len(events))
-            self.assertEqual(events[0], (session_label, SESSION_START))
+            self.assertEqual(events[0], (session_label.tz_localize("UTC"), SESSION_START))
 
             for i in range(1, 391):
                 self.assertEqual(events[i], (minutes[i - 1], BAR))
@@ -193,21 +194,23 @@ class TestClock(TestCase):
         calendar = get_calendar("XTKS")
 
         sessions = calendar.sessions_in_range(
-            pd.Timestamp("2021-06-14", tz="utc"),
-            pd.Timestamp("2021-06-15", tz="utc")
+            pd.Timestamp("2021-06-14"),
+            pd.Timestamp("2021-06-15")
         )
 
-        trading_o_and_c = calendar.schedule.loc[sessions]
-        opens = trading_o_and_c['market_open']
-        closes = trading_o_and_c['market_close']
-        break_starts = trading_o_and_c['break_start']
-        break_ends = trading_o_and_c['break_end']
+        opens = calendar.first_minutes.loc[sessions]
+        closes = calendar.schedule.loc[
+            sessions, "close"
+        ]
+
+        break_starts = calendar.last_am_minutes.loc[sessions]
+        break_ends = calendar.first_pm_minutes.loc[sessions]
 
         clock = MinuteSimulationClock(
             sessions,
             opens,
             closes,
-            days_at_time(sessions, time(8, 45), "Japan"),
+            days_at_time(sessions, time(8, 45), "Japan", day_offset=0),
             break_starts,
             break_ends,
             False

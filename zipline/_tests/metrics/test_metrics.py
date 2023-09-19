@@ -1,4 +1,3 @@
-import unittest
 
 import numpy as np
 import pandas as pd
@@ -24,8 +23,8 @@ from zipline._testing.fixtures import (
 from zipline._testing.predicates import assert_equal, wildcard
 
 
-def T(cs):
-    return pd.Timestamp(cs, tz='utc')
+def ts_utc(cs):
+    return pd.Timestamp(cs, tz="UTC")
 
 
 def portfolio_snapshot(p):
@@ -67,8 +66,8 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
     FUTURE_MINUTE_CONSTANT_HIGH = 1.0
     FUTURE_MINUTE_CONSTANT_VOLUME = 100.0
 
-    START_DATE = T('2014-01-06')
-    END_DATE = T('2014-01-10')
+    START_DATE = pd.Timestamp('2014-01-06')
+    END_DATE = pd.Timestamp('2014-01-10')
 
     # note: class attributes after this do not configure fixtures, they are
     # just used in this test suite
@@ -104,16 +103,13 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
         )
 
         cls.trading_minutes = pd.Index(
-            cls.trading_calendar.minutes_for_sessions_in_range(
+            cls.exchange_calendar.sessions_minutes(
                 cls.START_DATE,
                 cls.END_DATE,
             ),
         )
         cls.closes = pd.Index(
-            cls.trading_calendar.session_closes_in_range(
-                cls.START_DATE,
-                cls.END_DATE,
-            ),
+            cls.exchange_calendar.closes[cls.START_DATE : cls.END_DATE]
         )
         cls.closes.name = None
 
@@ -147,7 +143,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             )
 
         nan_then_zero = pd.Series(0.0, index=self.closes)
-        nan_then_zero[0] = float('nan')
+        nan_then_zero.iloc[0] = float('nan')
         nan_then_zero_fields = (
             'algo_volatility',
             'benchmark_volatility',
@@ -671,7 +667,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
                 )
 
         nan_then_zero = pd.Series(0.0, index=self.closes)
-        nan_then_zero[0] = float('nan')
+        nan_then_zero.iloc[0] = float('nan')
         nan_then_zero_fields = (
             'algo_volatility',
             'benchmark_volatility',
@@ -730,7 +726,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             check_names=False,
         )
 
-        expected_cash[0] += cash_modifier
+        expected_cash.iloc[0] += cash_modifier
         assert_equal(
             perf['ending_cash'],
             expected_cash,
@@ -739,7 +735,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
 
         # we purchased one share on the first day
         expected_capital_used = pd.Series(0.0, index=self.closes)
-        expected_capital_used[0] += cash_modifier
+        expected_capital_used.iloc[0] += cash_modifier
 
         assert_equal(
             perf['capital_used'],
@@ -763,7 +759,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
 
         # we don't start with any positions; the first day has no starting
         # exposure
-        expected_position_exposure[0] = 0
+        expected_position_exposure.iloc[0] = 0
         for field in 'starting_value', 'starting_exposure':
             # for equities, position value and position exposure are the same
             assert_equal(
@@ -805,8 +801,8 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
         expected_single_order = {
             'amount': shares,
             'commission': 0.0,
-            'created': T('2014-01-06 14:31'),
-            'dt': T('2014-01-06 14:32'),
+            'created': ts_utc('2014-01-06 14:31'),
+            'dt': ts_utc('2014-01-06 14:32'),
             'filled': shares,
             'id': wildcard,
             'limit': None,
@@ -841,7 +837,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
         expected_single_transaction = {
             'amount': shares,
             'commission': None,
-            'dt': T('2014-01-06 14:32'),
+            'dt': ts_utc('2014-01-06 14:32'),
             'order_id': wildcard,
             'price': 1.0,
             'sid': self.equity,
@@ -890,8 +886,8 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             cash_modifier,
             index=self.trading_minutes,
         )
-        expected_portfolio_capital_used[0] = 0.0
-        expected_capital_used[0] = 0
+        expected_portfolio_capital_used.iloc[0] = 0.0
+        expected_capital_used.iloc[0] = 0
         assert_equal(
             portfolio_snapshots['cash_flow'],
             expected_portfolio_capital_used,
@@ -1078,7 +1074,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
         )
 
         nan_then_zero = pd.Series(0.0, index=self.closes)
-        nan_then_zero[0] = float('nan')
+        nan_then_zero.iloc[0] = float('nan')
         nan_then_zero_fields = (
             'algo_volatility',
             'benchmark_volatility',
@@ -1147,7 +1143,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
 
         # we don't start with any positions; the first day has no starting
         # exposure
-        expected_position_exposure[0] = 0
+        expected_position_exposure.iloc[0] = 0
         assert_equal(
             perf['starting_exposure'],
             expected_position_exposure,
@@ -1188,8 +1184,8 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             [{
                 'amount': contracts,
                 'commission': 0.0,
-                'created': T('2014-01-06 14:31'),
-                'dt': T('2014-01-06 14:32'),
+                'created': ts_utc('2014-01-06 14:31'),
+                'dt': ts_utc('2014-01-06 14:32'),
                 'filled': contracts,
                 'id': wildcard,
                 'limit': None,
@@ -1222,7 +1218,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             [{
                 'amount': contracts,
                 'commission': None,
-                'dt': T('2014-01-06 14:32'),
+                'dt': ts_utc('2014-01-06 14:32'),
                 'order_id': wildcard,
                 'price': 1.0,
                 'sid': self.future,
@@ -1310,8 +1306,10 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
     EQUITY_DAILY_BAR_SOURCE_FROM_MINUTE = True
     FUTURE_DAILY_BAR_SOURCE_FROM_MINUTE = True
 
-    START_DATE = T('2014-01-06')
-    END_DATE = T('2014-01-10')
+    EXCHANGE_CALENDAR_FOR_ASSET_TYPE = {Equity: 'NYSE', Future: 'CME_EQUITY_LIQUID'}
+
+    START_DATE = pd.Timestamp('2014-01-06')
+    END_DATE = pd.Timestamp('2014-01-10')
 
     # note: class attributes after this do not configure fixtures, they are
     # just used in this test suite
@@ -1346,45 +1344,33 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
         )
 
         cls.equity_minutes = pd.Index(
-            cls.trading_calendars[Equity].minutes_for_sessions_in_range(
+            cls.exchange_calendars[Equity].sessions_minutes(
                 cls.START_DATE,
                 cls.END_DATE,
             ),
         )
         cls.equity_closes = pd.Index(
-            cls.trading_calendars[Equity].session_closes_in_range(
-                cls.START_DATE,
-                cls.END_DATE,
-            ),
+            cls.exchange_calendars[Equity].closes[cls.START_DATE : cls.END_DATE]
         )
         cls.equity_closes.name = None
 
-        futures_cal = cls.trading_calendars[Future]
+        futures_cal = cls.exchange_calendars[Future]
         cls.future_minutes = pd.Index(
-            futures_cal.execution_minutes_for_sessions_in_range(
+            futures_cal.sessions_minutes(
                 cls.START_DATE,
                 cls.END_DATE,
             ),
 
         )
         cls.future_closes = pd.Index(
-            futures_cal.execution_time_from_close(
-                futures_cal.session_closes_in_range(
-                    cls.START_DATE,
-                    cls.END_DATE,
-                ),
-            ),
+            futures_cal.closes[cls.START_DATE : cls.END_DATE]
         )
         cls.future_closes.name = None
 
         cls.future_opens = pd.Index(
-            futures_cal.execution_time_from_open(
-                futures_cal.session_opens_in_range(
-                    cls.START_DATE,
-                    cls.END_DATE,
-                ),
-            ),
+            futures_cal.first_minutes[cls.START_DATE : cls.END_DATE]
         )
+
         cls.future_opens.name = None
 
     def init_instance_fixtures(self):
@@ -1402,7 +1388,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
 
         self.futures_data_portal = DataPortal(
             self.asset_finder,
-            self.trading_calendars[Future],
+            self.exchange_calendars[Future],
             first_trading_day=self.DATA_PORTAL_FIRST_TRADING_DAY,
             equity_daily_reader=(
                 self.bcolz_equity_daily_bar_reader
@@ -1426,7 +1412,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             ),
             future_daily_reader=(
                 MinuteResampleSessionBarReader(
-                    self.bcolz_future_minute_bar_reader.trading_calendar,
+                    self.bcolz_future_minute_bar_reader.exchange_calendar,
                     self.bcolz_future_minute_bar_reader)
                 if self.DATA_PORTAL_USE_MINUTE_DATA else None
             ),
@@ -1465,7 +1451,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
                     l,
                     c,
                     cls.asset_daily_volume,
-                    trading_minutes=len(calendar.minutes_for_session(session)),
+                    trading_minutes=len(calendar.session_minutes(session)),
                     random_state=random_state,
                 )
                 for o, h, l, c, session in zip(
@@ -1478,7 +1464,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             ],
             ignore_index=True,
         )
-        data.index = calendar.minutes_for_sessions_in_range(
+        data.index = calendar.sessions_minutes(
             cls.START_DATE,
             cls.END_DATE,
         )
@@ -1489,14 +1475,14 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
     @classmethod
     def make_equity_minute_bar_data(cls):
         return cls._make_minute_bar_data(
-            cls.trading_calendars[Equity],
+            cls.exchange_calendars[Equity],
             cls.asset_finder.equities_sids,
         )
 
     @classmethod
     def make_future_minute_bar_data(cls):
         return cls._make_minute_bar_data(
-            cls.trading_calendars[Future],
+            cls.exchange_calendars[Future],
             cls.asset_finder.futures_sids,
         )
 
@@ -1687,7 +1673,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             check_names=False,
         )
 
-        expected_cash[0] += cash_modifier
+        expected_cash.iloc[0] += cash_modifier
         assert_equal(
             perf['ending_cash'],
             expected_cash,
@@ -1696,7 +1682,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
 
         # we purchased one share on the first day
         expected_capital_used = pd.Series(0.0, index=self.equity_closes)
-        expected_capital_used[0] += cash_modifier
+        expected_capital_used.iloc[0] += cash_modifier
 
         assert_equal(
             perf['capital_used'],
@@ -1716,7 +1702,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
         # we don't start with any positions; the first day has no starting
         # exposure
         expected_starting_exposure = expected_exposure.shift(1)
-        expected_starting_exposure[0] = 0.0
+        expected_starting_exposure.iloc[0] = 0.0
         for field in 'starting_value', 'starting_exposure':
             # for equities, position value and position exposure are the same
             assert_equal(
@@ -1741,8 +1727,8 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
         expected_single_order = {
             'amount': shares,
             'commission': 0.0,
-            'created': T('2014-01-06 14:31'),
-            'dt': T('2014-01-06 14:32'),
+            'created': ts_utc('2014-01-06 14:31'),
+            'dt': ts_utc('2014-01-06 14:32'),
             'filled': shares,
             'id': wildcard,
             'limit': None,
@@ -1777,12 +1763,12 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
         expected_single_transaction = {
             'amount': shares,
             'commission': None,
-            'dt': T('2014-01-06 14:32'),
+            'dt': ts_utc('2014-01-06 14:32'),
             'order_id': wildcard,
             'price': self.data_portal.get_scalar_asset_spot_value(
                 self.equity,
                 'close',
-                T('2014-01-06 14:32'),
+                ts_utc('2014-01-06 14:32'),
                 'minute',
             ),
             'sid': self.equity,
@@ -1827,8 +1813,8 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             cash_modifier,
             index=self.equity_minutes,
         )
-        expected_portfolio_capital_used[0] = 0.0
-        expected_capital_used[0] = 0
+        expected_portfolio_capital_used.iloc[0] = 0.0
+        expected_capital_used.iloc[0] = 0
         assert_equal(
             portfolio_snapshots['cash_flow'],
             expected_portfolio_capital_used,
@@ -1992,12 +1978,12 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             # the portfolio on the bar of the order, only the following bars
             check_portfolio(data, context, first_bar)
 
-        sim_params = self.make_simparams(trading_calendar=self.trading_calendars[Future])
+        sim_params = self.make_simparams(exchange_calendar=self.exchange_calendars[Future])
 
         perf = self.run_algorithm(
             initialize=initialize,
             handle_data=handle_data,
-            trading_calendar=self.trading_calendars[Future],
+            exchange_calendar=self.exchange_calendars[Future],
             data_portal=self.futures_data_portal,
             sim_params=sim_params
         )
@@ -2140,7 +2126,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
         # we don't start with any positions; the first day has no starting
         # exposure
         expected_starting_exposure = expected_exposure.shift(1)
-        expected_starting_exposure[0] = 0.0
+        expected_starting_exposure.iloc[0] = 0.0
         assert_equal(
             perf['starting_exposure'],
             expected_starting_exposure,
@@ -2176,6 +2162,29 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'stop_reached': False
         }
 
+        # exchange calendars uses ZoneInfo while pandas currently uses
+        # pytz, which causes assert_equals to fail. Call tz_convert on
+        # date fields to convert them to pandas' native tz type.
+        def convert_to_native_pandas_tz_type(dt):
+            if hasattr(dt.tz, 'key'):
+                tz = dt.tz.key
+            else:
+                tz = dt.tz.tzname(None)
+            return dt.tz_convert(tz)
+
+        expected_single_order['created'] = convert_to_native_pandas_tz_type(
+            expected_single_order['created'])
+        expected_single_order['dt'] = convert_to_native_pandas_tz_type(
+            expected_single_order['dt'])
+
+        orders_list = orders.tolist()
+        for day in orders_list:
+            for order in day:
+                order['created'] = convert_to_native_pandas_tz_type(
+                    order['created'])
+                order['dt'] = convert_to_native_pandas_tz_type(
+                    order['dt'])
+
         # we only order on the first day
         expected_orders = (
             [[expected_single_order]] +
@@ -2183,10 +2192,11 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
         )
 
         assert_equal(
-            orders.tolist(),
+            orders_list,
             expected_orders,
             check_names=False,
         )
+
         assert_equal(
             orders.index,
             self.future_closes,
@@ -2210,6 +2220,9 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'sid': self.future,
         }
 
+        expected_single_transaction['dt'] = convert_to_native_pandas_tz_type(
+            expected_single_transaction['dt'])
+
         # since we only order on the first day, we should only transact on the
         # first day
         expected_transactions = (
@@ -2217,8 +2230,14 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             [[]] * (len(self.future_closes) - 1)
         )
 
+        transactions_list = transactions.tolist()
+        for day in transactions_list:
+            for transaction in day:
+                transaction['dt'] = convert_to_native_pandas_tz_type(
+                    transaction['dt'])
+
         assert_equal(
-            transactions.tolist(),
+            transactions_list,
             expected_transactions,
         )
         assert_equal(
@@ -2273,7 +2292,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
         )
 
         all_minutes = (
-            self.trading_calendars[Future].minutes_for_sessions_in_range(
+            self.exchange_calendars[Future].sessions_minutes(
                 self.START_DATE,
                 self.END_DATE,
             )

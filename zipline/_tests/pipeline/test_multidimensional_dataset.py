@@ -13,8 +13,6 @@ from zipline.pipeline.data import (
 from zipline._testing import ZiplineTestCase
 from zipline._testing.predicates import (
     assert_equal,
-    assert_is,
-    assert_is_not,
     assert_is_subclass,
     assert_raises_str,
 )
@@ -57,7 +55,7 @@ class TestDataSetFamily(ZiplineTestCase):
         MD2Slice = MD2.slice(dim_0='a')
 
         assert_equal(MD1Slice.extra_coords, MD2Slice.extra_coords)
-        assert_is_not(MD1Slice, MD2Slice)
+        self.assertIsNot(MD1Slice, MD2Slice)
 
     def test_empty_extra_dims(self):
         msg = (
@@ -146,14 +144,14 @@ class TestDataSetFamily(ZiplineTestCase):
                 ),
             ]
             for alt in alternate_constructions:
-                assert_is(Slice, alt, msg='Slices are not properly memoized')
+                self.assertIs(Slice, alt, msg='Slices are not properly memoized')
 
             expected_coords = OrderedDict(
                 zip(expected_dims, valid_combination),
             )
             assert_equal(Slice.extra_coords, expected_coords)
 
-            assert_is(Slice.dataset_family, MD)
+            self.assertIs(Slice.dataset_family, MD)
 
             assert_is_subclass(Slice, DataSetFamilySlice)
 

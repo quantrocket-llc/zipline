@@ -1,6 +1,6 @@
 from pandas import Timestamp
 from parameterized import parameterized
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 
 from zipline._testing import ZiplineTestCase
 from zipline.utils.date_utils import compute_date_range_chunks
@@ -10,7 +10,7 @@ def T(s):
     """
     Helpful function to improve readibility.
     """
-    return Timestamp(s, tz='UTC')
+    return Timestamp(s)
 
 
 class TestDateUtils(ZiplineTestCase):
@@ -37,7 +37,7 @@ class TestDateUtils(ZiplineTestCase):
         end_date = T('2017-01-31')
 
         date_ranges = compute_date_range_chunks(
-            self.calendar.all_sessions,
+            self.calendar.sessions,
             start_date,
             end_date,
             chunksize
@@ -49,7 +49,7 @@ class TestDateUtils(ZiplineTestCase):
         # Start date not found in calendar
         with self.assertRaises(KeyError) as cm:
             compute_date_range_chunks(
-                self.calendar.all_sessions,
+                self.calendar.sessions,
                 T('2017-05-07'),  # Sunday
                 T('2017-06-01'),
                 None
@@ -62,7 +62,7 @@ class TestDateUtils(ZiplineTestCase):
         # End date not found in calendar
         with self.assertRaises(KeyError) as cm:
             compute_date_range_chunks(
-                self.calendar.all_sessions,
+                self.calendar.sessions,
                 T('2017-05-01'),
                 T('2017-05-27'),  # Saturday
                 None
@@ -75,7 +75,7 @@ class TestDateUtils(ZiplineTestCase):
         # End date before start date
         with self.assertRaises(ValueError) as cm:
             compute_date_range_chunks(
-                self.calendar.all_sessions,
+                self.calendar.sessions,
                 T('2017-06-01'),
                 T('2017-05-01'),
                 None

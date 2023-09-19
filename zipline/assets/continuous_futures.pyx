@@ -32,9 +32,9 @@ from cpython cimport bool
 from functools import partial
 
 from numpy import array, empty, iinfo
-from numpy cimport long_t, int64_t
+from numpy cimport longlong_t as long_t, int64_t
 from pandas import Timestamp
-from trading_calendars import get_calendar
+from zipline.utils.calendar_utils import get_calendar
 import warnings
 
 ADJUSTMENT_STYLES = {'add', 'mul', None}
@@ -399,8 +399,8 @@ cdef class OrderedContracts(object):
 
     property start_date:
         def __get__(self):
-            return Timestamp(self._start_date, tz='UTC')
+            return Timestamp(self._start_date)
 
     property end_date:
         def __get__(self):
-            return Timestamp(self._end_date, tz='UTC')
+            return Timestamp(self._end_date)

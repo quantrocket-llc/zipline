@@ -12,7 +12,7 @@ from numpy import (
 from pandas import (
     DataFrame,
     date_range,
-    Int64Index,
+    Index,
     Timestamp,
 )
 from pandas.testing import assert_frame_equal
@@ -58,11 +58,11 @@ from zipline.utils.numpy_utils import (
 
 
 class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
-                                  zf.WithTradingCalendars,
+                                  zf.WithExchangeCalendars,
                                   zf.ZiplineTestCase):
-    sids = ASSET_FINDER_EQUITY_SIDS = Int64Index([1, 2, 3])
-    START_DATE = Timestamp('2015-01-31', tz='UTC')
-    END_DATE = Timestamp('2015-03-01', tz='UTC')
+    sids = ASSET_FINDER_EQUITY_SIDS = Index([1, 2, 3])
+    START_DATE = Timestamp('2015-01-31')
+    END_DATE = Timestamp('2015-03-01')
     ASSET_FINDER_EQUITY_SYMBOLS = ('A', 'B', 'C')
     ASSET_FINDER_COUNTRY_CODE = 'US'
 
@@ -70,9 +70,9 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
     def init_class_fixtures(cls):
         super(StatisticalBuiltInsTestCase, cls).init_class_fixtures()
 
-        day = cls.trading_calendar.day
+        day = cls.exchange_calendar.day
         cls.dates = dates = date_range(
-            '2015-02-01', '2015-02-28', freq=day, tz='UTC',
+            '2015-02-01', '2015-02-28', freq=day,
         )
 
         # Using these start and end dates because they are a contigous span of
@@ -199,7 +199,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
                     day:day + correlation_length
                 ]
                 my_asset_returns = todays_returns.iloc[:, my_asset_column]
-                for asset, other_asset_returns in todays_returns.iteritems():
+                for asset, other_asset_returns in todays_returns.items():
                     asset_column = int(asset) - 1
                     expected_pearson_results[day, asset_column] = pearsonr(
                         my_asset_returns, other_asset_returns,
@@ -304,7 +304,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
                     day:day + regression_length
                 ]
                 my_asset_returns = todays_returns.iloc[:, my_asset_column]
-                for asset, other_asset_returns in todays_returns.iteritems():
+                for asset, other_asset_returns in todays_returns.items():
                     asset_column = int(asset) - 1
                     expected_regression_results = linregress(
                         y=other_asset_returns, x=my_asset_returns,
@@ -515,9 +515,9 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
 
 class StatisticalMethodsTestCase(zf.WithSeededRandomPipelineEngine,
                                  zf.ZiplineTestCase):
-    sids = ASSET_FINDER_EQUITY_SIDS = Int64Index([1, 2, 3])
-    START_DATE = Timestamp('2015-01-31', tz='UTC')
-    END_DATE = Timestamp('2015-03-01', tz='UTC')
+    sids = ASSET_FINDER_EQUITY_SIDS = Index([1, 2, 3])
+    START_DATE = Timestamp('2015-01-31')
+    END_DATE = Timestamp('2015-03-01')
     ASSET_FINDER_COUNTRY_CODE = 'US'
     SEEDED_RANDOM_PIPELINE_DEFAULT_DOMAIN = US_EQUITIES
 
@@ -810,7 +810,7 @@ class StatisticalMethodsTestCase(zf.WithSeededRandomPipelineEngine,
             todays_returns_10 = returns_10_results.iloc[
                 day:day + correlation_length
             ]
-            for asset, asset_returns_5 in todays_returns_5.iteritems():
+            for asset, asset_returns_5 in todays_returns_5.items():
                 asset_column = int(asset) - 1
                 asset_returns_10 = todays_returns_10[asset]
                 expected_pearson_results[day, asset_column] = pearsonr(
@@ -916,7 +916,7 @@ class StatisticalMethodsTestCase(zf.WithSeededRandomPipelineEngine,
             todays_returns_10 = returns_10_results.iloc[
                 day:day + regression_length
             ]
-            for asset, asset_returns_5 in todays_returns_5.iteritems():
+            for asset, asset_returns_5 in todays_returns_5.items():
                 asset_column = int(asset) - 1
                 asset_returns_10 = todays_returns_10[asset]
                 expected_regression_results = linregress(
