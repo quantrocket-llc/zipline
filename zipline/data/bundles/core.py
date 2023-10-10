@@ -257,6 +257,12 @@ def _make_bundle_core():
                 stacklevel=3,
             )
 
+        if start_session and start_session.tz:
+            start_session = start_session.tz_localize(None)
+
+        if end_session and end_session.tz:
+            end_session = end_session.tz_localize(None)
+
         # NOTE: We don't eagerly compute calendar values here because
         # `register` is called at module scope in zipline, and creating a
         # calendar currently takes between 0.5 and 1 seconds, which causes a

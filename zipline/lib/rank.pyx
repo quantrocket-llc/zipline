@@ -34,7 +34,7 @@ def rankdata_1d_descending(ndarray data, str method):
     """
     1D descending version of scipy.stats.rankdata.
     """
-    return rankdata(-(data.view(float64)), method=method)
+    return rankdata(-(data.view(float64)), method=method, nan_policy='omit')
 
 
 def masked_rankdata_2d(ndarray data,
@@ -67,7 +67,7 @@ def masked_rankdata_2d(ndarray data,
         # FUTURE OPTIMIZATION:
         # Write a less general "apply to rows" method that doesn't do all
         # the extra work that apply_along_axis does.
-        result = apply_along_axis(rankdata, 1, data, method=method)
+        result = apply_along_axis(rankdata, 1, data, method=method, nan_policy='omit')
 
         # On SciPy >= 0.17, rankdata returns integers for any method except
         # average.

@@ -96,7 +96,7 @@ def get_data(
     exchange_calendar = get_calendar(calendar_name)
 
     session_minute = pd.Timestamp(dt, tz=exchange_calendar.tz)
-    session = session_minute.normalize().tz_localize(None).tz_localize("UTC")
+    session = session_minute.normalize().tz_localize(None)
 
     first_session = max(bundles.bundles[bundle].start_session, exchange_calendar.first_session)
     if session < first_session:

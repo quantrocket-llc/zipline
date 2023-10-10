@@ -131,9 +131,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
     start_date = pd.Timestamp(start_date)
 
     if start_date.tz:
-        start_date = start_date.tz_convert("UTC")
-    else:
-        start_date = start_date.tz_localize("UTC")
+        start_date = start_date.tz_localize(None)
 
     requested_end_date = end_date
     if end_date:
@@ -142,9 +140,7 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
         end_date = pd.Timestamp.now().normalize()
 
     if end_date.tz:
-        end_date = end_date.tz_convert("UTC")
-    else:
-        end_date = end_date.tz_localize("UTC")
+        end_date = end_date.tz_localize(None)
 
     first_session = max(bundles.bundles[bundle].start_session, exchange_calendar.first_session)
     second_session = exchange_calendar.next_session(first_session)

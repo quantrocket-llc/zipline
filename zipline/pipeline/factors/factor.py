@@ -1267,6 +1267,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return GroupedRowTransform(
             transform=rankdata if ascending else rankdata_1d_descending,
             transform_args=(method,),
+            transform_kwargs={'nan_policy': 'omit'},
             factor=self,
             groupby=groupby,
             dtype=float64_dtype,
@@ -1957,6 +1958,8 @@ class GroupedRowTransform(Factor):
         means.
     transform_args : tuple[hashable]
         Additional positional arguments to forward to ``transform``.
+    transform_kwargs : dict[str -> hashable]
+        Additional keyword arguments to forward to ``transform``.
 
     Notes
     -----
@@ -1975,6 +1978,7 @@ class GroupedRowTransform(Factor):
     def __new__(cls,
                 transform,
                 transform_args,
+                transform_kwargs,
                 factor,
                 groupby,
                 dtype,
@@ -1994,6 +1998,7 @@ class GroupedRowTransform(Factor):
             GroupedRowTransform,
             transform=transform,
             transform_args=transform_args,
+            transform_kwargs=transform_kwargs,
             inputs=(factor, groupby),
             missing_value=missing_value,
             mask=mask,
@@ -2001,17 +2006,19 @@ class GroupedRowTransform(Factor):
             **kwargs
         )
 
-    def _init(self, transform, transform_args, *args, **kwargs):
+    def _init(self, transform, transform_args, transform_kwargs, *args, **kwargs):
         self._transform = transform
         self._transform_args = transform_args
+        self._transform_kwargs = transform_kwargs
         return super(GroupedRowTransform, self)._init(*args, **kwargs)
 
     @classmethod
-    def _static_identity(cls, transform, transform_args, *args, **kwargs):
+    def _static_identity(cls, transform, transform_args, transform_kwargs, *args, **kwargs):
         return (
             super(GroupedRowTransform, cls)._static_identity(*args, **kwargs),
             transform,
             transform_args,
+            tuple((transform_kwargs or {}).items()),
         )
 
     def _compute(self, arrays, dates, assets, mask):
@@ -2026,6 +2033,7 @@ class GroupedRowTransform(Factor):
                 group_labels=group_labels,
                 func=self._transform,
                 func_args=self._transform_args,
+                func_kwargs=dict(self._transform_kwargs),
                 out=empty_like(data, dtype=self.dtype),
             ),
             self.missing_value,

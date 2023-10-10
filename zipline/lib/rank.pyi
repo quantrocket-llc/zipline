@@ -18,7 +18,7 @@ def rankdata_2d_ordinal(array):
     """
     Equivalent to:
 
-    numpy.apply_over_axis(scipy.stats.rankdata, 1, array, method='ordinal')
+    numpy.apply_over_axis(scipy.stats.rankdata, 1, array, method='ordinal', nan_policy='omit')
     """
     ...
 
