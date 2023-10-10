@@ -1135,6 +1135,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return GroupedRowTransform(
             transform=demean,
             transform_args=(),
+            transform_kwargs=None,
             factor=self,
             groupby=groupby,
             dtype=self.dtype,
@@ -1206,6 +1207,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return GroupedRowTransform(
             transform=zscore,
             transform_args=(),
+            transform_kwargs=None,
             factor=self,
             groupby=groupby,
             dtype=self.dtype,
@@ -1594,6 +1596,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         return GroupedRowTransform(
             transform=winsorize,
             transform_args=(min_percentile, max_percentile),
+            transform_kwargs=None,
             factor=self,
             groupby=groupby,
             dtype=self.dtype,
@@ -2009,7 +2012,7 @@ class GroupedRowTransform(Factor):
     def _init(self, transform, transform_args, transform_kwargs, *args, **kwargs):
         self._transform = transform
         self._transform_args = transform_args
-        self._transform_kwargs = transform_kwargs
+        self._transform_kwargs = transform_kwargs or {}
         return super(GroupedRowTransform, self)._init(*args, **kwargs)
 
     @classmethod
