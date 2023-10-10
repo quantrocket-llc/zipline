@@ -30,11 +30,11 @@ from zipline.utils.numpy_utils import (
 import_array()
 
 
-def rankdata_1d_descending(ndarray data, str method):
+def rankdata_1d_descending(ndarray data, str method, str nan_policy):
     """
     1D descending version of scipy.stats.rankdata.
     """
-    return rankdata(-(data.view(float64)), method=method, nan_policy='omit')
+    return rankdata(-(data.view(float64)), method=method, nan_policy=nan_policy)
 
 
 def masked_rankdata_2d(ndarray data,

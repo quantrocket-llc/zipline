@@ -1,4 +1,4 @@
-def rankdata_1d_descending(data, method):
+def rankdata_1d_descending(data, method, nan_policy='omit'):
     """
     1D descending version of scipy.stats.rankdata.
     """
