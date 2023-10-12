@@ -584,11 +584,10 @@ class TradingAlgorithm(object):
                 execution_closes = self.exchange_calendar.execution_time_from_close(
                     market_closes
                 )
-                execution_opens = execution_closes
             else:
                 execution_closes = market_closes
-                execution_opens = market_closes
-                before_trading_start_minutes = market_closes
+
+            execution_opens = before_trading_start_minutes = execution_closes
 
             # breaks aren't applicable in daily mode
             break_starts = break_ends = pd.Series(

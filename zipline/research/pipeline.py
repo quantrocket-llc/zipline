@@ -30,6 +30,7 @@ from zipline.research._asset import asset_finder_cache
 from zipline.research.bundle import _get_bundle
 from quantrocket.zipline import get_default_bundle
 from zipline.utils.calendar_utils import get_calendar
+from exchange_calendars.errors import DateOutOfBounds
 
 
 def run_pipeline(
@@ -159,8 +160,11 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
 
     # Roll-forward end_date to valid session
     for i in range(100):
-        if exchange_calendar.is_session(end_date):
-            break
+        try:
+            if exchange_calendar.is_session(end_date):
+                break
+        except DateOutOfBounds:
+            raise ValidationError("end_date is not in calendar")
         end_date += pd.Timedelta(days=1)
     else:
         raise ValidationError("end_date is not in calendar")

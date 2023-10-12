@@ -60,7 +60,7 @@ class DatabasePipelineLoader(implements(PipelineLoader)):
                     shift=dataset.SHIFT,
                     ffill=dataset.FFILL,
                     lookback_window=dataset.LOOKBACK_WINDOW,
-                    timezone=self.calendar.tz.zone,
+                    timezone=self.calendar.tz.key,
                     times=dataset.TIMES,
                     agg=dataset.AGG,
                     cont_fut=dataset.CONT_FUT,

@@ -167,7 +167,8 @@ class TermGraph(object):
             target='used_by',
             name='needed_for',
             key='key', link='dependencies')
-        data = nx.readwrite.json_graph.node_link.node_link_data(self.graph, attrs=attrs)
+        data = nx.readwrite.json_graph.node_link.node_link_data(
+            self.graph, **attrs)
         # remove AssetExists mask from graph representation
         data["dependencies"] = [d for d in data["dependencies"] if "AssetExists" not in str(d["term"])]
         data["nodes"] = [d for d in data["nodes"] if "AssetExists" not in str(d["needed_for"])]
