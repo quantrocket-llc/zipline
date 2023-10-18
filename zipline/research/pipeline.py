@@ -152,8 +152,11 @@ def _run_pipeline(pipeline, start_date, end_date=None, bundle=None, mask=None):
 
     # Roll-forward start_date to valid session
     for i in range(100):
-        if exchange_calendar.is_session(start_date):
-            break
+        try:
+            if exchange_calendar.is_session(start_date):
+                break
+        except DateOutOfBounds:
+            raise ValidationError(f"start_date is not in {calendar_name} calendar")
         start_date += pd.Timedelta(days=1)
     else:
         raise ValidationError(f"start_date is not in {calendar_name} calendar")
