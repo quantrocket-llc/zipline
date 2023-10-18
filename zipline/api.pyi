@@ -434,7 +434,7 @@ def attach_pipeline(
     :func:`zipline.api.pipeline_output`
     """
 
-def batch_market_order(share_counts: 'pd.Series[int]') -> pd.Index:
+def batch_market_order(share_counts: 'pd.Series[int]') -> 'pd.Index[str]':
     """Place a batch market order for multiple assets.
 
     Parameters
