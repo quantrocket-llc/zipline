@@ -2,6 +2,9 @@ import inspect
 from functools import partial
 
 import pandas as pd
+from exchange_calendars import exchange_calendar
+# override the GLOBAL_DEFAULT_START to 1980 (instead of 20 years ago)
+exchange_calendar.GLOBAL_DEFAULT_START = pd.Timestamp("1980-01-01")
 from exchange_calendars import ExchangeCalendar
 from exchange_calendars import clear_calendars
 from exchange_calendars import get_calendar as ec_get_calendar  # get_calendar,
@@ -29,10 +32,6 @@ def wrap_with_signature(signature):
 
 @wrap_with_signature(inspect.signature(ec_get_calendar))
 def get_calendar(name, *args, **kwargs):
-    if name in ["us_futures", "CMES", "XNYS", "NYSE"] and "start" not in kwargs:
-        # backward compat: trading_calendars defaulted to starting
-        # at 1990-01-01; this is mainly for the benefit of the test suite
-        kwargs["start"] = pd.Timestamp("1990-01-01")
     return ec_get_calendar(name, *args, side="right", **kwargs)
 
 

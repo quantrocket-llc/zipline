@@ -186,19 +186,19 @@ class TestSQLiteAdjustmentsWriter(WithExchangeCalendars,
         captured_warnings = [str(w.message) for w in captured_warnings]
 
         self.assertIn(
-            "Couldn't compute ratio for dividend sid=2, ex_date=1990-10-18,"
+            "Couldn't compute ratio for dividend sid=2, ex_date=1980-10-17,"
             " amount=10.000", captured_warnings)
         self.assertIn(
-            "Couldn't compute ratio for dividend sid=2, ex_date=1990-10-19,"
+            "Couldn't compute ratio for dividend sid=2, ex_date=1980-10-20,"
             " amount=0.100", captured_warnings)
         self.assertIn(
-            "Couldn't compute ratio for dividend sid=2, ex_date=1990-11-01,"
+            "Couldn't compute ratio for dividend sid=2, ex_date=1980-10-31,"
             " amount=0.100", captured_warnings)
         self.assertIn(
-            'Dividend ratio <= 0 for dividend sid=1, ex_date=1990-10-17,'
+            'Dividend ratio <= 0 for dividend sid=1, ex_date=1980-10-16,'
             ' amount=0.510', captured_warnings)
         self.assertIn(
-            'Dividend ratio <= 0 for dividend sid=1, ex_date=1990-10-18,'
+            'Dividend ratio <= 0 for dividend sid=1, ex_date=1980-10-17,'
             ' amount=0.400', captured_warnings)
 
     def _test_identity(self, name):
