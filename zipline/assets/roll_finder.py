@@ -83,7 +83,7 @@ class RollFinder(with_metaclass(ABCMeta, object)):
         -------
         rolls - list[tuple(sid, roll_date)]
             A list of rolls, where first value is the first active `sid`,
-        and the `roll_date` on which to hop to the next contract.
+            and the `roll_date` on which to hop to the next contract.
             The last pair in the chain has a value of `None` since the roll
             is after the range.
         """
@@ -215,6 +215,8 @@ class VolumeRollFinder(RollFinder):
         elif dt > front_contract.end_date and dt <= back_contract.end_date:
             return back
         elif dt > back_contract.end_date and dt <= front_contract.end_date:
+            return front
+        elif dt > front_contract.end_date and dt > back_contract.end_date:
             return front
 
         front_vol = get_value(front, prev, 'volume')
