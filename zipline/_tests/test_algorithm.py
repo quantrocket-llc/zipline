@@ -53,8 +53,15 @@ from zipline.errors import (
     ZeroCapitalError
 )
 
-from zipline.finance.commission import PerShare, PerTrade
-from zipline.finance.execution import LimitOrder
+from zipline.finance.commission import PerShare, PerTrade, NoCommission
+from zipline.finance.slippage import NoSlippage
+from zipline.finance.execution import (
+    LimitOrder,
+    MarketOnOpenOrder,
+    LimitOnOpenOrder,
+    MarketOnCloseOrder,
+    LimitOnCloseOrder
+)
 from zipline.finance.order import ORDER_STATUS
 from zipline.finance.trading import SimulationParameters
 from zipline.finance.asset_restrictions import (
@@ -4312,3 +4319,246 @@ class AlgoInputValidationTestCase(zf.WithMakeAlgo,
                     script=script,
                     **{method: lambda *args, **kwargs: None}
                 )
+
+class TestAuctionOrdersMinuteMode(zf.WithMakeAlgo, zf.ZiplineTestCase):
+
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-04')
+    SIM_PARAMS_DATA_FREQUENCY = 'minute'
+    sids = 1, 2
+
+    BENCHMARK_SID = None
+
+    @classmethod
+    def make_equity_info(cls):
+        return make_simple_equity_info(cls.sids, '2002-02-1', '2007-01-01')
+
+    @parameterized.expand([
+        # the algo starts on 2006-01-03, so the first opportunity for closing
+        # auction fills is on 2006-01-03, and the first opportunity for opening
+        # auction fills is on 2006-01-04
+        ('close', '2006-01-03 16:00:00', MarketOnCloseOrder),
+        ('open', '2006-01-04 09:31:00', MarketOnOpenOrder),
+    ])
+    def test_market_on_close_and_open(self, price_field, auction_dt, execution_style):
+        def initialize(algo):
+            algo.order_id = None
+            algo.auction_dt = pd.Timestamp(auction_dt, tz="America/New_York")
+            algo.set_commission(NoCommission())
+            algo.set_slippage(NoSlippage())
+
+        def handle_data(algo, data):
+
+            if not algo.order_id:
+
+                self.assertEqual(algo.get_datetime().date(), pd.Timestamp('2006-01-03').date())
+                order_id = algo.order(algo.sid(1), 1, style=execution_style())
+                algo.order_id = order_id
+                return
+
+            order = algo.get_order(algo.order_id)
+            # prior to the auction, the order is still open
+            if algo.get_datetime() < algo.auction_dt:
+                self.assertEqual(order.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+
+            # at the auction, the order is filled at the auction price (remember that
+            # the 4 pm bar is passed to the algo at 4:01 pm so the trade has already
+            # happened)
+            elif algo.get_datetime() == algo.auction_dt:
+                self.assertEqual(order.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                position = algo.portfolio.positions[algo.sid(1)]
+                auction_price = data.current(algo.sid(1), price_field)
+                self.assertEqual(position.amount, 1)
+                self.assertEqual(position.cost_basis, auction_price)
+                self.assertNotEqual(data.current(algo.sid(1), 'open'), data.current(algo.sid(1), 'close'), msg="open and close should be different")
+                all_orders = algo.get_open_orders()
+                self.assertEqual(all_orders, {})
+            # after the auction, the order is still filled
+            else:
+                self.assertEqual(order.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                all_orders = algo.get_open_orders()
+                self.assertEqual(all_orders, {})
+
+        self.run_algorithm(initialize=initialize, handle_data=handle_data)
+
+    @parameterized.expand([
+        # the algo starts on 2006-01-03, so the first opportunity for closing
+        # auction fills is on 2006-01-03, and the first opportunity for opening
+        # auction fills is on 2006-01-04
+        ('close', '2006-01-03 16:00:00', LimitOnCloseOrder),
+        ('open', '2006-01-04 09:31:00', LimitOnOpenOrder),
+    ])
+    def test_limit_on_close_and_open(self, price_field, auction_dt, execution_style):
+        def initialize(algo):
+            algo.order1_id = None
+            algo.order2_id = None
+            algo.auction_dt = pd.Timestamp(auction_dt, tz="America/New_York")
+            algo.set_commission(NoCommission())
+            algo.set_slippage(NoSlippage())
+
+        def handle_data(algo, data):
+            if not algo.order1_id:
+
+                self.assertEqual(algo.get_datetime().date(), pd.Timestamp('2006-01-03').date())
+
+                # marketable limit order should fill
+                order1_id = algo.order(algo.sid(1), 1, style=execution_style(450))
+                # nonmarketable limit order should not fill
+                order2_id = algo.order(algo.sid(1), 1, style=execution_style(300))
+                algo.order1_id = order1_id
+                algo.order2_id = order2_id
+                return
+
+            order1 = algo.get_order(algo.order1_id)
+            order2 = algo.get_order(algo.order2_id)
+            # prior to the auction, both orders are still open
+            if algo.get_datetime() < algo.auction_dt:
+                self.assertEqual(order1.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+                self.assertEqual(order2.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+                all_orders = algo.get_open_orders()
+                self.assertEqual(len(all_orders[algo.sid(1)]), 2)
+
+            # at the auction, the marketable order is filled at the auction price
+            # and the nonmarketable order is still open because it didn't fill
+            elif algo.get_datetime() == algo.auction_dt:
+                self.assertEqual(order1.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                position = algo.portfolio.positions[algo.sid(1)]
+                auction_price = data.current(algo.sid(1), price_field)
+                self.assertEqual(position.amount, 1)
+                self.assertEqual(position.cost_basis, auction_price)
+                self.assertNotEqual(data.current(algo.sid(1), 'open'), data.current(algo.sid(1), 'close'), msg="open and close should be different")
+
+                # order2 is still open, didn't fill but hasn't yet been marked cancelled
+                self.assertEqual(order2.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+
+                all_orders = algo.get_open_orders()
+                self.assertEqual(len(all_orders[algo.sid(1)]), 1)
+            # after the auction, the marketable order is still filled and the nonmarketable
+            # order is cancelled
+            else:
+                self.assertEqual(order1.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                self.assertEqual(order2.status, ORDER_STATUS.CANCELLED, msg=algo.get_datetime())
+                all_orders = algo.get_open_orders()
+                self.assertEqual(all_orders, {})
+
+        self.run_algorithm(initialize=initialize, handle_data=handle_data)
+
+class TestAuctionOrdersDailyMode(zf.WithMakeAlgo, zf.ZiplineTestCase):
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-06')
+    SIM_PARAMS_START_DATE = pd.Timestamp('2006-01-04')
+    SIM_PARAMS_DATA_FREQUENCY = 'daily'
+    DATA_PORTAL_USE_MINUTE_DATA = False
+    BENCHMARK_SID = None
+    sids = 1, 2
+
+    @classmethod
+    def make_equity_info(cls):
+        return make_simple_equity_info(cls.sids, '2002-02-1', '2007-01-01')
+
+    @parameterized.expand([
+        # the algo starts on 2006-01-03, and in daily mode orders are placed
+        # after the close, so the first opportunity for fills is on 2006-01-04
+        ('close', '2006-01-04 16:00:00', MarketOnCloseOrder),
+        ('open', '2006-01-04 16:00:00', MarketOnOpenOrder),
+    ])
+    def test_market_on_close_and_open(self, price_field, auction_dt, execution_style):
+        def initialize(algo):
+            algo.order_id = None
+            algo.auction_dt = pd.Timestamp(auction_dt, tz="America/New_York")
+            algo.set_commission(NoCommission())
+            algo.set_slippage(NoSlippage())
+
+        def handle_data(algo, data):
+
+            if not algo.order_id:
+
+                self.assertEqual(algo.get_datetime().date(), pd.Timestamp('2006-01-03').date())
+
+                order_id = algo.order(algo.sid(1), 1, style=execution_style())
+                algo.order_id = order_id
+                return
+
+            order = algo.get_order(algo.order_id)
+            # prior to the auction, the order is open
+            if algo.get_datetime() < algo.auction_dt:
+                self.assertEqual(order.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+
+            # at the auction, the order is filled at the auction price
+            elif algo.get_datetime() == algo.auction_dt:
+                self.assertEqual(order.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                position = algo.portfolio.positions[algo.sid(1)]
+                auction_price = data.current(algo.sid(1), price_field)
+                self.assertEqual(position.amount, 1)
+                self.assertEqual(position.cost_basis, auction_price)
+                self.assertNotEqual(data.current(algo.sid(1), 'open'), data.current(algo.sid(1), 'close'), msg="open and close should be different")
+                all_orders = algo.get_open_orders()
+                self.assertEqual(all_orders, {})
+            # after the auction, the order is still filled
+            else:
+                self.assertEqual(order.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                all_orders = algo.get_open_orders()
+                self.assertEqual(all_orders, {})
+
+        self.run_algorithm(initialize=initialize, handle_data=handle_data)
+
+    @parameterized.expand([
+        # the algo starts on 2006-01-03, and in daily mode orders are placed
+        # after the close, so the first opportunity for fills is on 2006-01-04
+        ('close', '2006-01-04 16:00:00', LimitOnCloseOrder),
+        ('open', '2006-01-04 16:00:00', LimitOnOpenOrder),
+    ])
+    def test_limit_on_close_and_open(self, price_field, auction_dt, execution_style):
+        def initialize(algo):
+            algo.order1_id = None
+            algo.order2_id = None
+            algo.auction_dt = pd.Timestamp(auction_dt, tz="America/New_York")
+            algo.set_commission(NoCommission())
+            algo.set_slippage(NoSlippage())
+
+        def handle_data(algo, data):
+            if not algo.order1_id:
+
+                self.assertEqual(algo.get_datetime().date(), pd.Timestamp('2006-01-03').date())
+
+                # marketable limit order should fill
+                order1_id = algo.order(algo.sid(1), 1, style=execution_style(100))
+                # nonmarketable limit order should not fill
+                order2_id = algo.order(algo.sid(1), 1, style=execution_style(5))
+                algo.order1_id = order1_id
+                algo.order2_id = order2_id
+                return
+
+            order1 = algo.get_order(algo.order1_id)
+            order2 = algo.get_order(algo.order2_id)
+            # prior to the auction, both orders are still open
+            if algo.get_datetime() < algo.auction_dt:
+                self.assertEqual(order1.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+                self.assertEqual(order2.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+                all_orders = algo.get_open_orders()
+                self.assertEqual(len(all_orders[algo.sid(1)]), 2)
+
+            # at the auction, the marketable order is filled at the auction price
+            # and the nonmarketable order is still open because it didn't fill
+            elif algo.get_datetime() == algo.auction_dt:
+                self.assertEqual(order1.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                position = algo.portfolio.positions[algo.sid(1)]
+                auction_price = data.current(algo.sid(1), price_field)
+                self.assertEqual(position.amount, 1)
+                self.assertEqual(position.cost_basis, auction_price)
+                self.assertNotEqual(data.current(algo.sid(1), 'open'), data.current(algo.sid(1), 'close'), msg="open and close should be different")
+
+                # order2 is still open, didn't fill but hasn't yet been marked cancelled
+                self.assertEqual(order2.status, ORDER_STATUS.OPEN, msg=algo.get_datetime())
+
+                all_orders = algo.get_open_orders()
+                self.assertEqual(len(all_orders[algo.sid(1)]), 1)
+            # after the auction, the marketable order is still filled and the nonmarketable
+            # order is cancelled
+            else:
+                self.assertEqual(order1.status, ORDER_STATUS.FILLED, msg=algo.get_datetime())
+                self.assertEqual(order2.status, ORDER_STATUS.CANCELLED, msg=algo.get_datetime())
+                all_orders = algo.get_open_orders()
+                self.assertEqual(all_orders, {})
+
+        self.run_algorithm(initialize=initialize, handle_data=handle_data)

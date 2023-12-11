@@ -35,6 +35,24 @@ StopLimitOrder
     Execution style representing a limit order to be placed if market price
     reaches a threshold.
 
+MarketOnOpenOrder
+    Execution style for orders to be filled at the open price of the asset's
+    first trade on the day the order is filled.
+
+LimitOnOpenOrder
+    Execution style for orders to be filled at the open price of the asset's
+    first trade on the day the order is filled, at a price equal to or better
+    than a specified limit price.
+
+MarketOnCloseOrder
+    Execution style for orders to be filled at the close price of the asset's
+    last trade on the day the order is filled.
+
+LimitOnCloseOrder
+    Execution style for orders to be filled at the close price of the asset's
+    last trade on the day the order is filled, at a price equal to or better
+    than a specified limit price.
+
 Notes
 -----
 Usage Guide:
@@ -57,6 +75,10 @@ __all__ = [
     'LimitOrder',
     'StopOrder',
     'StopLimitOrder',
+    'MarketOnOpenOrder',
+    'LimitOnOpenOrder',
+    'MarketOnCloseOrder',
+    'LimitOnCloseOrder',
 ]
 
 class ExecutionStyle(with_metaclass(abc.ABCMeta)):
@@ -64,6 +86,7 @@ class ExecutionStyle(with_metaclass(abc.ABCMeta)):
     """
 
     _exchange = None
+    _tif = None
 
     @abc.abstractmethod
     def get_limit_price(self, is_buy):
@@ -87,6 +110,13 @@ class ExecutionStyle(with_metaclass(abc.ABCMeta)):
         The exchange to which this order should be routed.
         """
         return self._exchange
+
+    @property
+    def tif(self):
+        """
+        The time in force for this order.
+        """
+        return self._tif
 
 
 class MarketOrder(ExecutionStyle):
@@ -144,6 +174,12 @@ class LimitOrder(ExecutionStyle):
     order_params : dict, optional
         Additional broker-specific order parameters to use in live trading.
         Ignored in backtests.
+
+    Examples
+    --------
+    Place a limit order::
+
+        algo.order(asset, 100, style=LimitOrder(10.0))
     """
     def __init__(
         self,
@@ -265,6 +301,111 @@ class StopLimitOrder(ExecutionStyle):
             tick_size=(0.01 if self.asset is None else self.asset.tick_size)
         )
 
+class MarketOnOpenOrder(MarketOrder):
+    """
+    Execution style for orders to be filled at the open price of the asset's
+    first trade on the day the order is filled.
+
+    Parameters
+    ----------
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
+
+    Examples
+    --------
+    Place a market-on-open order::
+
+        algo.order(asset, 100, style=MarketOnOpenOrder())
+    """
+
+    _tif = "OPG"
+
+class LimitOnOpenOrder(LimitOrder):
+    """
+    Execution style for orders to be filled at the open price of the asset's
+    first trade on the day the order is filled, at a price equal to or better
+    than a specified limit price.
+
+    Parameters
+    ----------
+    limit_price : float
+        Maximum price for buys, or minimum price for sells, at which the order
+        should be filled.
+
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
+
+    Examples
+    --------
+    Place a limit-on-open order::
+
+        algo.order(asset, 100, style=LimitOnOpenOrder(10.0))
+    """
+
+    _tif = "OPG"
+
+class MarketOnCloseOrder(MarketOrder):
+    """
+    Execution style for orders to be filled at the close price of the asset's
+    last trade on the day the order is filled.
+
+    Parameters
+    ----------
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
+
+    Examples
+    --------
+    Place a market-on-close order::
+
+        algo.order(asset, 100, style=MarketOnCloseOrder())
+    """
+
+    _tif = "CLS"
+
+class LimitOnCloseOrder(LimitOrder):
+    """
+    Execution style for orders to be filled at the close price of the asset's
+    last trade on the day the order is filled, at a price equal to or better
+    than a specified limit price.
+
+    Parameters
+    ----------
+    limit_price : float
+        Maximum price for buys, or minimum price for sells, at which the order
+        should be filled.
+
+    exchange : str, optional
+        The exchange to route the order to. Only applicable to live trading
+        and to certain brokers.
+
+    order_params : dict, optional
+        Additional broker-specific order parameters to use in live trading.
+        Ignored in backtests.
+
+    Examples
+    --------
+    Place a limit-on-close order::
+
+        algo.order(asset, 100, style=LimitOnCloseOrder(10.0))
+    """
+
+    _tif = "CLS"
 
 def asymmetric_round_price(price, prefer_round_down, tick_size, diff=0.95):
     """

@@ -141,6 +141,7 @@ class SimulationBlotter(Blotter):
             amount=amount,
             stop=style.get_stop_price(is_buy),
             limit=style.get_limit_price(is_buy),
+            tif=style.tif,
             id=order_id
         )
 
@@ -357,23 +358,26 @@ class SimulationBlotter(Blotter):
                 slippage = self.slippage_models[type(asset)]
 
                 for order, txn in \
-                        slippage.simulate(bar_data, asset, asset_orders):
-                    commission = self.commission_models[type(asset)]
-                    additional_commission = commission.calculate(order, txn)
+                        slippage.simulate(bar_data, asset, asset_orders, self.sim_params.data_frequency):
 
-                    if additional_commission > 0:
-                        commissions.append({
-                            "asset": order.asset,
-                            "order": order,
-                            "cost": additional_commission
-                        })
+                    if txn is not None:
 
-                    order.filled += txn.amount
-                    order.commission += additional_commission
+                        commission = self.commission_models[type(asset)]
+                        additional_commission = commission.calculate(order, txn)
 
-                    order.dt = txn.dt
+                        if additional_commission > 0:
+                            commissions.append({
+                                "asset": order.asset,
+                                "order": order,
+                                "cost": additional_commission
+                            })
 
-                    transactions.append(txn)
+                        order.filled += txn.amount
+                        order.commission += additional_commission
+
+                        order.dt = txn.dt
+
+                        transactions.append(txn)
 
                     if not order.open:
                         closed_orders.append(order)

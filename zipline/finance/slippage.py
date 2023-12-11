@@ -227,7 +227,7 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
         """
         raise NotImplementedError('process_order')
 
-    def simulate(self, data, asset, orders_for_asset):
+    def simulate(self, data, asset, orders_for_asset, data_frequency):
         self._volume_for_bar = 0
         volume = data.current(asset, "volume")
 
@@ -248,14 +248,17 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
         dt = data.current_dt
 
         for order in orders_for_asset:
-            if order.open_amount == 0:
-                continue
-
-            order.check_triggers(price, dt)
-            if not order.triggered:
-                continue
-
             txn = None
+
+            if order.open_amount == 0:
+                yield order, txn
+                continue
+
+            order.check_triggers(data, data_frequency)
+            if not order.triggered:
+                yield order, txn
+                continue
+
 
             try:
                 execution_price, execution_volume = \
@@ -274,7 +277,8 @@ class SlippageModel(with_metaclass(FinancialModelMeta)):
 
             if txn:
                 self._volume_for_bar += abs(txn.amount)
-                yield order, txn
+
+            yield order, txn
 
     def asdict(self):
         return self.__dict__
@@ -291,7 +295,7 @@ class NoSlippage(SlippageModel):
     @staticmethod
     def process_order(data, order):
         return (
-            data.current(order.asset, 'close'),
+            data.current(order.asset, 'open' if order.tif == 'OPG' else 'close'),
             order.amount,
         )
 
@@ -397,7 +401,7 @@ class VolumeShareSlippage(SlippageModel):
         volume_share = min(total_volume / volume,
                            self.volume_limit)
 
-        price = data.current(order.asset, "close")
+        price = data.current(order.asset, 'open' if order.tif == 'OPG' else 'close')
 
         # BEGIN
         #
@@ -461,7 +465,7 @@ class FixedSlippage(SlippageModel):
         )
 
     def process_order(self, data, order):
-        price = data.current(order.asset, "close")
+        price = data.current(order.asset, 'open' if order.tif == 'OPG' else 'close')
 
         return (
             price + (self.spread / 2.0 * order.direction),
@@ -770,7 +774,7 @@ class FixedBasisPointsSlippage(SlippageModel):
         volume = data.current(order.asset, "volume")
         max_volume = int(self.volume_limit * volume)
 
-        price = data.current(order.asset, "close")
+        price = data.current(order.asset, 'open' if order.tif == 'OPG' else 'close')
         shares_to_fill = min(abs(order.open_amount),
                              max_volume - self.volume_for_bar)
 

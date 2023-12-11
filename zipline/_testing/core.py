@@ -404,7 +404,7 @@ def create_minute_bar_data(minutes, sids):
     for sid_idx, sid in enumerate(sids):
         yield sid, pd.DataFrame(
             {
-                'open': np.arange(length) + 10 + sid_idx,
+                'open': np.arange(length) + 9 + sid_idx,
                 'high': np.arange(length) + 15 + sid_idx,
                 'low': np.arange(length) + 8 + sid_idx,
                 'close': np.arange(length) + 10 + sid_idx,
@@ -419,7 +419,7 @@ def create_daily_bar_data(sessions, sids):
     for sid_idx, sid in enumerate(sids):
         yield sid, pd.DataFrame(
             {
-                "open": (np.array(range(10, 10 + length)) + sid_idx),
+                "open": (np.array(range(9, 9 + length)) + sid_idx),
                 "high": (np.array(range(15, 15 + length)) + sid_idx),
                 "low": (np.array(range(8, 8 + length)) + sid_idx),
                 "close": (np.array(range(10, 10 + length)) + sid_idx),

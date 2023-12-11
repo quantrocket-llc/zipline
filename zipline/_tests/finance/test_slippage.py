@@ -181,9 +181,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # long, does not trade - impacted price worse than limit price
         open_orders = [
@@ -203,9 +205,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # long, does trade
         open_orders = [
@@ -225,6 +229,7 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(len(orders_txns), 1)
@@ -264,9 +269,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # short, does not trade - impacted price worse than limit price
         open_orders = [
@@ -286,9 +293,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # short, does trade
         open_orders = [
@@ -308,6 +317,7 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(len(orders_txns), 1)
@@ -349,9 +359,10 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
-
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[3],
@@ -361,9 +372,10 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
-
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # long, does not trade - impacted price worse than limit price
         open_orders = [
@@ -384,9 +396,10 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
-
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[3],
@@ -396,9 +409,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # long, does trade
         open_orders = [
@@ -419,9 +434,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[3],
@@ -431,6 +448,7 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(len(orders_txns), 1)
@@ -467,9 +485,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[1],
@@ -479,9 +499,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # short, does not trade - impacted price worse than limit price
         open_orders = [
@@ -502,9 +524,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[1],
@@ -514,9 +538,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         # short, does trade
         open_orders = [
@@ -537,9 +563,11 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
         bar_data = self.create_bardata(
             simulation_dt_func=lambda: self.minutes[1],
@@ -549,6 +577,7 @@ class SlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(len(orders_txns), 1)
@@ -657,6 +686,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(len(orders_txns), 1)
@@ -696,9 +726,11 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
-        self.assertEqual(len(orders_txns), 0)
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(len(txns), 0)
 
     def test_volume_share_slippage_with_future(self):
         slippage_model = VolumeShareSlippage(volume_limit=1, price_impact=0.3)
@@ -717,7 +749,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
         )
 
         orders_txns = list(
-            slippage_model.simulate(bar_data, self.ASSET1000, open_orders)
+            slippage_model.simulate(bar_data, self.ASSET1000, open_orders, self.SIM_PARAMS_DATA_FREQUENCY)
         )
 
         self.assertEqual(len(orders_txns), 1)
@@ -1142,6 +1174,7 @@ class OrdersStopTestCase(WithSimParams,
                     bar_data,
                     self.ASSET133,
                     [order],
+                    self.SIM_PARAMS_DATA_FREQUENCY
                 ))
             except StopIteration:
                 txn = None
@@ -1160,6 +1193,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
 
     START_DATE = pd.Timestamp('2006-01-05')
     END_DATE = pd.Timestamp('2006-01-05')
+    SIM_PARAMS_DATA_FREQUENCY = 'minute'
 
     ASSET_FINDER_EQUITY_SIDS = (133,)
 
@@ -1229,6 +1263,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(len(orders_txns), 1)
@@ -1281,6 +1316,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(len(orders_txns), 2)
@@ -1333,6 +1369,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
 
         self.assertEqual(1, len(orders_txns))
@@ -1351,5 +1388,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
             bar_data,
             self.ASSET133,
             open_orders,
+            self.SIM_PARAMS_DATA_FREQUENCY
         ))
-        self.assertEqual(0, len(orders_txns))
+        txns = [txn for _, txn in orders_txns if txn is not None]
+        self.assertEqual(0, len(txns))

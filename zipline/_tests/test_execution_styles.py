@@ -22,6 +22,10 @@ from zipline.finance.execution import (
     MarketOrder,
     StopLimitOrder,
     StopOrder,
+    MarketOnOpenOrder,
+    LimitOnOpenOrder,
+    MarketOnCloseOrder,
+    LimitOnCloseOrder,
 )
 from zipline._testing.fixtures import (
     ZiplineTestCase,
@@ -255,3 +259,12 @@ class ExecutionStyleTestCase(WithConstantFutureMinuteBarData,
                      style.get_stop_price(is_buy=False))
         assert_equal(expected_limit_sell_or_stop_buy + 1,
                      style.get_stop_price(is_buy=True))
+
+    def test_auction_order_tifs(self):
+        """
+        Basic unit tests for on-open and on-close execution styles.
+        """
+        assert_equal(MarketOnOpenOrder().tif, "OPG")
+        assert_equal(LimitOnOpenOrder(1).tif, "OPG")
+        assert_equal(MarketOnCloseOrder().tif, "CLS")
+        assert_equal(LimitOnCloseOrder(1).tif, "CLS")

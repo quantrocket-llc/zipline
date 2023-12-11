@@ -42,8 +42,8 @@ class Order(object):
     # Order objects and we keep them all in memory, so it's worthwhile trying
     # to cut down on the memory footprint of this object.
     __slots__ = ["id", "dt", "reason", "created", "asset", "amount", "filled",
-                 "commission", "_status", "stop", "limit", "stop_reached",
-                 "limit_reached", "direction", "type", "broker_order_id"]
+                 "commission", "_status", "stop", "limit", "tif", "stop_reached",
+                 "limit_reached", "tif_reached", "direction", "type", "broker_order_id"]
 
     @expect_types(asset=Asset)
     def __init__(
@@ -53,6 +53,7 @@ class Order(object):
         amount: int,
         stop: float = None,
         limit: float = None,
+        tif: str = None,
         filled: int = 0,
         commission: float = 0,
         id: str = None
@@ -98,8 +99,10 @@ class Order(object):
         self._status = ORDER_STATUS.OPEN
         self.stop = stop
         self.limit = limit
+        self.tif = tif
         self.stop_reached = False
         self.limit_reached = False
+        self.tif_reached = False
         self.direction = math.copysign(1, self.amount)
         self.type = zp.DATASOURCE_TYPE.ORDER
         self.broker_order_id = None
@@ -134,11 +137,17 @@ class Order(object):
         obj = zp.Order(initial_values=pydict)
         return obj
 
-    def check_triggers(self, price, dt):
+    def check_triggers(self, data, data_frequency):
         """
         Update internal state based on price triggers and the
         trade event's price.
         """
+        if self.tif == "OPG":
+            price = data.current(self.asset, "open")
+        else:
+            price = data.current(self.asset, "close")
+        dt = data.current_dt
+
         stop_reached, limit_reached, sl_stop_reached = \
             self.check_order_triggers(price)
         if (stop_reached, limit_reached) \
@@ -149,6 +158,32 @@ class Order(object):
         if sl_stop_reached:
             # Change the STOP LIMIT order into a LIMIT order
             self.stop = None
+
+        self.check_tif_triggers(data, data_frequency)
+
+    def check_tif_triggers(self, data, data_frequency):
+        """
+        Update internal state based on time triggers for on-open/on-close
+        orders.
+        """
+        if self.tif is None:
+            return
+
+        # if the tif for an on-open or on-close order was already reached
+        # and the order was not filled in the respective auction, mark it
+        # as cancelled
+        if self.tif_reached and self.tif in ('OPG', 'CLS'):
+            self.tif_reached = False
+            self.mark_cancelled()
+
+        if data_frequency == 'minute':
+            if self.tif == "OPG" and data.current_session_minutes[0] == data.current_dt:
+                self.tif_reached = True
+            elif self.tif == "CLS" and data.current_session_minutes[-1] == data.current_dt:
+                self.tif_reached = True
+
+        elif data_frequency == 'daily':
+            self.tif_reached = True
 
     def check_order_triggers(self, current_price):
         """
@@ -241,6 +276,9 @@ class Order(object):
         self._status = status
 
     def cancel(self):
+        self.mark_cancelled()
+
+    def mark_cancelled(self):
         self.status = ORDER_STATUS.CANCELLED
 
     def reject(self, reason=''):
@@ -261,11 +299,15 @@ class Order(object):
         For a market order, True.
         For a stop order, True IFF stop_reached.
         For a limit order, True IFF limit_reached.
+        For a on-open or on-close order, True IFF tif_reached.
         """
         if self.stop is not None and not self.stop_reached:
             return False
 
         if self.limit is not None and not self.limit_reached:
+            return False
+
+        if self.tif is not None and not self.tif_reached:
             return False
 
         return True

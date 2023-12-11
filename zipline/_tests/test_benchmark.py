@@ -204,8 +204,8 @@ class TestBenchmark(WithDataPortal, WithSimParams, WithExchangeCalendars,
 
             days_to_use = self.sim_params.sessions
 
-            # first value should be 0.0, coming from daily data
-            self.assertAlmostEqual(0.0, source.get_value(days_to_use[0]))
+            # first value should be 0.1, coming from daily data
+            self.assertAlmostEqual(0.1, source.get_value(days_to_use[0]))
 
             manually_calculated = data_portal.get_history_window(
                 [2], days_to_use[-1],

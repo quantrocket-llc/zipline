@@ -812,7 +812,9 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             'sid': self.equity,
             'status': ORDER_STATUS.FILLED,
             'stop': None,
-            'stop_reached': False
+            'stop_reached': False,
+            'tif': None,
+            'tif_reached': False,
         }
 
         # we only order on the first day
@@ -1195,7 +1197,9 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
                 'sid': self.future,
                 'status': ORDER_STATUS.FILLED,
                 'stop': None,
-                'stop_reached': False
+                'stop_reached': False,
+                'tif': None,
+                'tif_reached': False,
             }],
         ] + [[]] * (len(self.closes) - 1)
 
@@ -1738,7 +1742,9 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'sid': self.equity,
             'status': ORDER_STATUS.FILLED,
             'stop': None,
-            'stop_reached': False
+            'stop_reached': False,
+            'tif': None,
+            'tif_reached': False
         }
 
         # we only order on the first day
@@ -2159,7 +2165,9 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
             'sid': self.future,
             'status': ORDER_STATUS.FILLED,
             'stop': None,
-            'stop_reached': False
+            'stop_reached': False,
+            'tif': None,
+            'tif_reached': False
         }
 
         # exchange calendars uses ZoneInfo while pandas currently uses

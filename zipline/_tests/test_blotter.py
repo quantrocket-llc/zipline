@@ -25,6 +25,10 @@ from zipline.finance.execution import (
     MarketOrder,
     StopLimitOrder,
     StopOrder,
+    MarketOnOpenOrder,
+    LimitOnOpenOrder,
+    MarketOnCloseOrder,
+    LimitOnCloseOrder,
 )
 from zipline.finance.order import ORDER_STATUS, Order
 from zipline.finance.slippage import (
@@ -102,11 +106,16 @@ class BlotterTestCase(WithCreateBarData,
     def CREATE_BARDATA_DATA_FREQUENCY(cls):
         return cls.sim_params.data_frequency
 
-    @parameterized.expand([(MarketOrder(), None, None),
-                           (LimitOrder(10), 10, None),
-                           (StopOrder(10), None, 10),
-                           (StopLimitOrder(10, 20), 10, 20)])
-    def test_blotter_order_types(self, style_obj, expected_lmt, expected_stp):
+    @parameterized.expand([(MarketOrder(), None, None, None),
+                           (LimitOrder(10), 10, None, None),
+                           (StopOrder(10), None, 10, None),
+                           (StopLimitOrder(10, 20), 10, 20, None),
+                           (MarketOnOpenOrder(), None, None, 'OPG'),
+                           (LimitOnOpenOrder(10), 10, None, 'OPG'),
+                           (MarketOnCloseOrder(), None, None, 'CLS'),
+                           (LimitOnCloseOrder(10), 10, None, 'CLS'),
+                           ])
+    def test_blotter_order_types(self, style_obj, expected_lmt, expected_stp, expected_tif):
         style_obj.asset = self.asset_24
 
         blotter = SimulationBlotter(self.sim_params)
@@ -116,6 +125,7 @@ class BlotterTestCase(WithCreateBarData,
 
         self.assertEqual(result.limit, expected_lmt)
         self.assertEqual(result.stop, expected_stp)
+        self.assertEqual(result.tif, expected_tif)
 
     def test_cancel(self):
         blotter = SimulationBlotter(self.sim_params)
