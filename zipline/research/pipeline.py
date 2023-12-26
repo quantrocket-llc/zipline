@@ -364,7 +364,7 @@ def get_forward_returns(
         # For end_date, request enough cushion to calculate forward returns
         index_cushion = pd.date_range(
             start=factor.index.levels[0].max(),
-            periods=window_length + 5,
+            periods=window_length + 1,
             freq=freq)
 
         end_date = index_cushion.max()
