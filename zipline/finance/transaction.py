@@ -54,7 +54,7 @@ class Transaction(object):
         del py['asset']
 
         # Adding 'sid' for backwards compatibility with downstrean consumers.
-        py['sid'] = self.asset
+        py['sid'] = self.asset.to_dict()
 
         # If you think this looks dumb, that is because it is! We once stored
         # commission here, but haven't for over a year. I don't want to change

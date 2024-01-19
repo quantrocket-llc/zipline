@@ -842,7 +842,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             'dt': ts_utc('2014-01-06 14:32'),
             'order_id': wildcard,
             'price': 1.0,
-            'sid': self.equity,
+            'sid': self.equity.to_dict(),
         }
 
         # since we only order on the first day, we should only transact on the
@@ -1225,7 +1225,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
                 'dt': ts_utc('2014-01-06 14:32'),
                 'order_id': wildcard,
                 'price': 1.0,
-                'sid': self.future,
+                'sid': self.future.to_dict(),
             }],
         ] + [[]] * (len(self.closes) - 1)
 
@@ -1777,7 +1777,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
                 ts_utc('2014-01-06 14:32'),
                 'minute',
             ),
-            'sid': self.equity,
+            'sid': self.equity.to_dict(),
         }
 
         # since we only order on the first day, we should only transact on the
@@ -2225,7 +2225,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
                 dt,
                 'minute',
             ),
-            'sid': self.future,
+            'sid': self.future.to_dict(),
         }
 
         expected_single_transaction['dt'] = convert_to_native_pandas_tz_type(
