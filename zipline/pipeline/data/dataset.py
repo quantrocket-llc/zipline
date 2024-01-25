@@ -1,5 +1,5 @@
 import abc
-from typing import Union
+from typing import Union, TYPE_CHECKING
 from collections import namedtuple, OrderedDict
 from itertools import repeat
 from textwrap import dedent
@@ -381,66 +381,141 @@ class BoundColumn(LoadableTerm):
         """Short repr used to render in recursive contexts."""
         return self.qualname
 
-# The following BoundColumn subclasses are only used for type hints.
-class BoundBooleanColumn(BoundColumn):
-    """
-    A DataSet column for boolean values.
-    """
+# for type checking, define BoundColumn subclasses so we can point the .latest
+# attribute to the correct type
+if TYPE_CHECKING:
 
-    @property
-    def latest(self) -> LatestFilter:
-        """
-        Filter that returns the latest value of this column.
-        """
-        return super().latest
+    # redefine BoundColumn here because pyright gets confused when
+    # BoundFloatColumn etc. inherit directly from BoundColumn,
+    # perhaps due to the upstream complexity of BoundColumn.
+    class BoundColumn:
+        def specialize(self, domain: Domain) -> 'BoundColumn':
+            """Specialize ``self`` to a concrete domain.
+            """
+            ...
 
-class BoundFloatColumn(BoundColumn):
-    """
-    A DataSet column for floating point values.
-    """
+        def unspecialize(self) -> 'BoundColumn':
+            """
+            Unspecialize a column to its generic form.
 
-    @property
-    def latest(self) -> LatestFactor:
-        """
-        Factor that returns the latest value of this column.
-        """
-        return super().latest
+            This is equivalent to ``column.specialize(GENERIC)``.
+            """
+            ...
 
-class BoundDatetimeColumn(BoundColumn):
-    """
-    A DataSet column for datetime values.
-    """
+        def fx(self, currency: str) -> 'BoundColumn':
+            """
+            Construct a currency-converted version of this column.
 
-    @property
-    def latest(self) -> LatestFactor:
-        """
-        Factor that returns the latest value of this column.
-        """
-        return super().latest
+            Parameters
+            ----------
+            currency : str or zipline.currency.Currency
+                Currency into which to convert this column's data.
 
-class BoundIntColumn(BoundColumn):
-    """
-    A DataSet column for integer values.
-    """
+            Returns
+            -------
+            column : BoundColumn
+                Column producing the same data as ``self``, but currency-converted
+                into ``currency``.
+            """
+            ...
 
-    @property
-    def latest(self) -> LatestClassifier:
-        """
-        Classifier that returns the latest value of this column.
-        """
-        return super().latest
+        @property
+        def currency_aware(self) -> bool:
+            """
+            Whether or not this column produces currency-denominated data.
+            """
+            ...
 
-class BoundObjectColumn(BoundColumn):
-    """
-    A DataSet column for strings.
-    """
+        @property
+        def dataset(self) -> 'DataSet':
+            """
+            The dataset to which this column is bound.
 
-    @property
-    def latest(self) -> LatestClassifier:
+            Returns
+            -------
+            zipline.pipeline.data.DataSet
+            """
+            ...
+
+        @property
+        def name(self) -> str:
+            """
+            The name of this column.
+            """
+            ...
+
+        @property
+        def metadata(self):
+            """
+            Extra metadata associated with this column.
+            """
+            ...
+
+        @property
+        def qualname(self) -> str:
+            """The fully-qualified name of this column.
+            """
+            ...
+
+    class BoundBooleanColumn(BoundColumn):
         """
-        Classifier that returns the latest value of this column.
+        A DataSet column for boolean values.
         """
-        return super().latest
+
+        @property
+        def latest(self) -> LatestFilter:
+            """
+            Filter that returns the latest value of this column.
+            """
+            ...
+
+    class BoundFloatColumn(BoundColumn):
+        """
+        A DataSet column for floating point values.
+        """
+
+        @property
+        def latest(self) -> LatestFactor:
+            """
+            Factor that returns the latest value of this column.
+            """
+            ...
+
+    class BoundDatetimeColumn(BoundColumn):
+        """
+        A DataSet column for datetime values.
+        """
+
+        @property
+        def latest(self) -> LatestFactor:
+            """
+            Factor that returns the latest value of this column.
+            """
+            ...
+
+    class BoundIntColumn(BoundColumn):
+        """
+        A DataSet column for integer values.
+        """
+
+        @property
+        def latest(self) -> LatestClassifier:
+            """
+            Classifier that returns the latest value of this column.
+            """
+            ...
+
+    class BoundObjectColumn(BoundColumn):
+        """
+        A DataSet column for strings.
+        """
+
+        @property
+        def latest(self) -> LatestClassifier:
+            """
+            Classifier that returns the latest value of this column.
+            """
+            ...
 
 class DataSetMeta(type):
     """

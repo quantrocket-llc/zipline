@@ -15,6 +15,7 @@
 
 import os
 import pandas as pd
+from typing import Literal
 from zipline.data import bundles
 from zipline.data.data_portal import DataPortal
 from zipline.utils.extensions import load_extensions
@@ -29,7 +30,7 @@ from zipline.utils.calendar_utils import get_calendar
 def get_data(
     dt: str,
     bundle: str = None,
-    data_frequency: str = None
+    data_frequency: Literal['daily', 'minute'] = None
     ) -> BarData:
     """
     Return a `zipline.api.BarData` object for the specified bundle (or default bundle)
@@ -88,6 +89,9 @@ def get_data(
         os.environ,
         pd.Timestamp.utcnow(),
     )
+    if data_frequency and data_frequency not in ("daily", "minute"):
+        raise ValidationError("data_frequency must be 'daily' or 'minute'")
+
     if not data_frequency:
         config = get_bundle_config(bundle)
         data_frequency = config["data_frequency"]
