@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 from zipline.utils.numpy_utils import (
     bool_dtype,
     float64_dtype,
@@ -23,12 +23,14 @@ from zipline.pipeline.data import (
     DataSet,
     DataSetFamily
 )
-from zipline.pipeline.data.dataset import (
-    BoundBooleanColumn,
-    BoundFloatColumn,
-    BoundDatetimeColumn
-)
 from zipline.pipeline.domain import Domain, US_EQUITIES
+
+if TYPE_CHECKING:
+    from zipline.pipeline.data.dataset import (
+        BoundBooleanColumn,
+        BoundFloatColumn,
+        BoundDatetimeColumn
+    )
 
 class SP500(DataSet):
     """
@@ -53,7 +55,7 @@ class SP500(DataSet):
         in_sp500 = sharadar.SP500.in_sp500.latest
     """
     domain: Domain = US_EQUITIES
-    in_sp500: BoundBooleanColumn = Column(bool_dtype)
+    in_sp500: 'BoundBooleanColumn' = Column(bool_dtype)
     """Whether the security is a member of the S&P 500"""
 
 # legacy alias
@@ -690,219 +692,219 @@ class Fundamentals(DataSetFamily):
 
     domain: Domain = US_EQUITIES
 
-    REVENUE: BoundFloatColumn = Column(float64_dtype)
+    REVENUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Revenues - [Income Statement] Amount of Revenue recognized from goods sold; services rendered; insurance premiums; or other activities that constitute an earning process. Interest income for financial institutions is reported net of interest expense and provision for credit losses."""
-    COR: BoundFloatColumn = Column(float64_dtype)
+    COR: 'BoundFloatColumn' = Column(float64_dtype)
     """Cost of Revenue - [Income Statement] The aggregate cost of goods produced and sold and services rendered during the reporting period."""
-    SGNA: BoundFloatColumn = Column(float64_dtype)
+    SGNA: 'BoundFloatColumn' = Column(float64_dtype)
     """Selling General and Administrative Expense - [Income Statement] A component of [OpEx] representing the aggregate total costs related to selling a firm's product and services; as well as all other general and administrative expenses. Direct selling expenses (for example; credit; warranty; and advertising) are expenses that can be directly linked to the sale of specific products. Indirect selling expenses are expenses that cannot be directly linked to the sale of specific products; for example telephone expenses; Internet; and postal charges. General and administrative expenses include salaries of non-sales personnel; rent; utilities; communication; etc."""
-    RND: BoundFloatColumn = Column(float64_dtype)
+    RND: 'BoundFloatColumn' = Column(float64_dtype)
     """Research and Development Expense - [Income Statement] A component of [OpEx] representing the aggregate costs incurred in a planned search or critical investigation aimed at discovery of new knowledge with the hope that such knowledge will be useful in developing a new product or service."""
-    OPEX: BoundFloatColumn = Column(float64_dtype)
+    OPEX: 'BoundFloatColumn' = Column(float64_dtype)
     """Operating Expenses - [Income Statement] Operating expenses represents the total expenditure on [SGnA]; [RnD] and other operating expense items; it excludes [CoR]."""
-    INTEXP: BoundFloatColumn = Column(float64_dtype)
+    INTEXP: 'BoundFloatColumn' = Column(float64_dtype)
     """Interest Expense - [Income Statement] Amount of the cost of borrowed funds accounted for as interest expense."""
-    TAXEXP: BoundFloatColumn = Column(float64_dtype)
+    TAXEXP: 'BoundFloatColumn' = Column(float64_dtype)
     """Income Tax Expense - [Income Statement] Amount of current income tax expense (benefit) and deferred income tax expense (benefit) pertaining to continuing operations."""
-    NETINCDIS: BoundFloatColumn = Column(float64_dtype)
+    NETINCDIS: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Loss Income from Discontinued Operations - [Income Statement] Amount of loss (income) from a disposal group; net of income tax; reported as a separate component of income."""
-    CONSOLINC: BoundFloatColumn = Column(float64_dtype)
+    CONSOLINC: 'BoundFloatColumn' = Column(float64_dtype)
     """Consolidated Income - [Income Statement] The portion of profit or loss for the period; net of income taxes; which is attributable to the consolidated entity; before the deduction of [NetIncNCI]."""
-    NETINCNCI: BoundFloatColumn = Column(float64_dtype)
+    NETINCNCI: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Income to Non-Controlling Interests - [Income Statement] The portion of income which is attributable to non-controlling interest shareholders; subtracted from [ConsolInc] in order to obtain [NetInc]."""
-    NETINC: BoundFloatColumn = Column(float64_dtype)
+    NETINC: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Income - [Income Statement] The portion of profit or loss for the period; net of income taxes; which is attributable to the parent after the deduction of [NetIncNCI] from [ConsolInc]; and before the deduction of [PrefDivIS]."""
-    PREFDIVIS: BoundFloatColumn = Column(float64_dtype)
+    PREFDIVIS: 'BoundFloatColumn' = Column(float64_dtype)
     """Preferred Dividends Income Statement Impact - [Income Statement] Income statement item reflecting dividend payments to preferred stockholders. Subtracted from Net Income to Parent [NetInc] to obtain Net Income to Common Stockholders [NetIncCmn]."""
-    NETINCCMN: BoundFloatColumn = Column(float64_dtype)
+    NETINCCMN: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Income Common Stock - [Income Statement] The amount of net income (loss) for the period due to common shareholders. Typically differs from [NetInc] to the parent entity due to the deduction of [PrefDivIS]."""
-    EPS: BoundFloatColumn = Column(float64_dtype)
+    EPS: 'BoundFloatColumn' = Column(float64_dtype)
     """Earnings per Basic Share - [Income Statement] Earnings per share as calculated and reported by the company. Approximates to the amount of [NetIncCmn] for the period per each [SharesWA] after adjusting for [ShareFactor]."""
-    EPSDIL: BoundFloatColumn = Column(float64_dtype)
+    EPSDIL: 'BoundFloatColumn' = Column(float64_dtype)
     """Earnings per Diluted Share - [Income Statement] Earnings per diluted share as calculated and reported by the company. Approximates to the amount of [NetIncCmn] for the period per each [SharesWADil] after adjusting for [ShareFactor]."""
-    SHARESWA: BoundFloatColumn = Column(float64_dtype)
+    SHARESWA: 'BoundFloatColumn' = Column(float64_dtype)
     """Weighted Average Shares - [Income Statement] The weighted average number of shares or units issued and outstanding that are used by the company to calculate [EPS]; determined based on the timing of issuance of shares or units in the period."""
-    SHARESWADIL: BoundFloatColumn = Column(float64_dtype)
+    SHARESWADIL: 'BoundFloatColumn' = Column(float64_dtype)
     """Weighted Average Shares Diluted - [Income Statement] The weighted average number of shares or units issued and outstanding that are used by the company to calculate [EPSDil]; determined based on the timing of issuance of shares or units in the period."""
-    CAPEX: BoundFloatColumn = Column(float64_dtype)
+    CAPEX: 'BoundFloatColumn' = Column(float64_dtype)
     """Capital Expenditure - [Cash Flow Statement] A component of [NCFI] representing the net cash inflow (outflow) associated with the acquisition & disposal of long-lived; physical & intangible assets that are used in the normal conduct of business to produce goods and services and are not intended for resale. Includes cash inflows/outflows to pay for construction of self-constructed assets & software."""
-    NCFBUS: BoundFloatColumn = Column(float64_dtype)
+    NCFBUS: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Cash Flow - Business Acquisitions and Disposals - [Cash Flow Statement] A component of [NCFI] representing the net cash inflow (outflow) associated with the acquisition & disposal of businesses; joint-ventures; affiliates; and other named investments."""
-    NCFINV: BoundFloatColumn = Column(float64_dtype)
+    NCFINV: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Cash Flow - Investment Acquisitions and Disposals - [Cash Flow Statement] A component of [NCFI] representing the net cash inflow (outflow) associated with the acquisition & disposal of investments; including marketable securities and loan originations."""
-    NCFF: BoundFloatColumn = Column(float64_dtype)
+    NCFF: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Cash Flow from Financing - [Cash Flow Statement] A component of [NCF] representing the amount of cash inflow (outflow) from financing activities; from continuing and discontinued operations. Principal components of financing cash flow are: issuance (purchase) of equity shares; issuance (repayment) of debt securities; and payment of dividends & other cash distributions."""
-    NCFDEBT: BoundFloatColumn = Column(float64_dtype)
+    NCFDEBT: 'BoundFloatColumn' = Column(float64_dtype)
     """Issuance (Repayment) of Debt Securities  - [Cash Flow Statement] A component of [NCFF] representing the net cash inflow (outflow) from issuance (repayment) of debt securities."""
-    NCFCOMMON: BoundFloatColumn = Column(float64_dtype)
+    NCFCOMMON: 'BoundFloatColumn' = Column(float64_dtype)
     """Issuance (Purchase) of Equity Shares - [Cash Flow Statement] A component of [NCFF] representing the net cash inflow (outflow) from common equity changes. Includes additional capital contributions from share issuances and exercise of stock options; and outflow from share repurchases."""
-    NCFDIV: BoundFloatColumn = Column(float64_dtype)
+    NCFDIV: 'BoundFloatColumn' = Column(float64_dtype)
     """Payment of Dividends & Other Cash Distributions    - [Cash Flow Statement] A component of [NCFF] representing dividends and dividend equivalents paid on common stock and restricted stock units."""
-    NCFI: BoundFloatColumn = Column(float64_dtype)
+    NCFI: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Cash Flow from Investing - [Cash Flow Statement] A component of [NCF] representing the amount of cash inflow (outflow) from investing activities; from continuing and discontinued operations. Principal components of investing cash flow are: capital (expenditure) disposal of equipment [CapEx]; business (acquisitions) disposition [NCFBus] and investment (acquisition) disposal [NCFInv]."""
-    NCFO: BoundFloatColumn = Column(float64_dtype)
+    NCFO: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Cash Flow from Operations - [Cash Flow Statement] A component of [NCF] representing the amount of cash inflow (outflow) from operating activities; from continuing and discontinued operations."""
-    NCFX: BoundFloatColumn = Column(float64_dtype)
+    NCFX: 'BoundFloatColumn' = Column(float64_dtype)
     """Effect of Exchange Rate Changes on Cash  - [Cash Flow Statement] A component of Net Cash Flow [NCF] representing the amount of increase (decrease) from the effect of exchange rate changes on cash and cash equivalent balances held in foreign currencies."""
-    NCF: BoundFloatColumn = Column(float64_dtype)
+    NCF: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Cash Flow / Change in Cash & Cash Equivalents - [Cash Flow Statement] Principal component of the cash flow statement representing the amount of increase (decrease) in cash and cash equivalents. Includes [NCFO]; investing [NCFI] and financing [NCFF] for continuing and discontinued operations; and the effect of exchange rate changes on cash [NCFX]."""
-    SBCOMP: BoundFloatColumn = Column(float64_dtype)
+    SBCOMP: 'BoundFloatColumn' = Column(float64_dtype)
     """Share Based Compensation - [Cash Flow Statement] A component of [NCFO] representing the total amount of noncash; equity-based employee remuneration. This may include the value of stock or unit options; amortization of restricted stock or units; and adjustment for officers' compensation. As noncash; this element is an add back when calculating net cash generated by operating activities using the indirect method."""
-    DEPAMOR: BoundFloatColumn = Column(float64_dtype)
+    DEPAMOR: 'BoundFloatColumn' = Column(float64_dtype)
     """Depreciation Amortization & Accretion - [Cash Flow Statement] A component of operating cash flow representing the aggregate net amount of depreciation; amortization; and accretion recognized during an accounting period. As a non-cash item; the net amount is added back to net income when calculating cash provided by or used in operations using the indirect method."""
-    ASSETS: BoundFloatColumn = Column(float64_dtype)
+    ASSETS: 'BoundFloatColumn' = Column(float64_dtype)
     """Total Assets - [Balance Sheet] Sum of the carrying amounts as of the balance sheet date of all assets that are recognized. Major components are [CashnEq]; [Investments];[Intangibles]; [PPNENet];[TaxAssets] and [Receivables]."""
-    CASHNEQ: BoundFloatColumn = Column(float64_dtype)
+    CASHNEQ: 'BoundFloatColumn' = Column(float64_dtype)
     """Cash and Equivalents - [Balance Sheet] A component of [Assets] representing the amount of currency on hand as well as demand deposits with banks or financial institutions."""
-    INVESTMENTS: BoundFloatColumn = Column(float64_dtype)
+    INVESTMENTS: 'BoundFloatColumn' = Column(float64_dtype)
     """Investments - [Balance Sheet] A component of [Assets] representing the total amount of marketable and non-marketable securties; loans receivable and other invested assets."""
-    INVESTMENTSC: BoundFloatColumn = Column(float64_dtype)
+    INVESTMENTSC: 'BoundFloatColumn' = Column(float64_dtype)
     """Investments Current - [Balance Sheet] The current portion of [Investments]; reported if the company operates a classified balance sheet that segments current and non-current assets."""
-    INVESTMENTSNC: BoundFloatColumn = Column(float64_dtype)
+    INVESTMENTSNC: 'BoundFloatColumn' = Column(float64_dtype)
     """Investments Non-Current - [Balance Sheet] The non-current portion of [Investments]; reported if the company operates a classified balance sheet that segments current and non-current assets."""
-    DEFERREDREV: BoundFloatColumn = Column(float64_dtype)
+    DEFERREDREV: 'BoundFloatColumn' = Column(float64_dtype)
     """Deferred Revenue - [Balance Sheet] A component of [Liabilities] representing the carrying amount of consideration received or receivable on potential earnings that were not recognized as revenue; including sales; license fees; and royalties; but excluding interest income."""
-    DEPOSITS: BoundFloatColumn = Column(float64_dtype)
+    DEPOSITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Deposit Liabilities - [Balance Sheet] A component of [Liabilities] representing the total of all deposit liabilities held; including foreign and domestic; interest and noninterest bearing. May include demand deposits; saving deposits; Negotiable Order of Withdrawal and time deposits among others."""
-    PPNENET: BoundFloatColumn = Column(float64_dtype)
+    PPNENET: 'BoundFloatColumn' = Column(float64_dtype)
     """Property Plant & Equipment Net - [Balance Sheet] A component of [Assets] representing the amount after accumulated depreciation; depletion and amortization of physical assets used in the normal conduct of business to produce goods and services and not intended for resale."""
-    INVENTORY: BoundFloatColumn = Column(float64_dtype)
+    INVENTORY: 'BoundFloatColumn' = Column(float64_dtype)
     """Inventory - [Balance Sheet] A component of [Assets] representing the amount after valuation and reserves of inventory expected to be sold; or consumed within one year or operating cycle; if longer."""
-    TAXASSETS: BoundFloatColumn = Column(float64_dtype)
+    TAXASSETS: 'BoundFloatColumn' = Column(float64_dtype)
     """Tax Assets - [Balance Sheet] A component of [Assets] representing tax assets and receivables."""
-    RECEIVABLES: BoundFloatColumn = Column(float64_dtype)
+    RECEIVABLES: 'BoundFloatColumn' = Column(float64_dtype)
     """Trade and Non-Trade Receivables - [Balance Sheet] A component of [Assets] representing trade and non-trade receivables."""
-    PAYABLES: BoundFloatColumn = Column(float64_dtype)
+    PAYABLES: 'BoundFloatColumn' = Column(float64_dtype)
     """Trade and Non-Trade Payables - [Balance Sheet] A component of [Liabilities] representing trade and non-trade payables."""
-    INTANGIBLES: BoundFloatColumn = Column(float64_dtype)
+    INTANGIBLES: 'BoundFloatColumn' = Column(float64_dtype)
     """Goodwill and Intangible Assets - [Balance Sheet] A component of [Assets] representing the carrying amounts of all intangible assets and goodwill as of the balance sheet date; net of accumulated amortization and impairment charges."""
-    LIABILITIES: BoundFloatColumn = Column(float64_dtype)
+    LIABILITIES: 'BoundFloatColumn' = Column(float64_dtype)
     """Total Liabilities - [Balance Sheet] Sum of the carrying amounts as of the balance sheet date of all liabilities that are recognized. Principal components are [Debt]; [DeferredRev]; [Payables];[Deposits]; and [TaxLiabilities]."""
-    EQUITY: BoundFloatColumn = Column(float64_dtype)
+    EQUITY: 'BoundFloatColumn' = Column(float64_dtype)
     """Shareholders Equity - [Balance Sheet] A principal component of the balance sheet; in addition to [Liabilities] and [Assets]; that represents the total of all stockholders' equity (deficit) items; net of receivables from officers; directors; owners; and affiliates of the entity which are attributable to the parent."""
-    RETEARN: BoundFloatColumn = Column(float64_dtype)
+    RETEARN: 'BoundFloatColumn' = Column(float64_dtype)
     """Accumulated Retained Earnings (Deficit) - [Balance Sheet] A component of [Equity] representing the cumulative amount of the entities undistributed earnings or deficit. May only be reported annually by certain companies; rather than quarterly."""
-    ACCOCI: BoundFloatColumn = Column(float64_dtype)
+    ACCOCI: 'BoundFloatColumn' = Column(float64_dtype)
     """Accumulated Other Comprehensive Income - [Balance Sheet] A component of [Equity] representing the accumulated change in equity from transactions and other events and circumstances from non-owner sources; net of tax effect; at period end. Includes foreign currency translation items; certain pension adjustments; unrealized gains and losses on certain investments in debt and equity securities."""
-    ASSETSC: BoundFloatColumn = Column(float64_dtype)
+    ASSETSC: 'BoundFloatColumn' = Column(float64_dtype)
     """Current Assets - [Balance Sheet] The current portion of [Assets]; reported if a company operates a classified balance sheet that segments current and non-current assets."""
-    ASSETSNC: BoundFloatColumn = Column(float64_dtype)
+    ASSETSNC: 'BoundFloatColumn' = Column(float64_dtype)
     """Assets Non-Current - [Balance Sheet] Amount of non-current assets; for companies that operate a classified balance sheet. Calculated as the different between Total Assets [Assets] and Current Assets [AssetsC]."""
-    LIABILITIESC: BoundFloatColumn = Column(float64_dtype)
+    LIABILITIESC: 'BoundFloatColumn' = Column(float64_dtype)
     """Current Liabilities - [Balance Sheet] The current portion of [Liabilities]; reported if the company operates a classified balance sheet that segments current and non-current liabilities."""
-    LIABILITIESNC: BoundFloatColumn = Column(float64_dtype)
+    LIABILITIESNC: 'BoundFloatColumn' = Column(float64_dtype)
     """Liabilities Non-Current - [Balance Sheet] The non-current portion of [Liabilities]; reported if the company operates a classified balance sheet that segments current and non-current liabilities."""
-    TAXLIABILITIES: BoundFloatColumn = Column(float64_dtype)
+    TAXLIABILITIES: 'BoundFloatColumn' = Column(float64_dtype)
     """Tax Liabilities - [Balance Sheet] A component of [Liabilities] representing outstanding tax liabilities."""
-    DEBT: BoundFloatColumn = Column(float64_dtype)
+    DEBT: 'BoundFloatColumn' = Column(float64_dtype)
     """Total Debt - [Balance Sheet] A component of [Liabilities] representing the total amount of current and non-current debt owed. Includes secured and unsecured bonds issued; commercial paper; notes payable; credit facilities; lines of credit; capital lease obligations; and convertible notes."""
-    DEBTC: BoundFloatColumn = Column(float64_dtype)
+    DEBTC: 'BoundFloatColumn' = Column(float64_dtype)
     """Debt Current - [Balance Sheet] The current portion of [Debt]; reported if the company operates a classified balance sheet that segments current and non-current liabilities."""
-    DEBTNC: BoundFloatColumn = Column(float64_dtype)
+    DEBTNC: 'BoundFloatColumn' = Column(float64_dtype)
     """Debt Non-Current - [Balance Sheet] The non-current portion of [Debt] reported if the company operates a classified balance sheet that segments current and non-current liabilities."""
-    EBT: BoundFloatColumn = Column(float64_dtype)
+    EBT: 'BoundFloatColumn' = Column(float64_dtype)
     """Earnings before Tax - [Metrics] Earnings Before Tax is calculated by adding [TaxExp] back to [NetInc]."""
-    EBIT: BoundFloatColumn = Column(float64_dtype)
+    EBIT: 'BoundFloatColumn' = Column(float64_dtype)
     """Earning Before Interest & Taxes (EBIT) - [Income Statement] Earnings Before Interest and Tax is calculated by adding [TaxExp] and [IntExp] back to [NetInc]."""
-    EBITDA: BoundFloatColumn = Column(float64_dtype)
+    EBITDA: 'BoundFloatColumn' = Column(float64_dtype)
     """Earnings Before Interest Taxes & Depreciation Amortization (EBITDA) - [Metrics] EBITDA is a non-GAAP accounting metric that is widely used when assessing the performance of companies; calculated by adding [DepAmor] back to [EBIT]."""
-    FXUSD: BoundFloatColumn = Column(float64_dtype)
+    FXUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Foreign Currency to USD Exchange Rate - [Metrics] The exchange rate used for the conversion of foreign currency to USD for non-US companies that do not report in USD."""
-    EQUITYUSD: BoundFloatColumn = Column(float64_dtype)
+    EQUITYUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Shareholders Equity (USD) - [Balance Sheet] [Equity] in USD; converted by [FXUSD]."""
-    EPSUSD: BoundFloatColumn = Column(float64_dtype)
+    EPSUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Earnings per Basic Share (USD) - [Income Statement] [EPS] in USD; converted by [FXUSD]."""
-    REVENUEUSD: BoundFloatColumn = Column(float64_dtype)
+    REVENUEUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Revenues (USD) - [Income Statement] [Revenue] in USD; converted by [FXUSD]."""
-    NETINCCMNUSD: BoundFloatColumn = Column(float64_dtype)
+    NETINCCMNUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Net Income Common Stock (USD) - [Income Statement] [NetIncCmn] in USD; converted by [FXUSD]."""
-    CASHNEQUSD: BoundFloatColumn = Column(float64_dtype)
+    CASHNEQUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Cash and Equivalents (USD) - [Balance Sheet] [CashnEq] in USD; converted by [FXUSD]."""
-    DEBTUSD: BoundFloatColumn = Column(float64_dtype)
+    DEBTUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Total Debt (USD) - [Balance Sheet] [Debt] in USD; converted by [FXUSD]."""
-    EBITUSD: BoundFloatColumn = Column(float64_dtype)
+    EBITUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Earning Before Interest & Taxes (USD) - [Income Statement] [EBIT] in USD; converted by [FXUSD]."""
-    EBITDAUSD: BoundFloatColumn = Column(float64_dtype)
+    EBITDAUSD: 'BoundFloatColumn' = Column(float64_dtype)
     """Earnings Before Interest Taxes & Depreciation Amortization (USD) - [Metrics] [EBITDA] in USD; converted by [FXUSD]."""
-    SHARESBAS: BoundFloatColumn = Column(float64_dtype)
+    SHARESBAS: 'BoundFloatColumn' = Column(float64_dtype)
     """Shares (Basic) - [Entity] The number of shares or other units outstanding of the entity's capital or common stock or other ownership interests; as stated on the cover of related periodic report (10-K/10-Q); after adjustment for stock splits."""
-    DPS: BoundFloatColumn = Column(float64_dtype)
+    DPS: 'BoundFloatColumn' = Column(float64_dtype)
     """Dividends per Basic Common Share - [Income Statement] Aggregate dividends declared during the period for each split-adjusted share of common stock outstanding. Includes spinoffs where identified."""
-    SHAREFACTOR: BoundFloatColumn = Column(float64_dtype)
+    SHAREFACTOR: 'BoundFloatColumn' = Column(float64_dtype)
     """Share Factor - [Entity] Share factor is a multiplicant in the calculation of [MarketCap] and is used to adjust for: American Depository Receipts (ADRs) that represent more or less than 1 underlying share; and; companies which have different earnings share for different share classes (eg Berkshire Hathaway - BRKB)."""
-    MARKETCAP: BoundFloatColumn = Column(float64_dtype)
+    MARKETCAP: 'BoundFloatColumn' = Column(float64_dtype)
     """Market Capitalization - [Metrics] Represents the product of [SharesBas]; [Price] and [ShareFactor]."""
-    EV: BoundFloatColumn = Column(float64_dtype)
+    EV: 'BoundFloatColumn' = Column(float64_dtype)
     """Enterprise Value - [Metrics] Enterprise value is a measure of the value of a business as a whole; calculated as [MarketCap] plus [DebtUSD] minus [CashnEqUSD]."""
-    INVCAP: BoundFloatColumn = Column(float64_dtype)
+    INVCAP: 'BoundFloatColumn' = Column(float64_dtype)
     """Invested Capital - [Metrics] Invested capital is an input into the calculation of [ROIC]; and is calculated as: [Debt] plus [Assets] minus [Intangibles] minus [CashnEq] minus [LiabilitiesC]. Please note this calculation method is subject to change."""
-    EQUITYAVG: BoundFloatColumn = Column(float64_dtype)
+    EQUITYAVG: 'BoundFloatColumn' = Column(float64_dtype)
     """Average Equity - [Metrics] Average equity value for the period used in calculation of [ROE]; derived from [Equity]."""
-    ASSETSAVG: BoundFloatColumn = Column(float64_dtype)
+    ASSETSAVG: 'BoundFloatColumn' = Column(float64_dtype)
     """Average Assets - [Metrics] Average asset value for the period used in calculation of [ROE] and [ROA]; derived from [Assets]."""
-    INVCAPAVG: BoundFloatColumn = Column(float64_dtype)
+    INVCAPAVG: 'BoundFloatColumn' = Column(float64_dtype)
     """Invested Capital Average - [Metrics] Average invested capital value for the period used in the calculation of [ROIC]; and derived from [InvCap]. Invested capital is an input into the calculation of [ROIC]; and is calculated as: [Debt] plus [Assets] minus [Intangibles] minus [CashnEq] minus [LiabilitiesC]. Please note this calculation method is subject to change."""
-    TANGIBLES: BoundFloatColumn = Column(float64_dtype)
+    TANGIBLES: 'BoundFloatColumn' = Column(float64_dtype)
     """Tangible Asset Value - [Metrics] The value of tangibles assets calculated as the difference between [Assets] and [Intangibles]."""
-    ROE: BoundFloatColumn = Column(float64_dtype)
+    ROE: 'BoundFloatColumn' = Column(float64_dtype)
     """Return on Average Equity - [Metrics] Return on equity measures a corporation's profitability by calculating the amount of [NetIncCmn] returned as a percentage of [EquityAvg]."""
-    ROA: BoundFloatColumn = Column(float64_dtype)
+    ROA: 'BoundFloatColumn' = Column(float64_dtype)
     """Return on Average Assets - [Metrics] Return on assets measures how profitable a company is [NetIncCmn] relative to its total assets [AssetsAvg]."""
-    FCF: BoundFloatColumn = Column(float64_dtype)
+    FCF: 'BoundFloatColumn' = Column(float64_dtype)
     """Free Cash Flow - [Metrics] Free Cash Flow is a measure of financial performance calculated as [NCFO] minus [CapEx]."""
-    ROIC: BoundFloatColumn = Column(float64_dtype)
+    ROIC: 'BoundFloatColumn' = Column(float64_dtype)
     """Return on Invested Capital - [Metrics] Return on Invested Capital is ratio estimated by dividing [EBIT] by [InvCapAvg]. [InvCap] is calculated as: [Debt] plus [Assets] minus [Intangibles] minus [CashnEq] minus [LiabilitiesC]. Please note this calculation method is subject to change."""
-    GP: BoundFloatColumn = Column(float64_dtype)
+    GP: 'BoundFloatColumn' = Column(float64_dtype)
     """Gross Profit - [Income Statement] Aggregate revenue [Revenue] less cost of revenue [CoR] directly attributable to the revenue generation activity."""
-    OPINC: BoundFloatColumn = Column(float64_dtype)
+    OPINC: 'BoundFloatColumn' = Column(float64_dtype)
     """Operating Income - [Income Statement] Operating income is a measure of financial performance before the deduction of [IntExp]; [TaxExp] and other Non-Operating items. It is calculated as [GP] minus [OpEx]."""
-    GROSSMARGIN: BoundFloatColumn = Column(float64_dtype)
+    GROSSMARGIN: 'BoundFloatColumn' = Column(float64_dtype)
     """Gross Margin - [Metrics] Gross Margin measures the ratio between a company's [GP] and [Revenue]."""
-    NETMARGIN: BoundFloatColumn = Column(float64_dtype)
+    NETMARGIN: 'BoundFloatColumn' = Column(float64_dtype)
     """Profit Margin - [Metrics] Measures the ratio between a company's [NetIncCmn] and [Revenue]."""
-    EBITDAMARGIN: BoundFloatColumn = Column(float64_dtype)
+    EBITDAMARGIN: 'BoundFloatColumn' = Column(float64_dtype)
     """EBITDA Margin - [Metrics] Measures the ratio between a company's [EBITDA] and [Revenue]."""
-    ROS: BoundFloatColumn = Column(float64_dtype)
+    ROS: 'BoundFloatColumn' = Column(float64_dtype)
     """Return on Sales - [Metrics] Return on Sales is a ratio to evaluate a company's operational efficiency; calculated by dividing [EBIT] by [Revenue]. ROS is often a component of DuPont ROE analysis."""
-    ASSETTURNOVER: BoundFloatColumn = Column(float64_dtype)
+    ASSETTURNOVER: 'BoundFloatColumn' = Column(float64_dtype)
     """Asset Turnover - [Metrics] Asset turnover is a measure of a firms operating efficiency; calculated by dividing [Revenue] by [AssetsAVG]. Often a component of DuPont ROE analysis."""
-    PAYOUTRATIO: BoundFloatColumn = Column(float64_dtype)
+    PAYOUTRATIO: 'BoundFloatColumn' = Column(float64_dtype)
     """Payout Ratio - [Metrics] The percentage of earnings paid as dividends to common stockholders. Calculated by dividing [DPS] by [EPSUSD]."""
-    EVEBITDA: BoundFloatColumn = Column(float64_dtype)
+    EVEBITDA: 'BoundFloatColumn' = Column(float64_dtype)
     """Enterprise Value over EBITDA - [Metrics] Measures the ratio between [EV] and [EBITDAUSD]."""
-    EVEBIT: BoundFloatColumn = Column(float64_dtype)
+    EVEBIT: 'BoundFloatColumn' = Column(float64_dtype)
     """Enterprise Value over EBIT - [Metrics] Measures the ratio between [EV] and [EBITUSD]."""
-    PE: BoundFloatColumn = Column(float64_dtype)
+    PE: 'BoundFloatColumn' = Column(float64_dtype)
     """Price Earnings (Damodaran Method) - [Metrics] Measures the ratio between [MarketCap] and [NetIncCmnUSD]"""
-    PE1: BoundFloatColumn = Column(float64_dtype)
+    PE1: 'BoundFloatColumn' = Column(float64_dtype)
     """Price to Earnings Ratio - [Metrics] An alternative to [PE] representing the ratio between [Price] and [EPSUSD]."""
-    SPS: BoundFloatColumn = Column(float64_dtype)
+    SPS: 'BoundFloatColumn' = Column(float64_dtype)
     """Sales per Share - [Metrics] Sales per Share measures the ratio between [RevenueUSD] and [SharesWA] as adjusted by [ShareFactor]."""
-    PS1: BoundFloatColumn = Column(float64_dtype)
+    PS1: 'BoundFloatColumn' = Column(float64_dtype)
     """Price to Sales Ratio - [Metrics] An alternative calculation method to [PS]; that measures the ratio between a company's [Price] and it's [SPS]."""
-    PS: BoundFloatColumn = Column(float64_dtype)
+    PS: 'BoundFloatColumn' = Column(float64_dtype)
     """Price Sales (Damodaran Method) - [Metrics] Measures the ratio between [MarketCap] and [RevenueUSD]."""
-    PB: BoundFloatColumn = Column(float64_dtype)
+    PB: 'BoundFloatColumn' = Column(float64_dtype)
     """Price to Book Value - [Metrics] Measures the ratio between [MarketCap] and [EquityUSD]."""
-    DE: BoundFloatColumn = Column(float64_dtype)
+    DE: 'BoundFloatColumn' = Column(float64_dtype)
     """Debt to Equity Ratio - [Metrics] Measures the ratio between [Liabilities] and [Equity]."""
-    DIVYIELD: BoundFloatColumn = Column(float64_dtype)
+    DIVYIELD: 'BoundFloatColumn' = Column(float64_dtype)
     """Dividend Yield - [Metrics] Dividend Yield measures the ratio between a company's [DPS] and its [Price]."""
-    CURRENTRATIO: BoundFloatColumn = Column(float64_dtype)
+    CURRENTRATIO: 'BoundFloatColumn' = Column(float64_dtype)
     """Current Ratio - [Metrics] The ratio between [AssetsC] and [LiabilitiesC]; for companies that operate a classified balance sheet."""
-    WORKINGCAPITAL: BoundFloatColumn = Column(float64_dtype)
+    WORKINGCAPITAL: 'BoundFloatColumn' = Column(float64_dtype)
     """Working Capital - [Metrics] Working capital measures the difference between [AssetsC] and [LiabilitiesC]."""
-    FCFPS: BoundFloatColumn = Column(float64_dtype)
+    FCFPS: 'BoundFloatColumn' = Column(float64_dtype)
     """Free Cash Flow per Share - [Metrics] Free Cash Flow per Share is a valuation metric calculated by dividing [FCF] by [SharesWA] and [ShareFactor]."""
-    BVPS: BoundFloatColumn = Column(float64_dtype)
+    BVPS: 'BoundFloatColumn' = Column(float64_dtype)
     """Book Value per Share - [Metrics] Measures the ratio between [Equity] and [SharesWA] as adjusted by [ShareFactor]."""
-    TBVPS: BoundFloatColumn = Column(float64_dtype)
+    TBVPS: 'BoundFloatColumn' = Column(float64_dtype)
     """Tangible Assets Book Value per Share - [Metrics] Measures the ratio between [Tangibles] and [SharesWA] as adjusted by [ShareFactor]."""
-    PRICE: BoundFloatColumn = Column(float64_dtype)
+    PRICE: 'BoundFloatColumn' = Column(float64_dtype)
     """Share Price (Adjusted Close) - [Entity] The price per common share adjusted for stock splits but not adjusted for dividends; used in the computation of [PE1]; [PS1]; [DivYield] and [SPS]."""
-    CALENDARDATE: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    CALENDARDATE: 'BoundDatetimeColumn' = Column(datetime64ns_dtype, missing_value=NaTD)
     """Calendar Date - [Entity] The Calendar Date represents the normalized [ReportPeriod]. This provides a common date to query for which is necessary due to irregularity in report periods across companies. For example; if the report period is "2015-09-26"; the calendar date will be "2015-09-30" for quarterly and trailing-twelve-month dimensions (ARQ;MRQ;ART;MRT); and "2015-12-31" for annual dimensions (ARY;MRY). We also employ offsets in order to maximise comparability of the period across companies. For example consider two companies: one with a quarter ending on 2018-07-24; and the other with a quarter ending on 2018-06-28. A naive normalization process would assign these to differing calendar quarters of 2018-09-30 and 2018-06-30 respectively. However, we assign these both to the 2018-06-30 calendar quarter because this maximises the overlap in the report periods in question and therefore the comparability of this period."""
-    REPORTPERIOD: BoundDatetimeColumn = Column(datetime64ns_dtype, missing_value=NaTD)
+    REPORTPERIOD: 'BoundDatetimeColumn' = Column(datetime64ns_dtype, missing_value=NaTD)
     """Report Period - [Entity] The Report Period represents the end date of the fiscal period."""
 
     @classmethod
@@ -1099,57 +1101,57 @@ class Institutions(DataSetFamily):
 
     domain: Domain = US_EQUITIES
 
-    SHRHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    SHRHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Shareholders (Institutional) - The number of shareholders."""
-    CLLHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    CLLHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Call holders (Institutional) - The number of call holders."""
-    PUTHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    PUTHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Put holders (institutional) - The number of put holders."""
-    WNTHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    WNTHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Warrant holders (institutional) - The number of warrant holders."""
-    DBTHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    DBTHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Debt holders (institutional) - The number of debt holders."""
-    PRFHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    PRFHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Preferred Stock holders (institutional) - The number of preferred stock holders."""
-    FNDHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    FNDHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Fund holders (institutional) - The number of fund holders."""
-    UNDHOLDERS: BoundFloatColumn = Column(float64_dtype)
+    UNDHOLDERS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Unidentified Security type holders (institutional) - The number of unidentified security type holders."""
-    SHRUNITS: BoundFloatColumn = Column(float64_dtype)
+    SHRUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Share Units held (institutional) - The total number of share units held."""
-    CLLUNITS: BoundFloatColumn = Column(float64_dtype)
+    CLLUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Call Units held (institutional) - The total number of call units held."""
-    PUTUNITS: BoundFloatColumn = Column(float64_dtype)
+    PUTUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Put Units held (institutional) - The total number of put units held."""
-    WNTUNITS: BoundFloatColumn = Column(float64_dtype)
+    WNTUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Warrant Units held (institutional) - The total number of warrant units held."""
-    DBTUNITS: BoundFloatColumn = Column(float64_dtype)
+    DBTUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Debt Units held (institutional) - The total number of debt units held."""
-    PRFUNITS: BoundFloatColumn = Column(float64_dtype)
+    PRFUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Preferred Stock units held (institutional) - The total number of preferred stock units held."""
-    FNDUNITS: BoundFloatColumn = Column(float64_dtype)
+    FNDUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Fund units held (institutional) - The total number of fund units held."""
-    UNDUNITS: BoundFloatColumn = Column(float64_dtype)
+    UNDUNITS: 'BoundFloatColumn' = Column(float64_dtype)
     """Number of Unidentified Security type units held (institutional) - The total number of unidentified security type units held."""
-    SHRVALUE: BoundFloatColumn = Column(float64_dtype)
+    SHRVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Share units held (institutional) - The total value of share units held."""
-    CLLVALUE: BoundFloatColumn = Column(float64_dtype)
+    CLLVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Call units held (institutional) - The total value of call units held."""
-    PUTVALUE: BoundFloatColumn = Column(float64_dtype)
+    PUTVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Put units held (institutional) - The total value of put units held."""
-    WNTVALUE: BoundFloatColumn = Column(float64_dtype)
+    WNTVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Warrant units held (institutional) - The total value of warrant units held."""
-    DBTVALUE: BoundFloatColumn = Column(float64_dtype)
+    DBTVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Debt units held (institutional) - The total value of debt units held."""
-    PRFVALUE: BoundFloatColumn = Column(float64_dtype)
+    PRFVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Preferred Stock units held (institutional) - The total value of preferred stock units held."""
-    FNDVALUE: BoundFloatColumn = Column(float64_dtype)
+    FNDVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Fund units held (institutional) - The total value of fund units held."""
-    UNDVALUE: BoundFloatColumn = Column(float64_dtype)
+    UNDVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Value of Unidentified Security type units held (institutional) - The total value of unidentified security type units held."""
-    TOTALVALUE: BoundFloatColumn = Column(float64_dtype)
+    TOTALVALUE: 'BoundFloatColumn' = Column(float64_dtype)
     """Total Value of all Security types held (institutional) - The total value of all security types held."""
-    PERCENTOFTOTAL: BoundFloatColumn = Column(float64_dtype)
+    PERCENTOFTOTAL: 'BoundFloatColumn' = Column(float64_dtype)
     """Percentage of Total Institutional Holdings for the Quarter - The percentage that the [TotalValue] of this line item constitutes of all institutional holdings for this quarter."""
 
     @classmethod

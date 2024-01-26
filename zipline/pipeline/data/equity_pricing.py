@@ -1,10 +1,14 @@
 """
 Dataset representing OHLCV data.
 """
+from typing import TYPE_CHECKING
 from zipline.utils.numpy_utils import float64_dtype, categorical_dtype
 
 from ..domain import US_EQUITIES
-from .dataset import Column, DataSet, BoundFloatColumn, BoundObjectColumn
+from .dataset import Column, DataSet
+
+if TYPE_CHECKING:
+    from .dataset import BoundFloatColumn, BoundObjectColumn
 
 
 class EquityPricing(DataSet):
@@ -42,12 +46,12 @@ class EquityPricing(DataSet):
     >>> from zipline.pipeline import EquityPricing
     >>> close_price = EquityPricing.close.latest
     """
-    open: BoundFloatColumn = Column(float64_dtype, currency_aware=True)
-    high: BoundFloatColumn = Column(float64_dtype, currency_aware=True)
-    low: BoundFloatColumn = Column(float64_dtype, currency_aware=True)
-    close: BoundFloatColumn = Column(float64_dtype, currency_aware=True)
-    volume: BoundFloatColumn = Column(float64_dtype)
-    currency: BoundObjectColumn = Column(categorical_dtype)
+    open: 'BoundFloatColumn' = Column(float64_dtype, currency_aware=True)
+    high: 'BoundFloatColumn' = Column(float64_dtype, currency_aware=True)
+    low: 'BoundFloatColumn' = Column(float64_dtype, currency_aware=True)
+    close: 'BoundFloatColumn' = Column(float64_dtype, currency_aware=True)
+    volume: 'BoundFloatColumn' = Column(float64_dtype)
+    currency: 'BoundObjectColumn' = Column(categorical_dtype)
 
 
 # Backwards compat alias.

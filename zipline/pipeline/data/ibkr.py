@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TYPE_CHECKING
 from zipline.utils.numpy_utils import float64_dtype
 from zipline.pipeline.data import Column, DataSet
-from zipline.pipeline.data.dataset import BoundFloatColumn
+if TYPE_CHECKING:
+    from zipline.pipeline.data.dataset import BoundFloatColumn
 
 class ShortableShares(DataSet):
     """
@@ -46,13 +48,13 @@ class ShortableShares(DataSet):
 
         shares = ibkr.ShortableShares.LastQuantity.latest
     """
-    MinQuantity: BoundFloatColumn = Column(float64_dtype)
+    MinQuantity: 'BoundFloatColumn' = Column(float64_dtype)
     """minimum quantity of shortable shares for the day"""
-    MaxQuantity: BoundFloatColumn = Column(float64_dtype)
+    MaxQuantity: 'BoundFloatColumn' = Column(float64_dtype)
     """maximum quantity of shortable shares for the day"""
-    MeanQuantity: BoundFloatColumn = Column(float64_dtype)
+    MeanQuantity: 'BoundFloatColumn' = Column(float64_dtype)
     """average quantity of shortable shares for the day"""
-    LastQuantity: BoundFloatColumn = Column(float64_dtype)
+    LastQuantity: 'BoundFloatColumn' = Column(float64_dtype)
     """last quantity of shortable shares for the day"""
 
 class BorrowFees(DataSet):
@@ -77,6 +79,6 @@ class BorrowFees(DataSet):
 
         fees = ibkr.BorrowFee.FeeRate.latest
     """
-    FeeRate: BoundFloatColumn = Column(float64_dtype)
+    FeeRate: 'BoundFloatColumn' = Column(float64_dtype)
     """The annualized interest rate on short positions. For example, 1.0198
     indicates an annualized interest rate of 1.0198%."""

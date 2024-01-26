@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TYPE_CHECKING
 from zipline.utils.numpy_utils import bool_dtype
 from zipline.pipeline.data import Column, DataSet
-from zipline.pipeline.data.dataset import BoundBooleanColumn
 from zipline.pipeline.domain import Domain, US_EQUITIES
+if TYPE_CHECKING:
+    from zipline.pipeline.data.dataset import BoundBooleanColumn
 
 class ETB(DataSet):
     """
@@ -40,5 +42,5 @@ class ETB(DataSet):
         are_etb = alpaca.ETB.etb.latest
     """
     domain: Domain = US_EQUITIES
-    etb: BoundBooleanColumn = Column(bool_dtype)
+    etb: 'BoundBooleanColumn' = Column(bool_dtype)
     """Whether the security is easy-to-borrow"""
