@@ -310,7 +310,7 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             else:
                 self.assertSetEqual(set(a[key]), set(b[key]))
 
-    def test_static_assets(self):
+    def test_convert_screen_static_assets(self):
         """
         Tests that static asset screens are converted to prescreens.
         """
@@ -324,8 +324,39 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             pipe._prescreen,
             {"sids": [65, 66]}
         )
+    def test_initial_universe_static_assets(self):
+        """
+        Tests that static asset initial universes are converted to prescreens.
+        """
+        assets = self.asset_finder.retrieve_all([65, 66])
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=StaticAssets(assets),
+        )
+        self.assertIsNone(pipe.screen)
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"sids": [65, 66]}
+        )
 
-    def test_single_asset(self):
+    def test_not_convert_screen_if_initial_universe(self):
+        """
+        Tests that a screen that could be converted to a prescreen
+        is not converted if an initial_universe if provided.
+        """
+        assets = self.asset_finder.retrieve_all([65, 66])
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            screen=StaticAssets([assets[0]]),
+            initial_universe=StaticAssets([assets[1]]),
+        )
+        self.assertSetEqual(pipe.screen.params['sids'], {65})
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"sids": [66]}
+        )
+
+    def test_convert_screen_single_asset(self):
         """
         Tests that single asset screens are converted to prescreens.
         """
@@ -340,7 +371,22 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             {"sids": [66]}
         )
 
-    def test_static_sids(self):
+    def test_initial_universe_single_asset(self):
+        """
+        Tests that single asset initial_universe is converted to prescreen.
+        """
+        asset = self.asset_finder.retrieve_asset(66)
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SingleAsset(asset),
+        )
+        self.assertIsNone(pipe.screen)
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"sids": [66]}
+        )
+
+    def test_convert_screen_static_sids(self):
         """
         Tests that static sids screens are converted to prescreens.
         """
@@ -354,8 +400,22 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             {"real_sids": ["66", "67"]}
         )
 
+    def test_convert_initial_universe_static_sids(self):
+        """
+        Tests that static sids initial_universe is converted to prescreens.
+        """
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=StaticSids(['66', '67']),
+        )
+        self.assertIsNone(pipe.screen)
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"real_sids": ["66", "67"]}
+        )
+
     @patch("zipline.pipeline.filters.filter.get_securities")
-    def test_static_universe(self, mock_get_securities):
+    def test_convert_screen_static_universe(self, mock_get_securities):
         """
         Tests that static universe screens are converted to prescreens.
         """
@@ -370,7 +430,7 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             {"real_sids": ["65", "67"]}
         )
 
-    def test_securities_master(self):
+    def test_convert_screen_securities_master(self):
         """
         Tests that securities master screens are converted to prescreens.
         """
@@ -604,7 +664,39 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
                 "values": [True]
             }]})
 
-    def test_ANDed_securities_master(self):
+    def test_initial_universe_securities_master(self):
+        """
+        Tests that securities master initial_universe is converted to prescreen.
+        """
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.SecType.latest.eq('STK'),
+        )
+        self.assertIsNone(pipe.screen)
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "SecType",
+                "op": "eq",
+                "negate": False,
+                "values": ["STK"]
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=~SecuritiesMaster.SecType.latest.eq('STK'),
+        )
+        self.assertIsNone(pipe.screen)
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "SecType",
+                "op": "eq",
+                "negate": True,
+                "values": ["STK"]
+            }]})
+
+    def test_convert_screen_ANDed_securities_master(self):
         """
         Tests that ANDed securities master screens are converted to prescreens.
         """
@@ -663,7 +755,7 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
                 },
             ]})
 
-    def test_not_prescreen(self):
+    def test_not_convert_screen_to_prescreen(self):
         """
         Tests that prescreens aren't created for unsupported screens.
         """
@@ -702,3 +794,53 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
         )
         self.assertIsNotNone(pipe.screen)
         self.assertIsNone(pipe._prescreen)
+
+    def test_initial_universe_with_screen(self):
+        """
+        Tests that applying an initial_universe with a screen.
+        """
+        asset = self.asset_finder.retrieve_asset(66)
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            screen=SomeFilter(),
+            initial_universe=SingleAsset(asset),
+        )
+        self.assertTrue(isinstance(pipe.screen, SomeFilter))
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"sids": [66]}
+        )
+
+    def test_invalid_initial_universe(self):
+        """
+        Tests that applying an initial_universe with a screen.
+        """
+        asset = self.asset_finder.retrieve_asset(66)
+
+        expected_error_message = (
+            "The term NotNullFilter([SomeFactor(...)], 0) "
+            "is invalid for initial_universe. The initial_universe Filter must consist exclusively "
+            "of one or more  of the following terms: StaticSids, StaticAssets, StaticUniverse, or "
+            "terms based on columns from the SecuritiesMaster dataset. If the Filter includes multiple "
+            "terms, they must be ANDed together; ORed terms are not supported."
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            Pipeline(
+                initial_universe=SomeFactor().notnull(),
+            )
+
+        self.assertEqual(
+            str(cm.exception),
+            expected_error_message
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            Pipeline(
+                initial_universe=SomeFactor().notnull() & SingleAsset(asset),
+            )
+
+        self.assertEqual(
+            str(cm.exception),
+            expected_error_message
+        )

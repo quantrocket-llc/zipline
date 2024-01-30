@@ -1583,7 +1583,7 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
         """
 
         pipeline = Pipeline(
-            screen=StaticSids(['2', '3'])
+            initial_universe=StaticSids(['2', '3'])
         )
         self.assertIsNone(pipeline._screen)
         self.assertEqual(set(pipeline._prescreen.keys()), {"real_sids"})

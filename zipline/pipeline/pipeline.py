@@ -209,10 +209,13 @@ class Pipeline(object):
     A Pipeline object represents a collection of named expressions to be
     compiled and executed.
 
-    A Pipeline has two important attributes: 'columns', a dictionary of named
-    :class:`~zipline.pipeline.Term` instances, and 'screen', a
+    A Pipeline has three important attributes: 'columns', a dictionary of named
+    :class:`~zipline.pipeline.Term` instances, 'screen', a
     :class:`~zipline.pipeline.Filter` representing criteria for
-    including an asset in the results of a Pipeline.
+    including an asset in the results of a Pipeline. and 'initial_universe', a
+    :class:`~zipline.pipeline.Filter` defining which assets to include in the
+    initial universe on which the Pipeline is computed. For the distinction between
+    'screen' and 'initial_universe', see the Notes section below.
 
     To compute a pipeline in the context of a TradingAlgorithm, users must call
     ``attach_pipeline`` in their ``initialize`` function to register that the
@@ -225,25 +228,58 @@ class Pipeline(object):
     columns : dict, optional
         Initial columns.
     screen : zipline.pipeline.Filter, optional
-        Initial screen.
+        A Filter defining which assets to include in the Pipeline results.
+    initial_universe : zipline.pipeline.Filter, optional
+        A Filter defining which assets to include in the initial universe
+        on which the Pipeline is computed. If provided, the Filter must consist
+        exclusively of one or more of the following terms: StaticSids, StaticAssets,
+        StaticUniverse, or terms based on columns from the SecuritiesMaster dataset.
+        If the Filter includes multiple terms, they must be ANDed together; ORed terms
+        are not supported. If omitted, the initial universe is all assets in the bundle.
+        Specifying an initial_universe can speed up pipeline computation by limiting
+        the set of assets on which computations must be performed. For the distinction
+        between 'screen' and 'initial_universe', see the Notes section below.
 
     Notes
     -----
+    The 'screen' and 'initial_universe' attributes are both used to filter the
+    assets in a pipeline, but they differ in which kinds of terms they support
+    and when they are applied. 'initial_universe' is applied before the pipeline
+    runs. This limits the size of the computational universe and speeds up pipeline
+    computation. However, because 'initial_universe' is applied before the pipeline
+    runs, it cannot include terms that will only be known after the pipeline runs,
+    such as an asset's daily price or its dollar volume rank compared to its peers.
+    'initial_universe' can only use terms representing static characteristics of
+    assets, specifically StaticSids, StaticAssets, StaticUniverse, or terms based on
+    columns from the SecuritiesMaster dataset.
+
+    In contrast, 'screen' is applied after the pipeline runs and filters the results
+    that get returned. This means 'screen' can include any term or combination of terms,
+    as these terms will have been computed by the time the screen is applied. However,
+    because 'screen' is applied after the pipeline runs, it does not limit the size
+    of the computational universe and thus does not speed up pipeline computation.
+
+    You can use 'initial_universe' and 'screen' together, limiting the size of
+    the computational universe with 'initial_universe' and further filtering the
+    results with 'screen'.
+
     Usage Guide:
 
     * Pipeline API: https://qrok.it/dl/z/pipeline
     """
-    __slots__ = ('_columns', '_prescreen', '_screen', '_domain', '__weakref__')
+    __slots__ = ('_columns', '_prescreen', '_initial_universe', '_screen', '_domain', '__weakref__')
 
     @expect_types(
         columns=optional(dict),
         screen=optional(Filter),
+        initial_universe=optional(Filter),
         domain=Domain
     )
     def __init__(
         self,
         columns: dict[str, Term] = None,
         screen: Filter = None,
+        initial_universe: Filter = None,
         domain: Domain = GENERIC
         ):
         if columns is None:
@@ -261,13 +297,23 @@ class Pipeline(object):
                 )
 
         self._columns = columns
+        self._initial_universe = initial_universe
         self._prescreen = None
+        if initial_universe:
+            _prescreen = self._convert_to_prescreen(initial_universe, raise_errors=True)
+            if _prescreen:
+                self._prescreen = _prescreen
         self._screen = screen
-        if screen:
-            self._maybe_convert_to_prescreen(screen)
+        if screen and not initial_universe:
+            _prescreen = self._convert_to_prescreen(screen)
+            if _prescreen:
+                self._prescreen = _prescreen
+                # since we successfully converted the screen to a prescreen,
+                # we can clear the screen
+                self._screen = None
         self._domain = domain
 
-    def _maybe_convert_to_prescreen(self, screen):
+    def _convert_to_prescreen(self, screen, raise_errors=False):
         """
         Tries to convert the screen Filter into prescreen parameters.
 
@@ -276,9 +322,9 @@ class Pipeline(object):
         the pipeline if the screen only includes securities master terms, which
         don't change over time.
 
-        self._prescreen is a dict of asset-level parameters that can be used to
+        The returned prescreen is a dict of asset-level parameters that can be used to
         pre-filter the universe and thus limit the initial workspace size. If
-        populated, _prescreen is a dict with the following possible keys:
+        populated, prescreen is a dict with the following possible keys:
           - sids: list of zipline sids to include
           - real_sids: list of real sids to include
           - fields: list of dicts with the following keys:
@@ -287,13 +333,18 @@ class Pipeline(object):
               - negate: whether to negate the filter
               - values: list of values to include or exclude
         """
-
+        ERROR_MSG = (
+            "The term {term} is invalid for initial_universe. "
+            "The initial_universe Filter must consist exclusively of one or more "
+            " of the following terms: StaticSids, StaticAssets, StaticUniverse, or "
+            "terms based on columns from the SecuritiesMaster dataset. If the Filter "
+            "includes multiple terms, they must be ANDed together; ORed terms are not "
+            "supported."
+        )
         # see if the screen contains a single prescreenable term
         prescreen = _term_to_prescreen_dict(screen)
         if prescreen is not None:
-            self._prescreen = prescreen
-            self._screen = None
-            return
+            return prescreen
 
         # if the screen is a NumExprFilter, see if it is an ANDed conjunction of
         # prescreenable terms (ORed expressions are not supported)
@@ -315,11 +366,18 @@ class Pipeline(object):
                         negate=negate)
                     # if any term cannot be converted to a prescreen, bail out
                     if not prescreen:
-                        break
+                        if raise_errors:
+                            raise ValueError(ERROR_MSG.format(term=str(screen.bindings[term])))
+                        return None
                 else:
                     # didn't break loop, so prescreen is valid
-                    self._prescreen = prescreen
-                    self._screen = None
+                    return prescreen
+
+
+        if raise_errors:
+            raise ValueError(ERROR_MSG.format(term=str(screen)))
+
+        return None
 
     @property
     def columns(self) -> dict[str, Term]:
@@ -354,6 +412,19 @@ class Pipeline(object):
         filtering out any rows for which the screen computed ``False``.
         """
         return self._screen
+
+    @property
+    def initial_universe(self) -> Filter:
+        """
+        The initial universe of this pipeline.
+
+        Returns
+        -------
+        initial_universe : zipline.pipeline.Filter or None
+            Term defining which assets to include in the initial universe for
+            this pipeline.
+        """
+        return self._initial_universe
 
     @expect_types(term=Term, name=str)
     def add(
@@ -441,8 +512,11 @@ class Pipeline(object):
                 "use set_screen(new_filter, overwrite=True)."
             )
         self._screen = screen
-        self._prescreen = None
-        self._maybe_convert_to_prescreen(screen)
+        if not self._prescreen:
+            _prescreen = self._convert_to_prescreen(screen)
+            if _prescreen:
+                self._prescreen = _prescreen
+                self._screen = None
 
     def to_execution_plan(
         self,
