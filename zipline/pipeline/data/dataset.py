@@ -27,7 +27,6 @@ from zipline.utils.formatting import s, plural
 from zipline.utils.input_validation import (
     coerce_types,
     ensure_dtype,
-    expect_types,
 )
 from zipline.utils.numpy_utils import float64_dtype, NoDefaultMissingValue
 from zipline.utils.preprocess import preprocess
@@ -308,7 +307,7 @@ class BoundColumn(LoadableTerm):
         return self._currency_aware
 
     @property
-    def dataset(self) -> 'DataSet':
+    def dataset(self) -> 'Dataset':
         """
         The dataset to which this column is bound.
 
@@ -427,7 +426,7 @@ if TYPE_CHECKING:
             ...
 
         @property
-        def dataset(self) -> 'DataSet':
+        def dataset(self) -> 'Dataset':
             """
             The dataset to which this column is bound.
 
@@ -568,8 +567,7 @@ class DataSetMeta(type):
 
         return newtype
 
-    @expect_types(domain=Domain)
-    def specialize(self, domain: Domain) -> 'DataSet':
+    def specialize(self, domain: Domain) -> 'Dataset':
         """
         Specialize a generic DataSet to a concrete domain.
 
@@ -607,7 +605,7 @@ class DataSetMeta(type):
             self._domain_specializations[domain] = new_type
             return new_type
 
-    def unspecialize(self) -> 'DataSet':
+    def unspecialize(self) -> 'Dataset':
         """
         Unspecialize a dataset to its generic form.
 

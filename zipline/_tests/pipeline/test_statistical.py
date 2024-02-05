@@ -1,6 +1,7 @@
 """
 Tests for statistical pipeline terms.
 """
+import pydantic
 import numpy as np
 from numpy import (
     arange,
@@ -442,19 +443,14 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
             )
 
     def test_simple_beta_input_validation(self):
-        with self.assertRaises(TypeError) as e:
+        with self.assertRaises(pydantic.ValidationError) as cm:
             SimpleBeta(
                 target="SPY",
                 regression_length=100,
                 allowed_missing_percentage=0.5,
             )
-        result = str(e.exception)
-        expected = (
-            r"SimpleBeta\(\) expected a value of type"
-            " .*Asset for argument 'target',"
-            " but got str instead."
-        )
-        self.assertRegex(result, expected)
+        result = str(cm.exception)
+        self.assertIn("Input should be an instance of Asset", result)
 
         with self.assertRaises(ValueError) as e:
             SimpleBeta(
@@ -478,7 +474,7 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
         result = str(e.exception)
         expected = (
             "SimpleBeta() expected a value inclusively between 0.0 and 1.0 "
-            "for argument 'allowed_missing_percentage', but got 50 instead."
+            "for argument 'allowed_missing_percentage', but got 50.0 instead."
         )
         self.assertEqual(result, expected)
 

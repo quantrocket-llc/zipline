@@ -5,7 +5,6 @@ if TYPE_CHECKING:
     from zipline.pipeline.data.dataset import BoundColumn
     from zipline.pipeline.filters import Filter
 
-from numbers import Number
 from numpy import (
     arange,
     average,
@@ -23,7 +22,6 @@ from numpy import (
 )
 
 from zipline.pipeline.data import EquityPricing
-from zipline.utils.input_validation import expect_types
 from zipline.utils.math_utils import (
     nanargmax,
     nanmax,
@@ -530,7 +528,6 @@ class _ExponentialWeightedFactor(SingleInputMixin, CustomFactor):
     params = ('decay_rate',)
 
     @classmethod
-    @expect_types(span=Number)
     def from_span(cls, inputs, window_length, span, **kwargs):
         """
         Convenience constructor for passing `decay_rate` in terms of `span`.
@@ -576,7 +573,6 @@ class _ExponentialWeightedFactor(SingleInputMixin, CustomFactor):
         )
 
     @classmethod
-    @expect_types(halflife=Number)
     def from_halflife(cls, inputs, window_length, halflife, **kwargs):
         """
         Convenience constructor for passing ``decay_rate`` in terms of half

@@ -5,6 +5,7 @@ from typing import overload, TYPE_CHECKING
 if TYPE_CHECKING:
     from zipline.pipeline.factors.factor import Factor, BooleanFactor
     from zipline.pipeline.classifiers import Classifier
+from pydantic import validate_call
 from itertools import chain
 from operator import attrgetter
 from numpy import (
@@ -45,7 +46,6 @@ from zipline.pipeline.mixins import (
     StandardOutputs,
 )
 from zipline.pipeline.term import ComputableTerm, Term
-from zipline.utils.input_validation import expect_types
 from zipline.utils.numpy_utils import (
     same,
     bool_dtype,
@@ -267,8 +267,8 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
         if_false: 'Classifier'
         ) -> 'Classifier':...
 
-    @expect_types(if_true=ComputableTerm, if_false=ComputableTerm)
-    def if_else(self, if_true, if_false):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def if_else(self, if_true: ComputableTerm, if_false: ComputableTerm):
         """
         Create a term that selects values from one of two choices.
 
@@ -813,7 +813,6 @@ class ArrayPredicate(SingleInputMixin, Filter):
     params = ('op', 'opargs')
     window_length = 0
 
-    @expect_types(term=Term, opargs=tuple)
     def __new__(cls, term, op, opargs):
         hash(opargs)  # fail fast if opargs isn't hashable.
         return super(ArrayPredicate, cls).__new__(

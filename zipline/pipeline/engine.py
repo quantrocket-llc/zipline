@@ -67,7 +67,6 @@ from toolz import groupby
 from zipline.data.bar_reader import NoDataOnDate
 from zipline.lib.adjusted_array import ensure_adjusted_array, ensure_ndarray
 from zipline.errors import NoFurtherDataError
-from zipline.utils.input_validation import expect_types
 from zipline.utils.numpy_utils import (
     as_column,
     repeat_first_axis,
@@ -270,10 +269,6 @@ class SimplePipelineEngine(PipelineEngine):
         '_populate_initial_workspace',
     )
 
-    @expect_types(
-        default_domain=Domain,
-        __funcname='SimplePipelineEngine',
-    )
     def __init__(self,
                  get_loader,
                  asset_finder,

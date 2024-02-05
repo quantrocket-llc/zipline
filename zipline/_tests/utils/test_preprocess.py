@@ -16,8 +16,6 @@ from zipline.utils.input_validation import (
     ensure_timezone,
     expect_element,
     expect_dtypes,
-    expect_types,
-    optional,
     optionally,
 )
 
@@ -179,93 +177,6 @@ class PreprocessTestCase(TestCase):
 
             self.assertEqual(Foo.clsmeth(*args, **kwargs), ('1', 2.0, 4))
             self.assertEqual(Foo().method(*args, **kwargs), ('1', 2.0, 4))
-
-    def test_expect_types(self):
-
-        @expect_types(a=int, b=int)
-        def foo(a, b, c):
-            return a, b, c
-
-        self.assertEqual(foo(1, 2, 3), (1, 2, 3))
-        self.assertEqual(foo(1, 2, c=3), (1, 2, 3))
-        self.assertEqual(foo(1, b=2, c=3), (1, 2, 3))
-        self.assertEqual(foo(1, 2, c='3'), (1, 2, '3'))
-
-        for not_int in (str, float):
-            with self.assertRaises(TypeError) as e:
-                foo(not_int(1), 2, 3)
-            self.assertEqual(
-                e.exception.args[0],
-                "{qualname}() expected a value of type "
-                "int for argument 'a', but got {t} instead.".format(
-                    qualname=qualname(foo),
-                    t=not_int.__name__,
-                )
-            )
-            with self.assertRaises(TypeError):
-                foo(1, not_int(2), 3)
-            with self.assertRaises(TypeError):
-                foo(not_int(1), not_int(2), 3)
-
-    def test_expect_types_custom_funcname(self):
-
-        class Foo(object):
-            @expect_types(__funcname='ArgleBargle', a=int)
-            def __init__(self, a):
-                self.a = a
-
-        foo = Foo(1)
-        self.assertEqual(foo.a, 1)
-
-        for not_int in (str, float):
-            with self.assertRaises(TypeError) as e:
-                Foo(not_int(1))
-            self.assertEqual(
-                e.exception.args[0],
-                "ArgleBargle() expected a value of type "
-                "int for argument 'a', but got {t} instead.".format(
-                    t=not_int.__name__,
-                )
-            )
-
-    def test_expect_types_with_tuple(self):
-        @expect_types(a=(int, float))
-        def foo(a):
-            return a
-
-        self.assertEqual(foo(1), 1)
-        self.assertEqual(foo(1.0), 1.0)
-
-        with self.assertRaises(TypeError) as e:
-            foo('1')
-
-        expected_message = (
-            "{qualname}() expected a value of "
-            "type int or float for argument 'a', but got str instead."
-        ).format(qualname=qualname(foo))
-        self.assertEqual(e.exception.args[0], expected_message)
-
-    def test_expect_optional_types(self):
-
-        @expect_types(a=optional(int))
-        def foo(a=None):
-            return a
-
-        self.assertIs(foo(), None)
-        self.assertIs(foo(None), None)
-        self.assertIs(foo(a=None), None)
-
-        self.assertEqual(foo(1), 1)
-        self.assertEqual(foo(a=1), 1)
-
-        with self.assertRaises(TypeError) as e:
-            foo('1')
-
-        expected_message = (
-            "{qualname}() expected a value of "
-            "type int or NoneType for argument 'a', but got str instead."
-        ).format(qualname=qualname(foo))
-        self.assertEqual(e.exception.args[0], expected_message)
 
     def test_expect_element(self):
         set_ = {'a', 'b'}

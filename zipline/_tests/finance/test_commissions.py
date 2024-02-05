@@ -41,19 +41,21 @@ class CommissionUnitTests(WithAssetFinder, ZiplineTestCase):
         })
 
     def generate_order_and_txns(self, sid, order_amount, fill_amounts):
+        dt = self.START_DATE.tz_localize("UTC")
+
         asset1 = self.asset_finder.retrieve_asset(sid)
 
         # one order
-        order = Order(dt=None, asset=asset1, amount=order_amount)
+        order = Order(dt=dt, asset=asset1, amount=order_amount)
 
         # three fills
-        txn1 = Transaction(asset=asset1, amount=fill_amounts[0], dt=None,
+        txn1 = Transaction(asset=asset1, amount=fill_amounts[0], dt=dt,
                            price=100, order_id=order.id)
 
-        txn2 = Transaction(asset=asset1, amount=fill_amounts[1], dt=None,
+        txn2 = Transaction(asset=asset1, amount=fill_amounts[1], dt=dt,
                            price=101, order_id=order.id)
 
-        txn3 = Transaction(asset=asset1, amount=fill_amounts[2], dt=None,
+        txn3 = Transaction(asset=asset1, amount=fill_amounts[2], dt=dt,
                            price=102, order_id=order.id)
 
         return order, [txn1, txn2, txn3]

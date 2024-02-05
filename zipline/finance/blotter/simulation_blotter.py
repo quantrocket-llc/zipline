@@ -15,6 +15,8 @@
 from collections import defaultdict
 from copy import copy
 
+from pydantic import validate_call
+
 from six import iteritems
 import warnings
 
@@ -33,7 +35,7 @@ from zipline.finance.commission import (
     PerContract,
     PerShare,
 )
-from zipline.utils.input_validation import expect_types
+from zipline.finance.execution import ExecutionStyle
 
 @register(Blotter, 'default')
 class SimulationBlotter(Blotter):
@@ -88,8 +90,8 @@ class SimulationBlotter(Blotter):
                    new_orders=self.new_orders,
                    current_dt=self.current_dt)
 
-    @expect_types(asset=Asset)
-    def order(self, asset, amount, style, order_id=None):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def order(self, asset: Asset, amount: int, style: ExecutionStyle, order_id: str | None = None):
         """Place an order.
 
         Parameters

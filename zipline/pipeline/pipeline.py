@@ -1,13 +1,10 @@
 import six
+from typing import Literal
 
 import pandas as pd
+from pydantic import validate_call
 
 from zipline.errors import UnsupportedPipelineOutput
-from zipline.utils.input_validation import (
-    expect_element,
-    expect_types,
-    optional,
-)
 
 from .domain import Domain, GENERIC, infer_domain
 from .graph import ExecutionPlan, TermGraph, SCREEN_NAME
@@ -269,17 +266,12 @@ class Pipeline(object):
     """
     __slots__ = ('_columns', '_prescreen', '_initial_universe', '_screen', '_domain', '__weakref__')
 
-    @expect_types(
-        columns=optional(dict),
-        screen=optional(Filter),
-        initial_universe=optional(Filter),
-        domain=Domain
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(
         self,
-        columns: dict[str, Term] = None,
-        screen: Filter = None,
-        initial_universe: Filter = None,
+        columns: dict[str, Term] | None = None,
+        screen: Filter | None = None,
+        initial_universe: Filter | None = None,
         domain: Domain = GENERIC
         ):
         if columns is None:
@@ -426,7 +418,7 @@ class Pipeline(object):
         """
         return self._initial_universe
 
-    @expect_types(term=Term, name=str)
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def add(
         self,
         term: Term,
@@ -465,7 +457,7 @@ class Pipeline(object):
 
         self._columns[name] = term
 
-    @expect_types(name=str)
+    @validate_call
     def remove(self, name: str) -> Term:
         """Remove a column.
 
@@ -486,7 +478,7 @@ class Pipeline(object):
         """
         return self.columns.pop(name)
 
-    @expect_types(screen=Filter, overwrite=(bool, int))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def set_screen(
         self,
         screen: Filter,
@@ -586,8 +578,8 @@ class Pipeline(object):
         columns[SCREEN_NAME] = screen
         return columns
 
-    @expect_element(format=('svg', 'png', 'jpeg'))
-    def show_graph(self, format: str = 'svg'):
+    @validate_call
+    def show_graph(self, format: Literal['svg', 'png', 'jpeg'] = 'svg'):
         """
         Render this Pipeline as a DAG.
 
@@ -604,13 +596,13 @@ class Pipeline(object):
         elif format == 'jpeg':
             return g.jpeg
         else:
-            # We should never get here because of the expect_element decorator
+            # We should never get here because of the validate_call decorator
             # above.
             raise AssertionError("Unknown graph format %r." % format)
 
     @staticmethod
-    @expect_types(term=Term, column_name=six.string_types)
-    def validate_column(column_name, term):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def validate_column(column_name: str, term: Term) -> None:
         if term.ndim == 1:
             raise UnsupportedPipelineOutput(column_name=column_name, term=term)
 
@@ -628,7 +620,7 @@ class Pipeline(object):
             terms.append(screen)
         return terms
 
-    @expect_types(default=Domain)
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def domain(self, default: Domain) -> Domain:
         """
         Get the domain for this pipeline.

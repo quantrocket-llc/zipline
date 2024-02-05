@@ -119,6 +119,7 @@ class BlotterTestCase(WithCreateBarData,
         style_obj.asset = self.asset_24
 
         blotter = SimulationBlotter(self.sim_params)
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
 
         blotter.order(self.asset_24, 100, style_obj)
         result = blotter.open_orders[self.asset_24][0]
@@ -129,6 +130,7 @@ class BlotterTestCase(WithCreateBarData,
 
     def test_cancel(self):
         blotter = SimulationBlotter(self.sim_params)
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
 
         oid_1 = blotter.order(self.asset_24, 100, MarketOrder())
         oid_2 = blotter.order(self.asset_24, 200, MarketOrder())
@@ -163,6 +165,9 @@ class BlotterTestCase(WithCreateBarData,
 
     def test_blotter_eod_cancellation(self):
         blotter = SimulationBlotter(self.sim_params, cancel_policy=EODCancel())
+        today = pd.Timestamp.utcnow()
+        tomorrow = today + pd.Timedelta(days=1)
+        blotter.set_date(today)
 
         # Make two orders for the same asset, so we can test that we are not
         # mutating the orders list as we are cancelling orders
@@ -175,6 +180,7 @@ class BlotterTestCase(WithCreateBarData,
         self.assertEqual(blotter.new_orders[0].status, ORDER_STATUS.OPEN)
         self.assertEqual(blotter.new_orders[1].status, ORDER_STATUS.OPEN)
 
+        blotter.set_date(tomorrow)
         blotter.execute_cancel_policy(BAR)
         self.assertEqual(blotter.new_orders[0].status, ORDER_STATUS.OPEN)
         self.assertEqual(blotter.new_orders[1].status, ORDER_STATUS.OPEN)
@@ -186,6 +192,7 @@ class BlotterTestCase(WithCreateBarData,
 
     def test_blotter_never_cancel(self):
         blotter = SimulationBlotter(self.sim_params, cancel_policy=NeverCancel())
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
 
         blotter.order(self.asset_24, 100, MarketOrder())
 
@@ -200,6 +207,7 @@ class BlotterTestCase(WithCreateBarData,
 
     def test_order_rejection(self):
         blotter = SimulationBlotter(self.sim_params)
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
 
         # Reject a nonexistent order -> no order appears in new_order,
         # no exceptions raised out
@@ -229,6 +237,7 @@ class BlotterTestCase(WithCreateBarData,
         # Do it again, but reject it at a later time (after tradesimulation
         # pulls it from new_orders)
         blotter = SimulationBlotter(self.sim_params)
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
         new_open_id = blotter.order(self.asset_24, 10, MarketOrder())
         new_open_order = blotter.open_orders[self.asset_24][0]
         self.assertEqual(new_open_id, new_open_order.id)
@@ -245,6 +254,7 @@ class BlotterTestCase(WithCreateBarData,
         # You can't reject a filled order.
         # Reset for paranoia
         blotter = SimulationBlotter(self.sim_params)
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
         blotter.slippage_models[Equity] = FixedSlippage()
         filled_id = blotter.order(self.asset_24, 100, MarketOrder())
         filled_order = None
@@ -273,6 +283,7 @@ class BlotterTestCase(WithCreateBarData,
         status to OPEN/FILLED as necessary
         """
         blotter = SimulationBlotter(self.sim_params, equity_slippage=VolumeShareSlippage())
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
 
         # Nothing happens on held of a non-existent order
         blotter.hold(56)
@@ -312,6 +323,7 @@ class BlotterTestCase(WithCreateBarData,
                 ORDER_STATUS.FILLED
 
             blotter = SimulationBlotter(self.sim_params, equity_slippage=VolumeShareSlippage())
+            blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
             open_id = blotter.order(self.asset_24, order_size, MarketOrder())
             open_order = blotter.open_orders[self.asset_24][0]
             self.assertEqual(open_id, open_order.id)
@@ -334,6 +346,7 @@ class BlotterTestCase(WithCreateBarData,
 
     def test_prune_orders(self):
         blotter = SimulationBlotter(self.sim_params)
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
 
         blotter.order(self.asset_24, 100, MarketOrder())
         open_order = blotter.open_orders[self.asset_24][0]
@@ -362,6 +375,9 @@ class BlotterTestCase(WithCreateBarData,
         """
         blotter1 = SimulationBlotter(self.sim_params)
         blotter2 = SimulationBlotter(self.sim_params)
+        dt = pd.Timestamp.utcnow()
+        blotter1.set_date(dt)
+        blotter2.set_date(dt)
         for i in range(1, 4):
             order_arg_lists = [
                 (self.asset_24, i * 100, MarketOrder()),
@@ -395,6 +411,7 @@ class BlotterTestCase(WithCreateBarData,
             equity_commission=PerTrade(cost=1.0),
             future_commission=PerTrade(cost=2.0),
         )
+        blotter.set_date(pd.Timestamp("2014-01-02", tz="UTC"))
         blotter.order(self.asset_24, 1, MarketOrder())
         blotter.order(self.future_cl, 1, MarketOrder())
 

@@ -16,13 +16,11 @@ from __future__ import division
 
 from copy import copy
 
-from zipline.assets import Asset
 from zipline.protocol import DATASOURCE_TYPE
-from zipline.utils.input_validation import expect_types
 
 
 class Transaction(object):
-    @expect_types(asset=Asset)
+
     def __init__(self, asset, amount, dt, price, order_id):
         self.asset = asset
         self.amount = amount

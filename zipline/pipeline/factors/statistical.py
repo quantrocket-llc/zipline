@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-
+from pydantic import validate_call
 from numexpr import evaluate
 import numpy as np
 from numpy import broadcast_arrays
@@ -17,7 +17,6 @@ from zipline.pipeline.term import AssetExists
 from zipline.utils.input_validation import (
     expect_bounded,
     expect_dtypes,
-    expect_types,
 )
 from zipline.utils.math_utils import nanmean
 from zipline.utils.numpy_utils import (
@@ -525,12 +524,7 @@ class SimpleBeta(CustomFactor, StandardOutputs):
             mask: Filter = None):
             pass
 
-    @expect_types(
-        target=Asset,
-        regression_length=int,
-        allowed_missing_percentage=(int, float),
-        __funcname='SimpleBeta',
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     @expect_bounded(
         regression_length=(3, None),
         allowed_missing_percentage=(0.0, 1.0),

@@ -4,6 +4,8 @@ classifier.py
 from typing import Callable, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from zipline.pipeline.factors import Factor
+from pydantic import validate_call
+
 from functools import partial
 from numbers import Number
 import operator
@@ -23,7 +25,7 @@ from zipline.pipeline.dtypes import (
 )
 from zipline.pipeline.term import ComputableTerm
 from zipline.utils.compat import unicode
-from zipline.utils.input_validation import expect_types, expect_dtypes
+from zipline.utils.input_validation import expect_dtypes
 from zipline.utils.numpy_utils import (
     categorical_dtype,
     int64_dtype,
@@ -64,11 +66,9 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
     ALLOWED_DTYPES = CLASSIFIER_DTYPES
     categories = None
 
-    # We explicitly don't support classifier to classifier comparisons, since
-    # the stored values likely don't mean the same thing. This may be relaxed
-    # in the future, but for now we're starting conservatively.
-    @expect_types(other=(bytes, str, Number))
-    def eq(self, other: Union[str, int]) -> 'Filter':
+    # We probably shouldn't support classifier to classifier comparisons, since
+    # the stored values likely don't mean the same thing.
+    def eq(self, other: Union[str, Number]) -> 'Filter':
         """
         Construct a Filter returning True for asset/date pairs where the output
         of ``self`` matches ``other``.
@@ -103,10 +103,9 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
                 opargs=(other,),
             )
 
-    @expect_types(other=(bytes, str, Number))
     def __ne__(
         self,
-        other: Union[str, int]
+        other: Union[str, Number]
         ) -> Filter:
         """
         Construct a Filter returning True for asset/date pairs where the output
@@ -138,7 +137,6 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
     del bad_compare
 
     @string_classifiers_only
-    @expect_types(prefix=(bytes, unicode))
     def startswith(
         self,
         prefix: str
@@ -164,7 +162,6 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         )
 
     @string_classifiers_only
-    @expect_types(suffix=(bytes, unicode))
     def endswith(
         self,
         suffix: str
@@ -190,7 +187,6 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         )
 
     @string_classifiers_only
-    @expect_types(substring=(bytes, unicode))
     def has_substring(
         self,
         substring: str
@@ -216,10 +212,9 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         )
 
     @string_classifiers_only
-    @expect_types(pattern=(bytes, unicode, type(re.compile(''))))
     def matches(
         self,
-        pattern: str
+        pattern: Union[str, re.Pattern]
         ) -> Filter:
         """
         Construct a Filter that checks regex matches against ``pattern``.
@@ -578,7 +573,6 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
         """
         return super()._where(condition=condition, fill_value=fill_value)
 
-    @expect_types(mask=(Filter, type(None)),)
     def shift(self, periods: int = 1, mask: Filter = None) -> 'Classifier':
         """
         Create a new Classifier that computes the value of this Classifier shifted
@@ -657,9 +651,9 @@ class Relabel(SingleInputMixin, Classifier):
     params = ('relabeler',)
 
     # TODO: Support relabeling for integer dtypes.
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     @expect_dtypes(term=categorical_dtype)
-    @expect_types(term=Classifier)
-    def __new__(cls, term, relabeler):
+    def __new__(cls, term: Classifier, relabeler: Callable[[LabelArray], LabelArray]):
         return super(Relabel, cls).__new__(
             cls,
             inputs=(term,),

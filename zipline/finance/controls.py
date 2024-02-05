@@ -15,7 +15,9 @@
 import abc
 from datetime import datetime
 import warnings
-import pandas as pd
+
+from pydantic import validate_call
+from typing import Union
 
 from six import with_metaclass
 
@@ -25,7 +27,6 @@ from zipline.errors import (
 )
 from zipline.utils.input_validation import (
     expect_bounded,
-    expect_types,
 )
 
 class TradingControl(with_metaclass(abc.ABCMeta)):
@@ -398,13 +399,9 @@ class MinLeverage(AccountControl):
     double the account value by the deadline date.
     """
 
-    @expect_types(
-        __funcname='MinLeverage',
-        min_leverage=(int, float),
-        deadline=datetime
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     @expect_bounded(__funcname='MinLeverage', min_leverage=(0, None))
-    def __init__(self, min_leverage, deadline):
+    def __init__(self, min_leverage: Union[int, float], deadline: datetime):
         super(MinLeverage, self).__init__(min_leverage=min_leverage,
                                           deadline=deadline)
         self.min_leverage = min_leverage

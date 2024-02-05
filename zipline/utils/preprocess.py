@@ -89,7 +89,10 @@ def preprocess(*_unused, **processors):
         raise TypeError("preprocess() doesn't accept positional arguments")
 
     def _decorator(f):
-        args, varargs, varkw, defaults, _, _, _ = argspec = inspect.getfullargspec(f)
+        # inspect f.raw_function if f has a raw_function attr. This is the case
+        # for functions decorated with pydantic.validate_call. Pydantic moves the
+        # args and kwargs into "args" and "kwargs" params, which breaks this function.
+        args, varargs, varkw, defaults, _, _, _ = argspec = inspect.getfullargspec(getattr(f, 'raw_function', f))
         if defaults is None:
             defaults = ()
         no_defaults = (NO_DEFAULT,) * (len(args) - len(defaults))

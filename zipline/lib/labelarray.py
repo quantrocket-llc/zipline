@@ -1,9 +1,11 @@
 """
 An ndarray subclass for working with arrays of strings.
 """
-from functools import partial, total_ordering
+from functools import total_ordering
 from operator import eq, ne
 import re
+from pydantic import validate_call
+from typing import Union
 
 import numpy as np
 from numpy import ndarray
@@ -15,10 +17,7 @@ from zipline.utils.functional import instance
 from zipline.utils.preprocess import preprocess
 from zipline.utils.sentinel import sentinel
 from zipline.utils.input_validation import (
-    coerce,
-    expect_kinds,
-    expect_types,
-    optional,
+    coerce
 )
 from zipline.utils.numpy_utils import (
     bool_dtype,
@@ -140,24 +139,23 @@ class LabelArray(ndarray):
     SUPPORTED_SCALAR_TYPES = (bytes, unicode, type(None))
     SUPPORTED_NON_NONE_SCALAR_TYPES = (bytes, unicode)
 
-    @preprocess(
-        values=coerce(list, partial(np.asarray, dtype=object)),
+    def __new__(cls,
+                values: np.ndarray | list,
+                missing_value: Union[bytes, unicode, None] = None,
+                categories: list | np.ndarray | set | None = None,
+                sort: bool = True):
+
+        if isinstance(values, list):
+            values = np.asarray(values, dtype=object)
+
+        if values.dtype.kind not in ("O", "S", "U"):
+            raise TypeError("values dtype must be of kind 'O', 'S', or 'U'")
+
         # Coerce ``list`` to ``list`` to make a copy. Code internally may call
         # ``categories.insert(0, missing_value)`` which will mutate this list
         # in place.
-        categories=coerce((list, np.ndarray, set), list),
-    )
-    @expect_types(
-        values=np.ndarray,
-        missing_value=SUPPORTED_SCALAR_TYPES,
-        categories=optional(list),
-    )
-    @expect_kinds(values=("O", "S", "U"))
-    def __new__(cls,
-                values,
-                missing_value,
-                categories=None,
-                sort=True):
+        if isinstance(categories, (list, np.ndarray, set)):
+            categories = list(categories)
 
         # Numpy's fixed-width string types aren't very efficient. Working with
         # object arrays is faster than bytes or unicode arrays in almost all
@@ -814,7 +812,6 @@ class _sortable_sentinel(object):
         return True
 
 
-@expect_types(trues=LabelArray, falses=LabelArray)
 def labelarray_where(cond, trues, falses):
     """LabelArray-aware implementation of np.where.
     """

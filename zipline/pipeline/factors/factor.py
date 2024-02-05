@@ -2,6 +2,7 @@
 factor.py
 """
 from typing import Union, TYPE_CHECKING
+from pydantic import validate_call
 from operator import attrgetter
 from numbers import Number
 from math import ceil
@@ -51,7 +52,6 @@ from zipline.pipeline.mixins import (
 )
 from zipline.pipeline.term import AssetExists, ComputableTerm, Term
 from zipline.utils.functional import with_doc, with_name
-from zipline.utils.input_validation import expect_types
 from zipline.utils.math_utils import (
     nanmax,
     nanmean,
@@ -611,7 +611,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
     del _eq
     del clsdict  # don't pollute the class namespace with this.
 
-    @expect_types(mask=(Filter, type(None)))
     @float64_only
     def mean(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily mean across assets.
@@ -640,7 +639,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             dtype=self.dtype,
         )
 
-    @expect_types(mask=(Filter, type(None)))
     @float64_only
     def stddev(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily standard deviation
@@ -670,7 +668,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             dtype=self.dtype,
         )
 
-    @expect_types(mask=(Filter, type(None)))
     @float64_only
     def max(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily max across assets.
@@ -699,7 +696,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             dtype=self.dtype,
         )
 
-    @expect_types(mask=(Filter, type(None)))
     @float64_only
     def min(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily min across assets.
@@ -728,7 +724,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             dtype=self.dtype,
         )
 
-    @expect_types(mask=(Filter, type(None)))
     @float64_only
     def median(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily median across assets.
@@ -757,7 +752,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             dtype=self.dtype,
         )
 
-    @expect_types(mask=(Filter, type(None)))
     @float64_only
     def sum(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily sum across assets.
@@ -786,7 +780,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             dtype=self.dtype,
         )
 
-    @expect_types(mask=(Filter, type(None)))
     @float64_only
     def notnull_count(self, mask: Filter = None) -> 'Factor':
         """Create a 1-dimensional factor computing the daily count of not-null
@@ -953,9 +946,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         """
         return super()._where(condition=condition, fill_value=fill_value)
 
-    @expect_types(
-        mask=(Filter, type(None)),
-    )
     def shift(self, periods: int = 1, mask: Filter = None) -> 'Factor':
         """
         Create a new Factor that computes the value of this Factor shifted
@@ -985,9 +975,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         from .basic import Shift
         return Shift(inputs=[self], window_length=periods + 1, mask=mask)
 
-    @expect_types(
-        mask=(Filter, type(None)),
-    )
     @float64_only
     def pct_change(self, periods: int = 1, mask: Filter = None) -> 'Factor':
         """
@@ -1018,10 +1005,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         from .basic import PercentChange
         return PercentChange(inputs=[self], window_length=periods + 1, mask=mask)
 
-    @expect_types(
-        mask=(Filter, type(None)),
-        groupby=(Classifier, type(None)),
-    )
     @float64_only
     def demean(
         self,
@@ -1144,10 +1127,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             mask=mask,
         )
 
-    @expect_types(
-        mask=(Filter, type(None)),
-        groupby=(Classifier, type(None)),
-    )
     @float64_only
     def zscore(
         self,
@@ -1278,9 +1257,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             window_safe=True,
         )
 
-    @expect_types(
-        target=Term, correlation_length=int, mask=(Filter, type(None)),
-    )
     def pearsonr(
         self,
         target: Term,
@@ -1354,9 +1330,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             mask=mask,
         )
 
-    @expect_types(
-        target=Term, correlation_length=int, mask=(Filter, type(None)),
-    )
     def spearmanr(
         self,
         target: Term,
@@ -1429,9 +1402,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             mask=mask,
         )
 
-    @expect_types(
-        target=Term, regression_length=int, mask=(Filter, type(None)),
-    )
     def linear_regression(
         self,
         target: Term,
@@ -1501,12 +1471,6 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             mask=mask,
         )
 
-    @expect_types(
-        min_percentile=(int, float),
-        max_percentile=(int, float),
-        mask=(Filter, type(None)),
-        groupby=(Classifier, type(None)),
-    )
     @float64_only
     def winsorize(
         self,
@@ -1605,11 +1569,11 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             window_safe=self.window_safe,
         )
 
-    @expect_types(bins=int, mask=(Filter, type(None)))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def quantiles(
         self,
         bins: int,
-        mask: Filter = None
+        mask: Filter | None = None
         ) -> Classifier:
         """
         Construct a Classifier computing quantiles of the output of ``self``.
@@ -1636,10 +1600,10 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
             mask = self.mask
         return Quantiles(inputs=(self,), bins=bins, mask=mask)
 
-    @expect_types(mask=(Filter, type(None)))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def quartiles(
         self,
-        mask: Filter = None
+        mask: Filter | None = None
         ) -> Classifier:
         """
         Construct a Classifier computing quartiles over the output of ``self``.
@@ -1663,7 +1627,7 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         """
         return self.quantiles(bins=4, mask=mask)
 
-    @expect_types(mask=(Filter, type(None)))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def quintiles(
         self,
         mask: Filter = None
@@ -1690,10 +1654,10 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         """
         return self.quantiles(bins=5, mask=mask)
 
-    @expect_types(mask=(Filter, type(None)))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def deciles(
         self,
-        mask: Filter = None
+        mask: Filter | None = None
         ) -> Classifier:
         """
         Construct a Classifier computing decile labels on ``self``.
@@ -1927,8 +1891,8 @@ class BooleanFactor(SingleInputMixin, Factor):
     window_length = 0
     dtype = float64_dtype
 
-    @expect_types(filter=Filter)
-    def __new__(cls, filter):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def __new__(cls, filter: Filter):
         return super(BooleanFactor, cls).__new__(
             cls,
             inputs=(filter,),

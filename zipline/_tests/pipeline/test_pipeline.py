@@ -4,6 +4,7 @@ Tests for zipline.pipeline.Pipeline
 from unittest import TestCase
 import re
 
+import pydantic
 import inspect
 import pandas as pd
 from mock import patch
@@ -72,15 +73,15 @@ class PipelineTestCase(TestCase):
 
     def test_construction_bad_input_types(self):
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             Pipeline(1)
 
         Pipeline({})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             Pipeline({}, 1)
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             Pipeline({}, SomeFactor())
 
         with self.assertRaises(TypeError):
@@ -98,7 +99,7 @@ class PipelineTestCase(TestCase):
         p.add(f > 5, 'g')
         self.assertEqual(p.columns, {'f': f, 'g': f > 5})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             p.add(f, 1)
 
         with self.assertRaises(TypeError):
@@ -149,13 +150,12 @@ class PipelineTestCase(TestCase):
         p.set_screen(g, overwrite=True)
         self.assertEqual(p.screen, g)
 
-        with self.assertRaises(TypeError) as e:
+        with self.assertRaises(pydantic.ValidationError) as cm:
             p.set_screen(f, g)
 
-        message = e.exception.args[0]
         self.assertIn(
-            "expected a value of type bool or int for argument 'overwrite'",
-            message,
+            "Input should be a valid boolean",
+            str(cm.exception),
         )
 
     def test_show_graph(self):
@@ -211,14 +211,10 @@ class PipelineTestCase(TestCase):
             self.assertEqual(format, 'jpeg')
             self.assertEqual(include_asset_exists, False)
 
-        expected = (
-            r".*\.show_graph\(\) expected a value in "
-            r"\('svg', 'png', 'jpeg'\) for argument 'format', "
-            r"but got 'fizzbuzz' instead."
-        )
-
-        with self.assertRaisesRegex(ValueError, expected):
+        with self.assertRaises(pydantic.ValidationError) as cm:
             p.show_graph(format='fizzbuzz')
+
+        self.assertIn("Input should be 'svg', 'png' or 'jpeg'", str(cm.exception))
 
     def test_infer_domain_no_terms(self):
         self.assertEqual(Pipeline().domain(default=GENERIC), GENERIC)

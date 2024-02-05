@@ -18,6 +18,7 @@ from datetime import timedelta
 from functools import partial
 from textwrap import dedent
 from copy import deepcopy
+import pydantic
 
 import toolz
 from parameterized import parameterized
@@ -331,7 +332,7 @@ def handle_data(context, data):
     get_datetime(timezone)
 """
         algo = self.make_algo(script=algo_text)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             algo.run()
 
     @parameterized.expand([

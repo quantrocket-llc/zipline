@@ -16,6 +16,7 @@ Currently, this means that a domain defines two things:
 """
 import datetime
 from textwrap import dedent
+from pydantic import validate_call
 
 from interface import default, implements, Interface
 import numpy as np
@@ -26,7 +27,6 @@ from zipline.utils.calendar_utils import get_calendar
 
 from zipline.country import CountryCode
 from zipline.utils.formatting import bulleted_list
-from zipline.utils.input_validation import expect_types, optional
 from zipline.utils.memoize import lazyval
 from zipline.utils.pandas_utils import days_at_time
 
@@ -160,15 +160,11 @@ class EquityCalendarDomain(Domain):
          been available at least 45 minutes prior to market open for it to
          appear in the pipeline input for the given session.
     """
-    @expect_types(
-        country_code=str,
-        calendar_name=str,
-        __funcname='EquityCountryDomain',
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(self,
-                 country_code,
-                 calendar_name,
-                 data_query_offset=-np.timedelta64(45, 'm')):
+                 country_code: str,
+                 calendar_name: str,
+                 data_query_offset: np.timedelta64 = -np.timedelta64(45, 'm')):
         self._country_code = country_code
         self.calendar_name = calendar_name
         self._data_query_offset = (
@@ -433,18 +429,12 @@ class EquitySessionDomain(Domain):
         ``data_query_time``. This can be used to express that the cutoff time
         for a session falls on a different calendar day from the session label.
     """
-    @expect_types(
-        sessions=pd.DatetimeIndex,
-        country_code=str,
-        data_query_time=optional(datetime.time),
-        data_query_date_offset=int,
-        __funcname='EquitySessionDomain',
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(self,
-                 sessions,
-                 country_code,
-                 data_query_time=None,
-                 data_query_date_offset=0):
+                 sessions: pd.DatetimeIndex,
+                 country_code: str,
+                 data_query_time: datetime.time | None = None,
+                 data_query_date_offset: int = 0):
         self._country_code = country_code
         self._sessions = sessions
 

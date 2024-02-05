@@ -1,5 +1,7 @@
 from six import iteritems
 
+from pydantic import validate_call
+
 import numpy as np
 import pandas as pd
 from pandas import NaT
@@ -8,7 +10,7 @@ from exchange_calendars import ExchangeCalendar
 
 from zipline.data.bar_reader import OHLCV, NoDataOnDate, NoDataForSid
 from zipline.data.session_bars import CurrencyAwareSessionBarReader
-from zipline.utils.input_validation import expect_types, validate_keys
+from zipline.utils.input_validation import validate_keys
 from zipline.utils.pandas_utils import check_indexes_all_same
 
 
@@ -29,17 +31,12 @@ class InMemoryDailyBarReader(CurrencyAwareSessionBarReader):
         Whether or not to verify that input data is correctly aligned to the
         given calendar. Default is True.
     """
-    @expect_types(
-        frames=dict,
-        calendar=ExchangeCalendar,
-        verify_indices=bool,
-        currency_codes=pd.Series,
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(self,
-                 frames,
-                 calendar,
-                 currency_codes,
-                 verify_indices=True):
+                 frames: dict,
+                 calendar: ExchangeCalendar,
+                 currency_codes: pd.Series,
+                 verify_indices: bool = True):
         self._frames = frames
         self._values = {key: frame.values for key, frame in iteritems(frames)}
         self._calendar = calendar

@@ -12,7 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Callable, Union, Literal, Any
+from typing import Union, Literal
+from pydantic import validate_call
 from collections import namedtuple
 from collections.abc import Iterable
 from copy import copy
@@ -104,8 +105,6 @@ from zipline.utils.input_validation import (
     ensure_upper_case,
     error_keywords,
     expect_dtypes,
-    expect_types,
-    optional,
 )
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.utils.cache import ExpiringCache
@@ -1499,9 +1498,9 @@ class TradingAlgorithm(object):
         self.blotter.set_date(dt)
 
     @api_method # document in zipline.api.pyi
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     @preprocess(tz=coerce_string(pytz.timezone))
-    @expect_types(tz=optional(tzinfo))
-    def get_datetime(self, tz: str = None) -> pd.Timestamp:
+    def get_datetime(self, tz: tzinfo | str | None = None) -> pd.Timestamp:
         """
         Returns the current simulation datetime.
 
@@ -1948,7 +1947,7 @@ class TradingAlgorithm(object):
         return self._calculate_order_target_amount(asset, target_amount)
 
     @api_method # document in zipline.api.pyi
-    @expect_types(share_counts=pd.Series)
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     @expect_dtypes(share_counts=int64_dtype)
     def batch_market_order(self, share_counts: pd.Series) -> pd.Index:
         """Place a batch market order for multiple assets.
@@ -2185,10 +2184,7 @@ class TradingAlgorithm(object):
         self.register_trading_control(control)
 
     @api_method # document in zipline.api.pyi
-    @expect_types(
-        restrictions=Restrictions,
-        on_error=str,
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def set_asset_restrictions(
         self,
         restrictions: Restrictions,
@@ -2221,16 +2217,12 @@ class TradingAlgorithm(object):
     ##############
     @api_method # document in zipline.api.pyi
     @require_not_initialized(AttachPipelineAfterInitialize())
-    @expect_types(
-        pipeline=Pipeline,
-        name=string_types,
-        chunks=(int, Iterable, type(None)),
-    )
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def attach_pipeline(
         self,
         pipeline: Pipeline,
         name: str,
-        chunks: int = None,
+        chunks: int | Iterable | None = None,
         eager: bool = True
         ) -> Pipeline:
         """Register a pipeline to be computed at the start of each day.

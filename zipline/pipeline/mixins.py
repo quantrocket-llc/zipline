@@ -15,7 +15,7 @@ from numpy import (
     where,
 )
 from pandas import NaT as pd_NaT
-
+from pydantic import validate_call
 from zipline.errors import (
     WindowLengthNotPositive,
     UnsupportedDataType,
@@ -24,7 +24,7 @@ from zipline.errors import (
 )
 from zipline.lib.labelarray import LabelArray, labelarray_where
 from zipline.utils.context_tricks import nop_context
-from zipline.utils.input_validation import expect_dtypes, expect_types
+from zipline.utils.input_validation import expect_dtypes
 from zipline.utils.numpy_utils import bool_dtype
 from zipline.utils.pandas_utils import nearest_unequal_elements
 
@@ -390,9 +390,9 @@ class DownsampledMixin(StandardOutputs, UniversalMixin):
     # point is that you're re-using the same result multiple times.
     window_safe = False
 
-    @expect_types(term=Term)
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     @expect_downsample_frequency
-    def __new__(cls, term, frequency):
+    def __new__(cls, term: Term, frequency: str):
         return super(DownsampledMixin, cls).__new__(
             cls,
             inputs=term.inputs,

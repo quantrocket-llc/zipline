@@ -1,7 +1,8 @@
 """
 Base class for Filters, Factors and Classifiers
 """
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from pydantic import validate_call
 if TYPE_CHECKING:
     from zipline.pipeline.filters import Filter
 from abc import ABCMeta, abstractproperty, abstractmethod
@@ -31,7 +32,6 @@ from zipline.errors import (
 )
 from zipline.lib.adjusted_array import can_represent_dtype
 from zipline.lib.labelarray import LabelArray
-from zipline.utils.input_validation import expect_types
 from zipline.utils.memoize import classlazyval, lazyval
 from zipline.utils.numpy_utils import (
     bool_dtype,
@@ -228,8 +228,8 @@ class Term(with_metaclass(ABCMeta, object)):
 
         pass
 
-    @expect_types(key=Asset)
-    def __getitem__(self, key):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def __getitem__(self, key: Asset):
         if isinstance(self, LoadableTerm):
             raise NonSliceableTerm(term=self)
 
@@ -711,8 +711,8 @@ class ComputableTerm(Term):
         out[self.mask] = 0
         return out
 
-    @expect_types(data=ndarray)
-    def postprocess(self, data):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def postprocess(self, data: ndarray):
         """
         Called with an result of ``self``, unravelled (i.e. 1-dimensional)
         after any user-defined screens have been applied.

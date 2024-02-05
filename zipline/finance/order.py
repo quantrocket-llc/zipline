@@ -17,10 +17,12 @@ import uuid
 from enum import Enum
 from six import text_type
 
+from pydantic import validate_call
+
+import datetime
 import pandas as pd
 import zipline.protocol as zp
 from zipline.assets import Asset
-from zipline.utils.input_validation import expect_types
 
 class ORDER_STATUS(Enum):
     OPEN = 0
@@ -45,18 +47,18 @@ class Order(object):
                  "commission", "_status", "stop", "limit", "tif", "stop_reached",
                  "limit_reached", "tif_reached", "direction", "type", "broker_order_id"]
 
-    @expect_types(asset=Asset)
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(
         self,
-        dt: pd.Timestamp,
+        dt: pd.Timestamp | datetime.datetime,
         asset: Asset,
         amount: int,
-        stop: float = None,
-        limit: float = None,
-        tif: str = None,
+        stop: float | None = None,
+        limit: float | None = None,
+        tif: str | None = None,
         filled: int = 0,
         commission: float = 0,
-        id: str = None
+        id: str | None = None
         ):
         """
         An order placed by an algorithm.

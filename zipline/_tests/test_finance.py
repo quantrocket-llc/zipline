@@ -371,6 +371,7 @@ class FinanceTestCase(zf.WithAssetFinder,
                 end=self.end)
 
         blotter = SimulationBlotter(sim_params, equity_slippage=FixedSlippage())
+        blotter.set_date(self.start.tz_localize("UTC"))
 
         # set up two open limit orders with very low limit prices,
         # one for sid 1 and one for sid 2
