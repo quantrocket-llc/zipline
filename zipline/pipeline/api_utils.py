@@ -1,7 +1,8 @@
 """
 Utilities for creating public APIs (e.g. argument validation decorators).
 """
-from zipline.utils.input_validation import preprocess
+from zipline.utils.preprocess import preprocess
+
 
 
 def restrict_to_dtype(dtype, message_template):

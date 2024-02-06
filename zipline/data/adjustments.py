@@ -9,7 +9,8 @@ import six
 import sqlite3
 
 from zipline.utils.functional import keysorted
-from zipline.utils.input_validation import preprocess
+from zipline.utils.preprocess import preprocess
+
 from zipline.utils.numpy_utils import (
     datetime64ns_dtype,
     float64_dtype,

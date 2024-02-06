@@ -24,7 +24,7 @@ import pandas as pd
 import pytz
 from toolz import curry
 
-from zipline.utils.input_validation import preprocess
+from zipline.utils.preprocess import preprocess
 from zipline.utils.memoize import lazyval
 from zipline.utils.sentinel import sentinel
 

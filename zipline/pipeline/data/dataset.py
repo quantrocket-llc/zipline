@@ -25,7 +25,6 @@ from zipline.pipeline.term import (
 )
 from zipline.utils.formatting import s, plural
 from zipline.utils.input_validation import (
-    coerce_types,
     ensure_dtype,
 )
 from zipline.utils.numpy_utils import float64_dtype, NoDefaultMissingValue
@@ -260,7 +259,6 @@ class BoundColumn(LoadableTerm):
         """
         return self.specialize(GENERIC)
 
-    @coerce_types(currency=(str, Currency))
     def fx(self, currency: str) -> 'BoundColumn':
         """
         Construct a currency-converted version of this column.
@@ -276,6 +274,9 @@ class BoundColumn(LoadableTerm):
             Column producing the same data as ``self``, but currency-converted
             into ``currency``.
         """
+        if isinstance(currency, str):
+            currency = Currency(currency)
+
         conversion = self._currency_conversion
 
         if not self._currency_aware:

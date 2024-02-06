@@ -102,8 +102,7 @@ from zipline.utils.api_support import (
     disallowed_in_before_trading_start)
 from zipline.utils.input_validation import (
     coerce_string,
-    ensure_upper_case,
-    error_keywords
+    ensure_upper_case
 )
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.utils.cache import ExpiringCache
@@ -1971,8 +1970,6 @@ class TradingAlgorithm(object):
         ]
         return self.blotter.batch_order(order_args)
 
-    @error_keywords(sid='Keyword argument `sid` is no longer supported for '
-                        'get_open_orders. Use `asset` instead.')
     @api_method # document in zipline.api.pyi
     def get_open_orders(
         self,

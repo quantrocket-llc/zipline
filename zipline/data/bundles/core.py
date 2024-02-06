@@ -1,13 +1,12 @@
 from collections import namedtuple
 import errno
 import os
-import shutil
 import warnings
 
 from contextlib2 import ExitStack
 import pandas as pd
 from zipline.utils.calendar_utils import get_calendar
-from toolz import curry, complement, take
+from toolz import curry, complement
 
 from ..adjustments import SQLiteAdjustmentReader, SQLiteAdjustmentWriter
 from ..bcolz_daily_bars import BcolzDailyBarReader, BcolzDailyBarWriter
@@ -19,12 +18,9 @@ from zipline.assets import AssetDBWriter, AssetFinder, ASSET_DB_VERSION
 from zipline.utils.cache import (
     dataframe_cache,
     working_dir,
-    working_file,
 )
 from zipline.utils.compat import mappingproxy
-from zipline.utils.input_validation import ensure_timestamp, optionally
 import zipline.utils.paths as pth
-from zipline.utils.preprocess import preprocess
 
 def asset_db_path(bundle_name, timestr, environ=None, db_version=None):
     return pth.data_path(
