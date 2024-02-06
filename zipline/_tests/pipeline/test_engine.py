@@ -1564,9 +1564,8 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
 
         asset = self.assets[0]
         pipeline = Pipeline(
-            screen=SingleAsset(asset)
+            initial_universe=SingleAsset(asset)
         )
-        self.assertIsNone(pipeline._screen)
         self.assertEqual(pipeline._prescreen, {"sids": [1]})
 
         root_mask = self.engine._compute_root_mask(
@@ -1585,7 +1584,6 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
         pipeline = Pipeline(
             initial_universe=StaticSids(['2', '3'])
         )
-        self.assertIsNone(pipeline._screen)
         self.assertEqual(set(pipeline._prescreen.keys()), {"real_sids"})
 
         root_mask = self.engine._compute_root_mask(
@@ -1607,11 +1605,10 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
             index=['1', '2', '3', '4'])
 
         pipeline = Pipeline(
-            screen=(
+            initial_universe=(
                 master.SecuritiesMaster.Symbol.latest.startswith("A")
                 & ~master.SecuritiesMaster.Etf.latest)
         )
-        self.assertIsNone(pipeline._screen)
         self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
         ops = set([field['op'] for field in pipeline._prescreen['fields']])
         self.assertEqual(ops, {"startswith", "eq"})
@@ -1631,11 +1628,10 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
             index=['1', '2', '3', '4'])
 
         pipeline = Pipeline(
-            screen=(
+            initial_universe=(
                 master.SecuritiesMaster.Symbol.latest.has_substring("Z"))
                 & ~master.SecuritiesMaster.Symbol.latest.endswith("Z")
         )
-        self.assertIsNone(pipeline._screen)
         self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
         ops = set([field['op'] for field in pipeline._prescreen['fields']])
         self.assertEqual(ops, {"endswith", "contains"})
@@ -1655,13 +1651,12 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
             index=['1', '2', '3', '4'])
 
         pipeline = Pipeline(
-            screen=(
+            initial_universe=(
                 # starts with a 2-letter sequence of As and/or Bs
                 master.SecuritiesMaster.Symbol.latest.matches(r"[A-B]{2}"))
                 # but doesn't start with 2 As
                 & ~master.SecuritiesMaster.Symbol.latest.matches(re.compile(r"[A]{2}"))
         )
-        self.assertIsNone(pipeline._screen)
         self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
         ops = set([field['op'] for field in pipeline._prescreen['fields']])
         self.assertEqual(ops, {"match"})
@@ -1683,12 +1678,11 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
             index=['1', '2', '3', '4'])
 
         pipeline = Pipeline(
-            screen=(
+            initial_universe=(
                 master.SecuritiesMaster.alpaca_AssetId.latest.notnull()
                 & master.SecuritiesMaster.edi_LocalSymbol.latest.isnull()
                 & master.SecuritiesMaster.ibkr_ConId.latest.notnull()
         ))
-        self.assertIsNone(pipeline._screen)
         self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
         ops = set([field['op'] for field in pipeline._prescreen['fields']])
         self.assertEqual(ops, {"isnull"})
@@ -1708,10 +1702,9 @@ class PrescreenRootMaskTestCase(WithConstantInputs,
             index=['1', '2', '3', '4'])
 
         pipeline = Pipeline(
-            screen=(
+            initial_universe=(
                 master.SecuritiesMaster.ibkr_ConId.latest.isnull()
         ))
-        self.assertIsNone(pipeline._screen)
         self.assertEqual(set(pipeline._prescreen.keys()), {"fields"})
         ops = set([field['op'] for field in pipeline._prescreen['fields']])
         self.assertEqual(ops, {"isnull"})

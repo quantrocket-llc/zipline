@@ -283,7 +283,7 @@ class PipelineTestCase(TestCase):
 
         self.assertEqual(e.exception.domains, [CA_EQUITIES, US_EQUITIES])
 
-class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
+class InitialUniverseTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
 
     def assert_prescreen_dict_equal(self, a, b):
         """
@@ -306,21 +306,7 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             else:
                 self.assertSetEqual(set(a[key]), set(b[key]))
 
-    def test_convert_screen_static_assets(self):
-        """
-        Tests that static asset screens are converted to prescreens.
-        """
-        assets = self.asset_finder.retrieve_all([65, 66])
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=StaticAssets(assets),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"sids": [65, 66]}
-        )
-    def test_initial_universe_static_assets(self):
+    def test_static_assets(self):
         """
         Tests that static asset initial universes are converted to prescreens.
         """
@@ -329,45 +315,12 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             columns={'f': SomeFactor()},
             initial_universe=StaticAssets(assets),
         )
-        self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"sids": [65, 66]}
         )
 
-    def test_not_convert_screen_if_initial_universe(self):
-        """
-        Tests that a screen that could be converted to a prescreen
-        is not converted if an initial_universe if provided.
-        """
-        assets = self.asset_finder.retrieve_all([65, 66])
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=StaticAssets([assets[0]]),
-            initial_universe=StaticAssets([assets[1]]),
-        )
-        self.assertSetEqual(pipe.screen.params['sids'], {65})
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"sids": [66]}
-        )
-
-    def test_convert_screen_single_asset(self):
-        """
-        Tests that single asset screens are converted to prescreens.
-        """
-        asset = self.asset_finder.retrieve_asset(66)
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SingleAsset(asset),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"sids": [66]}
-        )
-
-    def test_initial_universe_single_asset(self):
+    def test_single_asset(self):
         """
         Tests that single asset initial_universe is converted to prescreen.
         """
@@ -376,27 +329,12 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             columns={'f': SomeFactor()},
             initial_universe=SingleAsset(asset),
         )
-        self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"sids": [66]}
         )
 
-    def test_convert_screen_static_sids(self):
-        """
-        Tests that static sids screens are converted to prescreens.
-        """
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=StaticSids(['66', '67']),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"real_sids": ["66", "67"]}
-        )
-
-    def test_convert_initial_universe_static_sids(self):
+    def test_static_sids(self):
         """
         Tests that static sids initial_universe is converted to prescreens.
         """
@@ -404,21 +342,20 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             columns={'f': SomeFactor()},
             initial_universe=StaticSids(['66', '67']),
         )
-        self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"real_sids": ["66", "67"]}
         )
 
     @patch("zipline.pipeline.filters.filter.get_securities")
-    def test_convert_screen_static_universe(self, mock_get_securities):
+    def test_static_universe(self, mock_get_securities):
         """
-        Tests that static universe screens are converted to prescreens.
+        Tests that static universe initial_universe is converted to prescreens.
         """
         mock_get_securities.return_value = pd.DataFrame(index=['65', '67'])
         pipe = Pipeline(
             columns={'f': SomeFactor()},
-            screen=StaticUniverse('test-universe'),
+            initial_universe=StaticUniverse('test-universe'),
         )
         self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
@@ -426,249 +363,14 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             {"real_sids": ["65", "67"]}
         )
 
-    def test_convert_screen_securities_master(self):
+    def test_securities_master(self):
         """
-        Tests that securities master screens are converted to prescreens.
-        """
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.SecType.latest.eq('STK'),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "SecType",
-                "op": "eq",
-                "negate": False,
-                "values": ["STK"]
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=~SecuritiesMaster.SecType.latest.eq('STK'),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "SecType",
-                "op": "eq",
-                "negate": True,
-                "values": ["STK"]
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.Etf.latest,
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "Etf",
-                "op": "eq",
-                "negate": False,
-                "values": [True]
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=~SecuritiesMaster.Etf.latest,
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "Etf",
-                "op": "eq",
-                "negate": True,
-                "values": [True]
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.sharadar_Sector.latest != "Energy",
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "sharadar_Sector",
-                "op": "eq",
-                "negate": True,
-                "values": ["Energy"]
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.sharadar_Sector.latest.isin(["Energy", "Technology"]),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "sharadar_Sector",
-                "op": "eq",
-                "negate": False,
-                "values": ["Energy", "Technology"]
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=~SecuritiesMaster.sharadar_Sector.latest.isin(["Energy", "Technology"]),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "sharadar_Sector",
-                "op": "eq",
-                "negate": True,
-                "values": ["Energy", "Technology"]
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.sharadar_Category.latest.has_substring("Domestic"),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "sharadar_Category",
-                "op": "contains",
-                "negate": False,
-                "values": "Domestic"
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.Symbol.latest.startswith("A"),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "Symbol",
-                "op": "startswith",
-                "negate": False,
-                "values": "A"
-            }]})
-
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.Symbol.latest.endswith("ZZZ"),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "Symbol",
-                "op": "endswith",
-                "negate": False,
-                "values": "ZZZ"
-            }]})
-
-        # Classifier.matches(..) with str
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.Symbol.latest.matches(r"[A-B]{2}"),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "Symbol",
-                "op": "match",
-                "negate": False,
-                "values": "[A-B]{2}"
-            }]})
-
-        # Classifier.matches(..) with regex
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.Symbol.latest.matches(re.compile(r"[A-B]{2}")),
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "Symbol",
-                "op": "match",
-                "negate": False,
-                "values": re.compile(r"[A-B]{2}")
-            }]})
-
-        # isnull on object dtype
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.alpaca_AssetId.latest.isnull()
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "alpaca_AssetId",
-                "op": "isnull",
-                "negate": False,
-                "values": [True]
-            }]})
-
-        # notnull on object dtype
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.alpaca_AssetId.latest.notnull()
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "alpaca_AssetId",
-                "op": "isnull",
-                "negate": True,
-                "values": [True]
-            }]})
-
-        # isnull on float dtype
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.ibkr_ConId.latest.isnull()
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "ibkr_ConId",
-                "op": "isnull",
-                "negate": False,
-                "values": [True]
-            }]})
-
-        # notnull on object dtype
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SecuritiesMaster.ibkr_ConId.latest.notnull()
-        )
-        self.assertIsNone(pipe.screen)
-        self.assert_prescreen_dict_equal(
-            pipe._prescreen,
-            {"fields": [{
-                "field": "ibkr_ConId",
-                "op": "isnull",
-                "negate": True,
-                "values": [True]
-            }]})
-
-    def test_initial_universe_securities_master(self):
-        """
-        Tests that securities master initial_universe is converted to prescreen.
+        Tests that securities master initial_universes are converted to prescreens.
         """
         pipe = Pipeline(
             columns={'f': SomeFactor()},
             initial_universe=SecuritiesMaster.SecType.latest.eq('STK'),
         )
-        self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"fields": [{
@@ -682,7 +384,6 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             columns={'f': SomeFactor()},
             initial_universe=~SecuritiesMaster.SecType.latest.eq('STK'),
         )
-        self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"fields": [{
@@ -692,17 +393,204 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
                 "values": ["STK"]
             }]})
 
-    def test_convert_screen_ANDed_securities_master(self):
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.Etf.latest,
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "Etf",
+                "op": "eq",
+                "negate": False,
+                "values": [True]
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=~SecuritiesMaster.Etf.latest,
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "Etf",
+                "op": "eq",
+                "negate": True,
+                "values": [True]
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.sharadar_Sector.latest != "Energy",
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "sharadar_Sector",
+                "op": "eq",
+                "negate": True,
+                "values": ["Energy"]
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.sharadar_Sector.latest.isin(["Energy", "Technology"]),
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "sharadar_Sector",
+                "op": "eq",
+                "negate": False,
+                "values": ["Energy", "Technology"]
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=~SecuritiesMaster.sharadar_Sector.latest.isin(["Energy", "Technology"]),
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "sharadar_Sector",
+                "op": "eq",
+                "negate": True,
+                "values": ["Energy", "Technology"]
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.sharadar_Category.latest.has_substring("Domestic"),
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "sharadar_Category",
+                "op": "contains",
+                "negate": False,
+                "values": "Domestic"
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.Symbol.latest.startswith("A"),
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "Symbol",
+                "op": "startswith",
+                "negate": False,
+                "values": "A"
+            }]})
+
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.Symbol.latest.endswith("ZZZ"),
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "Symbol",
+                "op": "endswith",
+                "negate": False,
+                "values": "ZZZ"
+            }]})
+
+        # Classifier.matches(..) with str
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.Symbol.latest.matches(r"[A-B]{2}"),
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "Symbol",
+                "op": "match",
+                "negate": False,
+                "values": "[A-B]{2}"
+            }]})
+
+        # Classifier.matches(..) with regex
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.Symbol.latest.matches(re.compile(r"[A-B]{2}")),
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "Symbol",
+                "op": "match",
+                "negate": False,
+                "values": re.compile(r"[A-B]{2}")
+            }]})
+
+        # isnull on object dtype
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.alpaca_AssetId.latest.isnull()
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "alpaca_AssetId",
+                "op": "isnull",
+                "negate": False,
+                "values": [True]
+            }]})
+
+        # notnull on object dtype
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.alpaca_AssetId.latest.notnull()
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "alpaca_AssetId",
+                "op": "isnull",
+                "negate": True,
+                "values": [True]
+            }]})
+
+        # isnull on float dtype
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.ibkr_ConId.latest.isnull()
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "ibkr_ConId",
+                "op": "isnull",
+                "negate": False,
+                "values": [True]
+            }]})
+
+        # notnull on object dtype
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            initial_universe=SecuritiesMaster.ibkr_ConId.latest.notnull()
+        )
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"fields": [{
+                "field": "ibkr_ConId",
+                "op": "isnull",
+                "negate": True,
+                "values": [True]
+            }]})
+
+    def test_ANDed_securities_master(self):
         """
-        Tests that ANDed securities master screens are converted to prescreens.
+        Tests that ANDed securities master initial_universes are converted to prescreens.
         """
         pipe = Pipeline(
             columns={'f': SomeFactor()},
-            screen=(
-            SecuritiesMaster.sharadar_Category.latest.has_substring("Domestic")
-            & (SecuritiesMaster.sharadar_Sector.latest != "Energy")),
+            initial_universe=(
+                SecuritiesMaster.sharadar_Category.latest.has_substring("Domestic")
+                & (SecuritiesMaster.sharadar_Sector.latest != "Energy")),
         )
-        self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"fields": [
@@ -722,12 +610,11 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
 
         pipe = Pipeline(
             columns={'f': SomeFactor()},
-            screen=(
-            SecuritiesMaster.Etf.latest
-            & SecuritiesMaster.Symbol.latest.isin(["MDY", "SPY"])
-            & (SecuritiesMaster.Exchange.latest != "NYSE")),
+            initial_universe=(
+                SecuritiesMaster.Etf.latest
+                & SecuritiesMaster.Symbol.latest.isin(["MDY", "SPY"])
+                & (SecuritiesMaster.Exchange.latest != "NYSE")),
         )
-        self.assertIsNone(pipe.screen)
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"fields": [
@@ -751,49 +638,9 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
                 },
             ]})
 
-    def test_not_convert_screen_to_prescreen(self):
-        """
-        Tests that prescreens aren't created for unsupported screens.
-        """
-
-        # non securities master screens are not supported
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=SomeFilter(),
-        )
-        self.assertIsNotNone(pipe.screen)
-        self.assertIsNone(pipe._prescreen)
-
-        # ANDed securities master and non securities master screens are not supported
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=(
-            SecuritiesMaster.Etf.latest & SomeFilter()),
-        )
-        self.assertIsNotNone(pipe.screen)
-        self.assertIsNone(pipe._prescreen)
-
-        # ORed securities master screens are not supported
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=(
-            SecuritiesMaster.Etf.latest | SecuritiesMaster.Exchange.latest.eq("NYSE")),
-        )
-        self.assertIsNotNone(pipe.screen)
-        self.assertIsNone(pipe._prescreen)
-
-        # using fillna on a securities master screen is not supported
-        pipe = Pipeline(
-            columns={'f': SomeFactor()},
-            screen=(
-                SecuritiesMaster.Symbol.latest.fillna("A").eq("A")),
-        )
-        self.assertIsNotNone(pipe.screen)
-        self.assertIsNone(pipe._prescreen)
-
     def test_initial_universe_with_screen(self):
         """
-        Tests that applying an initial_universe with a screen.
+        Tests applying an initial_universe with a screen.
         """
         asset = self.asset_finder.retrieve_asset(66)
         pipe = Pipeline(
@@ -802,6 +649,18 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             initial_universe=SingleAsset(asset),
         )
         self.assertTrue(isinstance(pipe.screen, SomeFilter))
+        self.assert_prescreen_dict_equal(
+            pipe._prescreen,
+            {"sids": [66]}
+        )
+
+        assets = self.asset_finder.retrieve_all([65, 66])
+        pipe = Pipeline(
+            columns={'f': SomeFactor()},
+            screen=StaticAssets([assets[0]]),
+            initial_universe=StaticAssets([assets[1]]),
+        )
+        self.assertSetEqual(pipe.screen.params['sids'], {65})
         self.assert_prescreen_dict_equal(
             pipe._prescreen,
             {"sids": [66]}
@@ -840,3 +699,27 @@ class PrescreenTestCase(zf.WithAssetFinder, zf.ZiplineTestCase):
             str(cm.exception),
             expected_error_message
         )
+
+        # ANDed securities master and non securities master screens are not supported
+        with self.assertRaises(ValueError):
+            Pipeline(
+                columns={'f': SomeFactor()},
+                initial_universe=(
+                    SecuritiesMaster.Etf.latest & SomeFilter()),
+            )
+
+        # ORed securities master screens are not supported
+        with self.assertRaises(ValueError):
+            Pipeline(
+                columns={'f': SomeFactor()},
+                initial_universe=(
+                    SecuritiesMaster.Etf.latest | SecuritiesMaster.Exchange.latest.eq("NYSE")),
+            )
+
+        # using fillna on a securities master screen is not supported
+        with self.assertRaises(ValueError):
+            Pipeline(
+                columns={'f': SomeFactor()},
+                initial_universe=(
+                    SecuritiesMaster.Symbol.latest.fillna("A").eq("A")),
+            )

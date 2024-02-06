@@ -246,9 +246,9 @@ class Pipeline(object):
     computation. However, because 'initial_universe' is applied before the pipeline
     runs, it cannot include terms that will only be known after the pipeline runs,
     such as an asset's daily price or its dollar volume rank compared to its peers.
-    'initial_universe' can only use terms representing static characteristics of
-    assets, specifically StaticSids, StaticAssets, StaticUniverse, or terms based on
-    columns from the SecuritiesMaster dataset.
+    'initial_universe' can only use terms representing static assets or static
+    characteristics of assets, specifically StaticSids, StaticAssets, StaticUniverse,
+    or terms based on columns from the SecuritiesMaster dataset.
 
     In contrast, 'screen' is applied after the pipeline runs and filters the results
     that get returned. This means 'screen' can include any term or combination of terms,
@@ -292,27 +292,15 @@ class Pipeline(object):
         self._initial_universe = initial_universe
         self._prescreen = None
         if initial_universe:
-            _prescreen = self._convert_to_prescreen(initial_universe, raise_errors=True)
+            _prescreen = self._convert_to_prescreen(initial_universe)
             if _prescreen:
                 self._prescreen = _prescreen
         self._screen = screen
-        if screen and not initial_universe:
-            _prescreen = self._convert_to_prescreen(screen)
-            if _prescreen:
-                self._prescreen = _prescreen
-                # since we successfully converted the screen to a prescreen,
-                # we can clear the screen
-                self._screen = None
         self._domain = domain
 
-    def _convert_to_prescreen(self, screen, raise_errors=False):
+    def _convert_to_prescreen(self, initial_universe):
         """
-        Tries to convert the screen Filter into prescreen parameters.
-
-        Screens filter out rows after the pipeline is computed. As a performance
-        optimization, we can alternatively pre-filter the universe before computing
-        the pipeline if the screen only includes securities master terms, which
-        don't change over time.
+        Tries to convert the initial_universe Filter into prescreen parameters.
 
         The returned prescreen is a dict of asset-level parameters that can be used to
         pre-filter the universe and thus limit the initial workspace size. If
@@ -333,43 +321,39 @@ class Pipeline(object):
             "includes multiple terms, they must be ANDed together; ORed terms are not "
             "supported."
         )
-        # see if the screen contains a single prescreenable term
-        prescreen = _term_to_prescreen_dict(screen)
+        # see if the initial_universe contains a single prescreenable term
+        prescreen = _term_to_prescreen_dict(initial_universe)
         if prescreen is not None:
             return prescreen
 
         # if the screen is a NumExprFilter, see if it is an ANDed conjunction of
         # prescreenable terms (ORed expressions are not supported)
-        elif isinstance(screen, NumExprFilter):
+        elif isinstance(initial_universe, NumExprFilter):
 
             # ignore parantheses, which don't matter for ANDed expressions
-            expr = screen._expr.replace("(", "").replace(")", "")
+            expr = initial_universe._expr.replace("(", "").replace(")", "")
             # split on AND and see if the resulting terms (possibly ignoring ~)
             # match the screen bindings
             terms = expr.split(" & ")
-            if set([term.replace("~", "") for term in terms]) == set(screen.bindings):
+            if set([term.replace("~", "") for term in terms]) == set(initial_universe.bindings):
                 prescreen = {}
                 for term in terms:
                     negate = "~" in term
                     term = term.replace("~", "")
                     prescreen = _term_to_prescreen_dict(
-                        screen.bindings[term],
+                        initial_universe.bindings[term],
                         prescreen=prescreen,
                         negate=negate)
                     # if any term cannot be converted to a prescreen, bail out
                     if not prescreen:
-                        if raise_errors:
-                            raise ValueError(ERROR_MSG.format(term=str(screen.bindings[term])))
-                        return None
+                        raise ValueError(ERROR_MSG.format(term=str(initial_universe.bindings[term])))
+
                 else:
                     # didn't break loop, so prescreen is valid
                     return prescreen
 
 
-        if raise_errors:
-            raise ValueError(ERROR_MSG.format(term=str(screen)))
-
-        return None
+        raise ValueError(ERROR_MSG.format(term=str(initial_universe)))
 
     @property
     def columns(self) -> dict[str, Term]:
@@ -494,7 +478,7 @@ class Pipeline(object):
             Whether to overwrite any existing screen.  If overwrite is False
             and self.screen is not None, we raise an error.
         """
-        if (self._screen is not None or self._prescreen is not None) and not overwrite:
+        if self._screen is not None and not overwrite:
             raise ValueError(
                 "set_screen() called with overwrite=False and screen already "
                 "set.\n"
@@ -504,11 +488,6 @@ class Pipeline(object):
                 "use set_screen(new_filter, overwrite=True)."
             )
         self._screen = screen
-        if not self._prescreen:
-            _prescreen = self._convert_to_prescreen(screen)
-            if _prescreen:
-                self._prescreen = _prescreen
-                self._screen = None
 
     def to_execution_plan(
         self,
