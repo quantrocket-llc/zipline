@@ -1332,8 +1332,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
 
         self.assertEqual(
             str(e.exception),
-            "FixedBasisPointsSlippage() expected a value greater than "
-            "or equal to 0 for argument 'basis_points', but got -1 instead."
+            "basis_points must be 0 or greater but got -1"
         )
 
         with self.assertRaises(ValueError) as e:
@@ -1341,8 +1340,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
 
         self.assertEqual(
             str(e.exception),
-            "FixedBasisPointsSlippage() expected a value strictly "
-            "greater than 0 for argument 'volume_limit', but got 0 instead."
+            "volume_limit must be greater than 0 but got 0"
         )
 
     def test_fill_zero_shares(self):

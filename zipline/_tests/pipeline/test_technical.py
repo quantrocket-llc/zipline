@@ -425,8 +425,7 @@ class MovingAverageConvergenceDivergenceTestCase(ZiplineTestCase):
 
     def test_bad_inputs(self):
         template = (
-            "MACDSignal() expected a value greater than or equal to 1"
-            " for argument %r, but got 0 instead."
+            "%r must be at least 1 but got 0"
         )
         with self.assertRaises(ValueError) as e:
             MovingAverageConvergenceDivergenceSignal(fast_period=0)

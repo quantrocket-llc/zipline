@@ -1,7 +1,7 @@
 """
 Base class for Filters, Factors and Classifiers
 """
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from pydantic import validate_call
 if TYPE_CHECKING:
     from zipline.pipeline.filters import Filter
@@ -41,7 +41,6 @@ from zipline.utils.numpy_utils import (
     float64_dtype,
 )
 from .domain import Domain, GENERIC, infer_domain
-from .downsample_helpers import expect_downsample_frequency
 
 
 class Term(with_metaclass(ABCMeta, object)):
@@ -749,8 +748,8 @@ class ComputableTerm(Term):
             fill_value=self.missing_value,
         ).values
 
-    @expect_downsample_frequency
-    def downsample(self, frequency):
+    @validate_call
+    def downsample(self, frequency: Literal['year_start', 'quarter_start', 'month_start', 'week_start']):
         """
         Make a term that computes from ``self`` at lower-than-daily frequency.
 

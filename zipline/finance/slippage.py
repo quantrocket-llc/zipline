@@ -63,8 +63,6 @@ from zipline.finance.shared import AllowedAssetMarker, FinancialModelMeta
 from zipline.finance.transaction import create_transaction
 from zipline.utils.cache import ExpiringCache
 from zipline.utils.dummy import DummyMapping
-from zipline.utils.input_validation import (expect_bounded,
-                                            expect_strictly_bounded)
 
 SELL = 1 << 0
 BUY = 1 << 1
@@ -743,15 +741,12 @@ class FixedBasisPointsSlippage(SlippageModel):
     - This class, default-constructed, is zipline's default slippage model for
       equities.
     """
-    @expect_bounded(
-        basis_points=(0, None),
-        __funcname='FixedBasisPointsSlippage',
-    )
-    @expect_strictly_bounded(
-        volume_limit=(0, None),
-        __funcname='FixedBasisPointsSlippage',
-    )
     def __init__(self, basis_points: float = 5.0, volume_limit: float = 0.1):
+        if basis_points < 0:
+            raise ValueError(f"basis_points must be 0 or greater but got {basis_points}")
+        if volume_limit <= 0:
+            raise ValueError(f"volume_limit must be greater than 0 but got {volume_limit}")
+
         super(FixedBasisPointsSlippage, self).__init__()
         self.basis_points = basis_points
         self.percentage = self.basis_points / 10000.0

@@ -25,7 +25,6 @@ from zipline.pipeline.dtypes import (
 )
 from zipline.pipeline.term import ComputableTerm
 from zipline.utils.compat import unicode
-from zipline.utils.input_validation import expect_dtypes
 from zipline.utils.numpy_utils import (
     categorical_dtype,
     int64_dtype,
@@ -652,8 +651,10 @@ class Relabel(SingleInputMixin, Classifier):
 
     # TODO: Support relabeling for integer dtypes.
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    @expect_dtypes(term=categorical_dtype)
     def __new__(cls, term: Classifier, relabeler: Callable[[LabelArray], LabelArray]):
+        if term.dtype != categorical_dtype:
+            raise TypeError(f"term should have dtype {categorical_dtype.name} but has {term.dtype.name}")
+
         return super(Relabel, cls).__new__(
             cls,
             inputs=(term,),

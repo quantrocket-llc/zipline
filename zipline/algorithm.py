@@ -103,8 +103,7 @@ from zipline.utils.api_support import (
 from zipline.utils.input_validation import (
     coerce_string,
     ensure_upper_case,
-    error_keywords,
-    expect_dtypes,
+    error_keywords
 )
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.utils.cache import ExpiringCache
@@ -1948,7 +1947,6 @@ class TradingAlgorithm(object):
 
     @api_method # document in zipline.api.pyi
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    @expect_dtypes(share_counts=int64_dtype)
     def batch_market_order(self, share_counts: pd.Series) -> pd.Index:
         """Place a batch market order for multiple assets.
 
@@ -1962,6 +1960,9 @@ class TradingAlgorithm(object):
         order_ids : pd.Index[str]
             Index of ids for newly-created orders.
         """
+        if share_counts.dtype != int64_dtype:
+            raise TypeError(f"share_counts should have dtype {int64_dtype.name} but has {share_counts.dtype.name}")
+
         style = MarketOrder()
         order_args = [
             (asset, amount, style)

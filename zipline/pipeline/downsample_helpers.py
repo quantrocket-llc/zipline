@@ -2,8 +2,8 @@
 Helpers for downsampling code.
 """
 from operator import attrgetter
+from typing import Literal
 
-from zipline.utils.input_validation import expect_element
 from zipline.utils.numpy_utils import changed_locations
 
 _dt_to_period = {
@@ -13,16 +13,8 @@ _dt_to_period = {
     'week_start': attrgetter('week'),
 }
 
-SUPPORTED_DOWNSAMPLE_FREQUENCIES = frozenset(_dt_to_period)
 
-
-expect_downsample_frequency = expect_element(
-    frequency=SUPPORTED_DOWNSAMPLE_FREQUENCIES,
-)
-
-
-@expect_downsample_frequency
-def select_sampling_indices(dates, frequency):
+def select_sampling_indices(dates, frequency: Literal['year_start', 'quarter_start', 'month_start', 'week_start']):
     """
     Choose entries from ``dates`` to use for downsampling at ``frequency``.
 

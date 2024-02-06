@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from functools import partial
+from typing import Literal
 import warnings
 
 from bcolz import carray, ctable
@@ -39,7 +40,6 @@ from zipline.data.bar_reader import (
     NoDataOnDate,
 )
 from zipline.utils.functional import apply
-from zipline.utils.input_validation import expect_element
 from zipline.utils.numpy_utils import iNaT, float64_dtype, uint32_dtype
 from zipline.utils.memoize import lazyval
 from ._equities import _compute_row_slices, _read_bcolz_data
@@ -59,8 +59,7 @@ def check_uint32_safe(value, colname):
         )
 
 
-@expect_element(invalid_data_behavior={'warn', 'raise', 'ignore'})
-def winsorise_uint32(df, invalid_data_behavior, column, *columns):
+def winsorise_uint32(df, invalid_data_behavior: Literal['warn', 'raise', 'ignore'], column, *columns):
     """Drops any record where a value would not fit into a uint32.
 
     Parameters
@@ -101,7 +100,7 @@ def winsorise_uint32(df, invalid_data_behavior, column, *columns):
                 ' uint32: %r' % (
                     mv.sum(), df[mask.any(axis=1)],
                 ),
-                stacklevel=3,  # one extra frame for `expect_element`
+                stacklevel=2,
             )
 
     df[mask] = 0
@@ -328,8 +327,7 @@ class BcolzDailyBarWriter(object):
         full_table.flush()
         return full_table
 
-    @expect_element(invalid_data_behavior={'warn', 'raise', 'ignore'})
-    def to_ctable(self, raw_data, invalid_data_behavior):
+    def to_ctable(self, raw_data, invalid_data_behavior: Literal['warn', 'raise', 'ignore']):
         if isinstance(raw_data, ctable):
             # we already have a ctable so do nothing
             return raw_data

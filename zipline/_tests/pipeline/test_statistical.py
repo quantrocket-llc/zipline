@@ -460,10 +460,9 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
             )
         result = str(e.exception)
         expected = (
-            "SimpleBeta() expected a value greater than or equal to 3"
-            " for argument 'regression_length', but got 1 instead."
+            "regression_length must be at least 3 but got 1"
         )
-        self.assertEqual(result, expected)
+        self.assertIn(expected, result)
 
         with self.assertRaises(ValueError) as e:
             SimpleBeta(
@@ -473,10 +472,9 @@ class StatisticalBuiltInsTestCase(zf.WithAssetFinder,
             )
         result = str(e.exception)
         expected = (
-            "SimpleBeta() expected a value inclusively between 0.0 and 1.0 "
-            "for argument 'allowed_missing_percentage', but got 50.0 instead."
+            "allowed_missing_percentage must be between 0 and 1 but got 50"
         )
-        self.assertEqual(result, expected)
+        self.assertIn(expected, result)
 
     def test_simple_beta_target(self):
         beta = SimpleBeta(

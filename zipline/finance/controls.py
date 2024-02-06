@@ -25,9 +25,6 @@ from zipline.errors import (
     AccountControlViolation,
     TradingControlViolation,
 )
-from zipline.utils.input_validation import (
-    expect_bounded,
-)
 
 class TradingControl(with_metaclass(abc.ABCMeta)):
     """
@@ -400,8 +397,9 @@ class MinLeverage(AccountControl):
     """
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    @expect_bounded(__funcname='MinLeverage', min_leverage=(0, None))
     def __init__(self, min_leverage: Union[int, float], deadline: datetime):
+        if min_leverage < 0:
+            raise ValueError("min_leverage must be 0 or greater")
         super(MinLeverage, self).__init__(min_leverage=min_leverage,
                                           deadline=deadline)
         self.min_leverage = min_leverage

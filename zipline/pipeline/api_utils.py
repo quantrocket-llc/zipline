@@ -9,10 +9,6 @@ def restrict_to_dtype(dtype, message_template):
     A factory for decorators that restrict Term methods to only be callable on
     Terms with a specific dtype.
 
-    This is conceptually similar to
-    zipline.utils.input_validation.expect_dtypes, but provides more flexibility
-    for providing error messages that are specifically targeting Term methods.
-
     Parameters
     ----------
     dtype : numpy.dtype

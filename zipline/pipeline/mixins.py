@@ -4,6 +4,7 @@ Mixins classes for use with Filters and Factors.
 The mixin classes inherit from Term to ensure they appear before
 Term in the MRO of any class using the mixin
 """
+from typing import Literal
 from abc import abstractmethod
 
 from numpy import (
@@ -24,15 +25,11 @@ from zipline.errors import (
 )
 from zipline.lib.labelarray import LabelArray, labelarray_where
 from zipline.utils.context_tricks import nop_context
-from zipline.utils.input_validation import expect_dtypes
 from zipline.utils.numpy_utils import bool_dtype
 from zipline.utils.pandas_utils import nearest_unequal_elements
 
 
-from .downsample_helpers import (
-    select_sampling_indices,
-    expect_downsample_frequency,
-)
+from .downsample_helpers import select_sampling_indices
 from .term import Term
 
 
@@ -391,8 +388,7 @@ class DownsampledMixin(StandardOutputs, UniversalMixin):
     window_safe = False
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    @expect_downsample_frequency
-    def __new__(cls, term: Term, frequency: str):
+    def __new__(cls, term: Term, frequency: Literal['year_start', 'quarter_start', 'month_start', 'week_start']):
         return super(DownsampledMixin, cls).__new__(
             cls,
             inputs=term.inputs,
@@ -653,8 +649,10 @@ class IfElseMixin(UniversalMixin):
     """
     window_length = 0
 
-    @expect_dtypes(condition=bool_dtype)
     def __new__(cls, condition, if_true, if_false):
+        if condition.dtype != bool_dtype:
+            raise TypeError(f"condition should have dtype {bool_dtype.name} but has {condition.dtype.name}")
+
         return super(IfElseMixin, cls).__new__(
             cls,
             inputs=[condition, if_true, if_false],

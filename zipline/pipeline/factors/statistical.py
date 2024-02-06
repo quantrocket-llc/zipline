@@ -14,10 +14,6 @@ from zipline.pipeline.factors.factor import CustomFactor
 from zipline.pipeline.filters import SingleAsset, Filter
 from zipline.pipeline.mixins import StandardOutputs
 from zipline.pipeline.term import AssetExists
-from zipline.utils.input_validation import (
-    expect_bounded,
-    expect_dtypes,
-)
 from zipline.utils.math_utils import nanmean
 from zipline.utils.numpy_utils import (
     float64_dtype,
@@ -33,13 +29,19 @@ ALLOWED_DTYPES = (float64_dtype, int64_dtype)
 
 class _RollingCorrelation(CustomFactor):
 
-    @expect_dtypes(base_factor=ALLOWED_DTYPES, target=ALLOWED_DTYPES)
-    @expect_bounded(correlation_length=(2, None))
     def __new__(cls,
                 base_factor,
                 target,
                 correlation_length,
                 mask=None):
+        if base_factor.dtype not in ALLOWED_DTYPES:
+            raise TypeError(f"base_factor should have dtype {', '.join([d.name for d in ALLOWED_DTYPES])} but has {base_factor.dtype.name}")
+
+        if target.dtype not in ALLOWED_DTYPES:
+            raise TypeError(f"target should have dtype {', '.join([d.name for d in ALLOWED_DTYPES])} but has {target.dtype.name}")
+
+        if correlation_length < 2:
+            raise ValueError(f"correlation_length must be at least 2 but got {correlation_length}")
         if target.ndim == 2 and base_factor.mask is not target.mask:
             raise IncompatibleTerms(term_1=base_factor, term_2=target)
 
@@ -176,13 +178,20 @@ class RollingLinearRegression(CustomFactor):
     """
     outputs = ['alpha', 'beta', 'r_value', 'p_value', 'stderr']
 
-    @expect_dtypes(dependent=ALLOWED_DTYPES, independent=ALLOWED_DTYPES)
-    @expect_bounded(regression_length=(2, None))
     def __new__(cls,
                 dependent,
                 independent,
                 regression_length,
                 mask=None):
+        if dependent.dtype not in ALLOWED_DTYPES:
+            raise TypeError(f"dependent should have dtype {', '.join([d.name for d in ALLOWED_DTYPES])} but has {dependent.dtype.name}")
+
+        if independent.dtype not in ALLOWED_DTYPES:
+            raise TypeError(f"independent should have dtype {', '.join([d.name for d in ALLOWED_DTYPES])} but has {independent.dtype.name}")
+
+        if regression_length < 2:
+            raise ValueError(f"regression_length must be at least 2 but got {regression_length}")
+
         if independent.ndim == 2 and dependent.mask is not independent.mask:
             raise IncompatibleTerms(term_1=dependent, term_2=independent)
 
@@ -525,15 +534,16 @@ class SimpleBeta(CustomFactor, StandardOutputs):
             pass
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    @expect_bounded(
-        regression_length=(3, None),
-        allowed_missing_percentage=(0.0, 1.0),
-        __funcname='SimpleBeta',
-    )
     def __new__(cls,
                 target: Asset,
                 regression_length: int,
                 allowed_missing_percentage: float = 0.25):
+        if regression_length < 3:
+            raise ValueError(f"regression_length must be at least 3 but got {regression_length}")
+
+        if not (0 <= allowed_missing_percentage <= 1):
+            raise ValueError(f"allowed_missing_percentage must be between 0 and 1 but got {allowed_missing_percentage}")
+
         daily_returns = Returns(
             window_length=2,
             mask=(AssetExists() | SingleAsset(asset=target)),

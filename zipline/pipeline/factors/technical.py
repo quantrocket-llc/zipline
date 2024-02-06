@@ -22,7 +22,6 @@ from numexpr import evaluate
 from zipline.pipeline.data import EquityPricing
 from zipline.pipeline.factors.factor import CustomFactor
 from zipline.pipeline.mixins import SingleInputMixin
-from zipline.utils.input_validation import expect_bounded
 from zipline.utils.math_utils import (
     nanargmax,
     nanargmin,
@@ -531,18 +530,19 @@ class MACDSignal(CustomFactor):
             mask: 'Filter' = None):
             pass
 
-    @expect_bounded(
-        __funcname='MACDSignal',
-        fast_period=(1, None),  # These must all be >= 1.
-        slow_period=(1, None),
-        signal_period=(1, None),
-    )
     def __new__(cls,
                 fast_period: int = 12,
                 slow_period: int = 26,
                 signal_period: int = 9,
                 *args,
                 **kwargs):
+
+        if fast_period < 1:
+            raise ValueError(f"'fast_period' must be at least 1 but got {fast_period}")
+        if slow_period < 1:
+            raise ValueError(f"'slow_period' must be at least 1 but got {slow_period}")
+        if signal_period < 1:
+            raise ValueError(f"'signal_period' must be at least 1 but got {signal_period}")
 
         if slow_period <= fast_period:
             raise ValueError(
