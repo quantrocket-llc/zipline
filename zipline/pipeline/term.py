@@ -396,6 +396,8 @@ class Term(with_metaclass(ABCMeta, object)):
         window_length: int,
         mask: 'Filter' = None,
         ) -> 'Filter':
+        # This docstring is duplicated in BoundColumn for type hinting
+        # purposes. Any changes made here should be duplicated there.
         """
         Create a Filter that returns True for assets with no missing
         values for `window_length` consecutive days.
@@ -425,6 +427,8 @@ class Term(with_metaclass(ABCMeta, object)):
         >>> from zipline.pipeline.data import EquityPricing
         >>> consistently_has_data = EquityPricing.close.all_present(200)
         """
+        # ^^ This docstring is duplicated in BoundColumn for type hinting
+        # purposes. Any changes made here should be duplicated there.
         from zipline.pipeline.filters import AllPresent
         return AllPresent(
             inputs=[self],
