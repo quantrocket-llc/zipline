@@ -427,7 +427,7 @@ if TYPE_CHECKING:
             ...
 
         @property
-        def dataset(self) -> 'Dataset':
+        def dataset(self) -> 'DataSet':
             """
             The dataset to which this column is bound.
 
