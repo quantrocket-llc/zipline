@@ -3847,6 +3847,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     assets[0].auto_close_date,
                 ),
                 'price': fp0,
+                'resulting_amount': 0,
                 'sid': assets[0].to_dict(),
                 'order_id': None,  # Auto-close txns emit Nones for order_id.
             },
@@ -3864,6 +3865,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     assets[1].auto_close_date,
                 ),
                 'price': fp1,
+                'resulting_amount': 0,
                 'sid': assets[1].to_dict(),
                 'order_id': None,  # Auto-close txns emit Nones for order_id.
             },
@@ -4153,6 +4155,7 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
                 'commission': None,
                 'dt': backtest_minutes[1],
                 'price': initial_fill_prices[asset],
+                'resulting_amount': order_size,
                 'sid': asset.to_dict(),
             }
             # replacement syntax for deprecated assertDictContainsSubset;
@@ -4178,6 +4181,7 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
                     assets[0].auto_close_date,
                 ),
                 'price': fp0,
+                'resulting_amount': 0,
                 'sid': assets[0].to_dict(),
                 'order_id': None,  # Auto-close txns emit Nones for order_id.
             },
@@ -4195,6 +4199,7 @@ class TestMinutelyEquityAutoClose(zf.WithMakeAlgo,
                     assets[1].auto_close_date,
                 ),
                 'price': fp1,
+                'resulting_amount': 0,
                 'sid': assets[1].to_dict(),
                 'order_id': None,  # Auto-close txns emit Nones for order_id.
             },

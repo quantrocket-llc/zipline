@@ -841,6 +841,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
             'commission': None,
             'dt': ts_utc('2014-01-06 14:32'),
             'order_id': wildcard,
+            'resulting_amount': shares,
             'price': 1.0,
             'sid': self.equity.to_dict(),
         }
@@ -1225,6 +1226,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
                 'dt': ts_utc('2014-01-06 14:32'),
                 'order_id': wildcard,
                 'price': 1.0,
+                'resulting_amount': contracts,
                 'sid': self.future.to_dict(),
             }],
         ] + [[]] * (len(self.closes) - 1)
@@ -1777,6 +1779,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
                 ts_utc('2014-01-06 14:32'),
                 'minute',
             ),
+            'resulting_amount': shares,
             'sid': self.equity.to_dict(),
         }
 
@@ -2225,6 +2228,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
                 dt,
                 'minute',
             ),
+            'resulting_amount': contracts,
             'sid': self.future.to_dict(),
         }
 

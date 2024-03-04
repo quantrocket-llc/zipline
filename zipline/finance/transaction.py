@@ -28,6 +28,7 @@ class Transaction(object):
         self.price = price
         self.order_id = order_id
         self.type = DATASOURCE_TYPE.TRANSACTION
+        self.resulting_amount = None
 
     def __getitem__(self, name):
         return self.__dict__[name]

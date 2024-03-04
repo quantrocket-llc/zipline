@@ -156,6 +156,8 @@ class Position(object):
                 self.last_sale_date = txn.dt
 
         self.amount = total_shares
+        # now that we know the resulting position size, store it on the txn too
+        txn.resulting_amount = self.amount
 
     def adjust_commission_cost_basis(self, asset, cost):
         """

@@ -698,7 +698,8 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
             'amount': int(5),
             'asset': self.ASSET133,
             'type': DATASOURCE_TYPE.TRANSACTION,
-            'order_id': open_orders[0].id
+            'resulting_amount': None, # not populated yet
+            'order_id': open_orders[0].id,
         }
 
         self.assertIsNotNone(txn)
@@ -767,6 +768,7 @@ class VolumeShareSlippageTestCase(WithCreateBarData,
             'amount': 10,
             'asset': self.ASSET1000,
             'type': DATASOURCE_TYPE.TRANSACTION,
+            'resulting_amount': None, # not populated yet
             'order_id': open_orders[0].id,
         }
 
@@ -1275,6 +1277,7 @@ class FixedBasisPointsSlippageTestCase(WithCreateBarData,
             'amount': expected_amount,
             'asset': self.ASSET133,
             'type': DATASOURCE_TYPE.TRANSACTION,
+            'resulting_amount': None, # not populated yet
             'order_id': open_orders[0].id
         }
 
