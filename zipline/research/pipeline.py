@@ -53,7 +53,12 @@ def run_pipeline(
 
     start_date : str (YYYY-MM-DD), required
         First date on which the pipeline should run. If start_date is not a trading
-        day, the pipeline will start on the first trading day after start_date.
+        day, the pipeline will start on the first trading day after start_date. The
+        start_date determines the date of the first row in the result. Since each day's
+        output is based on the previous day's data, start_date must be at least one day
+        after the start date of the data in the bundle. In addition, start_date must
+        be far enough after the bundle start date to accommodate the window_length
+        of any factors in the pipeline.
 
     end_date : str (YYYY-MM-DD), optional
         Last date on which the pipeline should run. If end_date is not a trading
