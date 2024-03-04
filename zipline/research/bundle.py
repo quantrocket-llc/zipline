@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import zipline
 from zipline.utils.extensions import load_extensions
+from zipline.research.exceptions import ValidationError
 
 _bundle = None
 
@@ -56,6 +58,9 @@ def use_bundle(bundle: str) -> None:
     quantrocket.zipline.set_default_bundle : Set the default bundle to use for backtesting and trading.
     """
     load_extensions(code=bundle)
+
+    if bundle not in zipline.data.bundles.bundles:
+        raise ValidationError(f"bundle {bundle} does not exist")
 
     global _bundle
     _bundle = bundle

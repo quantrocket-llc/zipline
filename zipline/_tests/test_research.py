@@ -24,6 +24,7 @@ from zipline.research import (
     symbol,
     continuous_future,
 )
+from zipline.research.exceptions import ValidationError
 import pandas as pd
 import numpy as np
 
@@ -181,3 +182,10 @@ class UseBundleTestCase(unittest.TestCase):
 
         self.assertEqual(mock_pipeline_load_extensions.call_count, 6)
         self.assertEqual(mock_pipeline_load_extensions.call_args_list[5][1]["code"], "my-other-bundle")
+
+    def test_no_such_bundle(self):
+        """
+        Test that ValidationError is raised when the bundle does not exist.
+        """
+        with self.assertRaises(ValidationError):
+            use_bundle("no-such-bundle")
