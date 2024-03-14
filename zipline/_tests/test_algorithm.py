@@ -849,7 +849,7 @@ class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
                     all([(amount == 1) for amount in amounts])
                 ):
                     for stock in context.portfolio.positions:
-                        context.order(context.sid(stock), -1)
+                        context.order(stock, -1)
                     context.exited = True
 
             # Should be 0 when all positions are exited.

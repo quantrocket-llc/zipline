@@ -93,7 +93,7 @@ def sid(sid: str, bundle: str = None) -> Asset:
             real_sid = ?
         """, (sid, sid)).scalar()
 
-    if not zipline_sid:
+    if zipline_sid is None:
         raise ValidationError(
             f"No such sid {sid} in {bundle} bundle")
 

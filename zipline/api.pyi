@@ -831,10 +831,10 @@ def order_target(
     ``order_target`` does not take into account any open orders. For
     example::
 
-        order_target(sid(0), 10)
-        order_target(sid(0), 10)
+        order_target(sid('A'), 10)
+        order_target(sid('A'), 10)
 
-    This code will result in 20 shares of ``sid(0)`` because the first
+    This code will result in 20 shares of ``sid('A')`` because the first
     call to ``order_target`` will not have been filled when the second
     ``order_target`` call is made.
 
@@ -896,10 +896,10 @@ def order_target_percent(
     ``order_target_value`` does not take into account any open orders. For
     example::
 
-        order_target_percent(sid(0), 10)
-        order_target_percent(sid(0), 10)
+        order_target_percent(sid('A'), 10)
+        order_target_percent(sid('A'), 10)
 
-    This code will result in 20% of the portfolio being allocated to sid(0)
+    This code will result in 20% of the portfolio being allocated to sid('A')
     because the first call to ``order_target_percent`` will not have been
     filled when the second ``order_target_percent`` call is made.
 
@@ -961,10 +961,10 @@ def order_target_value(
     ``order_target_value`` does not take into account any open orders. For
     example::
 
-        order_target_value(sid(0), 10)
-        order_target_value(sid(0), 10)
+        order_target_value(sid('A'), 10)
+        order_target_value(sid('A'), 10)
 
-    This code will result in 20 dollars of ``sid(0)`` because the first
+    This code will result in 20 dollars of ``sid('A')`` because the first
     call to ``order_target_value`` will not have been filled when the
     second ``order_target_value`` call is made.
 

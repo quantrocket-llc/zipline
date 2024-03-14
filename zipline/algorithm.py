@@ -32,9 +32,7 @@ from six import (
     exec_,
     iteritems,
     itervalues,
-    string_types,
 )
-from zipline.utils.calendar_utils import get_calendar, ExchangeCalendar
 
 from zipline._protocol import (
     handle_non_market_minutes,
@@ -61,6 +59,7 @@ from zipline.errors import (
     ZeroCapitalError,
     CannotStoreAssetInInitialize,
     UnknownParameter,
+    SidsNotFound,
 )
 from zipline.finance.blotter import SimulationBlotter
 from zipline.finance.controls import (
@@ -110,11 +109,9 @@ from zipline.utils.cache import ExpiringCache
 import zipline.utils.events
 from zipline.utils.events import (
     EventManager,
-    EventRule,
     make_eventrule,
     date_rules,
     time_rules,
-    calendars,
     AfterOpen,
     BeforeClose
 )
@@ -128,7 +125,6 @@ import zipline.protocol
 
 from zipline.gens.sim_engine import MinuteSimulationClock
 from zipline.sources.benchmark_source import BenchmarkSource
-from zipline.zipline_warnings import ZiplineDeprecationWarning
 
 logger = logging.getLogger("quantrocket.zipline")
 logger.setLevel(logging.DEBUG)
@@ -1124,15 +1120,13 @@ class TradingAlgorithm(object):
         return self.asset_finder.lookup_symbol(symbol)
 
     @api_method # document in zipline.api.pyi
-    def sid(self, sid: Union[str, int]) -> Asset:
+    def sid(self, sid: str) -> Asset:
         """Lookup an Asset by its unique asset identifier.
 
         Parameters
         ----------
-        sid : str or int
-            The unique asset identifier. If a string is passed, it is assumed to
-            be the QuantRocket sid; if an integer is passed, it is assumed to be
-            the internal Zipline sid.
+        sid : str
+            The sid to retrieve.
 
         Returns
         -------
@@ -1144,9 +1138,27 @@ class TradingAlgorithm(object):
         SidsNotFound
             When a requested ``sid`` does not map to any asset.
         """
-        # Support for QuantRocket sids or Zipline integer sids is provided
-        # by a monkey-patch at runtime and is not implemented here
-        return self.asset_finder.retrieve_asset(sid)
+        zipline_sid = self.asset_finder.engine.execute(
+            """
+            SELECT
+                sid
+            FROM
+                equities
+            WHERE
+                real_sid = ?
+            UNION
+            SELECT
+                sid
+            FROM
+                futures_contracts
+            WHERE
+                real_sid = ?
+            """, (sid, sid)).scalar()
+
+        if zipline_sid is None:
+            raise SidsNotFound(sids=[sid])
+
+        return self.asset_finder.retrieve_asset(zipline_sid)
 
     @api_method # document in zipline.api.pyi
     @preprocess(symbol=ensure_upper_case)

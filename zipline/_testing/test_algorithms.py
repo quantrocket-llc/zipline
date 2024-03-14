@@ -40,7 +40,7 @@ The algorithm must expose methods:
             double-colon to turn this back into blockquoted table in ASCII art.
 
         +-----------------+--------------+----------------+-------------------+
-        |                 | sid(133)     |  sid(134)      | sid(135)          |
+        |                 | sid('133')   |  sid('134')    | sid('135')        |
         +=================+==============+================+===================+
         | price           | $10.10       | $22.50         | $13.37            |
         +-----------------+--------------+----------------+-------------------+
@@ -55,14 +55,14 @@ The algorithm must expose methods:
     order method of trading_client. An algorithm can then place orders with a
     valid sid and a number of shares::
 
-        self.order(sid(133), share_count)
+        self.order(sid('133'), share_count)
 
   - set_performance: property which can be set equal to the
     cumulative_trading_performance property of the trading_client. An
     algorithm can then check position information with the
     Portfolio object::
 
-        self.Portfolio[sid(133)].cost_basis
+        self.Portfolio[sid('133')].cost_basis
 
   - set_transact_setter: method that accepts a callable. Will
     be set as the value of the set_transact_setter method of
@@ -108,7 +108,7 @@ class TestAlgorithm(TradingAlgorithm):
                    slippage=None,
                    commission=None):
         self.count = order_count
-        self.asset = self.sid(sid)
+        self.asset = self.sid(str(sid))
         self.amount = amount
         self.incr = 0
 
@@ -138,7 +138,7 @@ class HeavyBuyAlgorithm(TradingAlgorithm):
     """
 
     def initialize(self, sid, amount):
-        self.asset = self.sid(sid)
+        self.asset = self.sid(str(sid))
         self.amount = amount
         self.incr = 0
 
@@ -162,7 +162,7 @@ class NoopAlgorithm(TradingAlgorithm):
 class DivByZeroAlgorithm(TradingAlgorithm):
 
     def initialize(self, sid):
-        self.asset = self.sid(sid)
+        self.asset = self.sid(str(sid))
         self.incr = 0
 
     def handle_data(self, data):
@@ -204,7 +204,7 @@ class EmptyPositionsAlgorithm(TradingAlgorithm):
     def handle_data(self, data):
         if not self.ordered:
             for s in self.sids:
-                self.order(self.sid(s), 1)
+                self.order(self.sid(str(s)), 1)
             self.ordered = True
 
         if not self.exited:
@@ -216,7 +216,7 @@ class EmptyPositionsAlgorithm(TradingAlgorithm):
                 all([(amount == 1) for amount in amounts])
             ):
                 for stock in self.portfolio.positions:
-                    self.order(self.sid(stock), -1)
+                    self.order(stock, -1)
                 self.exited = True
 
         # Should be 0 when all positions are exited.
@@ -229,7 +229,7 @@ class InvalidOrderAlgorithm(TradingAlgorithm):
     appropriate exceptions are raised.
     """
     def initialize(self, *args, **kwargs):
-        self.asset = self.sid(kwargs.pop('sids')[0])
+        self.asset = self.sid(str(kwargs.pop('sids')[0]))
 
     def handle_data(self, data):
         from zipline.api import (
@@ -320,7 +320,7 @@ def handle_data_api(context, data):
             context.get_datetime()
         ), "Orders not filled at current datetime."
     context.incr += 1
-    order(sid(0), 1)
+    order(sid('0'), 1)
 
     record(incr=context.incr)
 
@@ -360,10 +360,10 @@ def handle_data(context, data):
         assert context.portfolio.positions[0].amount == \
                 context.incr, "Orders not filled immediately."
         assert context.portfolio.positions[0].last_sale_price == \
-                data.current(sid(0), "price"), \
+                data.current(sid('0'), "price"), \
                 "Orders not filled at current price."
     context.incr += 1
-    order(sid(0), 1)
+    order(sid('0'), 1)
 
     record(incr=context.incr)
 """
@@ -398,7 +398,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    order(sid(3), 1)
+    order(sid('3'), 1)
 """
 
 access_portfolio_in_init = """
@@ -450,9 +450,9 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    price_history = data.history(assets=sid(3), fields="price",
+    price_history = data.history(assets=sid('3'), fields="price",
                                  bar_count=5, frequency="1d")
-    current = data.current(assets=sid(3), fields="price")
+    current = data.current(assets=sid('3'), fields="price")
 """
 
 call_without_kwargs = """
@@ -462,10 +462,10 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    price_history = data.history(sid(3), "price", 5, "1d")
-    current = data.current(sid(3), "price")
-    is_stale = data.is_stale(sid(3))
-    can_trade = data.can_trade(sid(3))
+    price_history = data.history(sid('3'), "price", 5, "1d")
+    current = data.current(sid('3'), "price")
+    is_stale = data.is_stale(sid('3'))
+    can_trade = data.can_trade(sid('3'))
 """
 
 call_with_bad_kwargs_history = """
@@ -475,7 +475,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    price_history = data.history(assets=sid(3), fields="price",
+    price_history = data.history(assets=sid('3'), fields="price",
                                  blahblah=5, frequency="1d")
 """
 
@@ -486,7 +486,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    current = data.current(assets=sid(3), blahblah="price")
+    current = data.current(assets=sid('3'), blahblah="price")
 """
 
 bad_type_history_assets = """
@@ -504,7 +504,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(sid(3), 10 , 5, '1d')
+    data.history(sid('3'), 10 , 5, '1d')
 """
 
 bad_type_history_bar_count = """
@@ -514,7 +514,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(sid(3), 'price', '5', '1d')
+    data.history(sid('3'), 'price', '5', '1d')
 """
 
 bad_type_history_frequency = """
@@ -524,7 +524,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(sid(3), 'price', 5, 1)
+    data.history(sid('3'), 'price', 5, 1)
 """
 
 bad_type_current_assets = """
@@ -542,7 +542,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.current(sid(3), 10)
+    data.current(sid('3'), 10)
 """
 
 bad_type_is_stale_assets = """
@@ -576,7 +576,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(frequency='1d', fields=10, assets=sid(3),
+    data.history(frequency='1d', fields=10, assets=sid('3'),
                  bar_count=5)
 """
 
@@ -587,7 +587,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(frequency='1d', fields='price', assets=sid(3),
+    data.history(frequency='1d', fields='price', assets=sid('3'),
                  bar_count='5')
 """
 
@@ -598,7 +598,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.history(frequency=1, fields='price', assets=sid(3),
+    data.history(frequency=1, fields='price', assets=sid('3'),
                  bar_count=5)
 """
 
@@ -617,7 +617,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    data.current(fields=10, assets=sid(3))
+    data.current(fields=10, assets=sid('3'))
 """
 
 bad_type_history_assets_kwarg_list = """
@@ -635,7 +635,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    context.get_open_orders(sid=sid(3))
+    context.get_open_orders(sid=sid('3'))
 """
 
 call_with_good_kwargs_get_open_orders = """
@@ -645,7 +645,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    context.get_open_orders(asset=sid(3))
+    context.get_open_orders(asset=sid('3'))
 """
 
 call_with_no_kwargs_get_open_orders = """
@@ -655,7 +655,7 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    context.get_open_orders(sid(3))
+    context.get_open_orders(sid('3'))
 """
 
 empty_positions = """
@@ -666,7 +666,7 @@ def initialize(context):
                       time_rules.market_open(hours=1))
 
 def before_trading_start(context, data):
-    context.asset = sid(3)
+    context.asset = sid('3')
 
 def test_history(context,data):
     record(amounts=context.portfolio.positions[context.asset].amount)
@@ -677,10 +677,10 @@ set_benchmark_algo = """
 from zipline.api import sid, set_benchmark
 
 def initialize(context):
-    set_benchmark(sid(3))
+    set_benchmark(sid('3'))
 
 def before_trading_start(context, data):
-    context.asset = sid(3)
+    context.asset = sid('3')
 
 def handle_data(context, data):
     pass
