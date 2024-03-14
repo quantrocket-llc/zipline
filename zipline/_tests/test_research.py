@@ -24,9 +24,9 @@ from zipline.research import (
     symbol,
     continuous_future,
 )
+import zipline
 from zipline.research.exceptions import ValidationError
 import pandas as pd
-import numpy as np
 
 
 class UseBundleTestCase(unittest.TestCase):
@@ -39,8 +39,10 @@ class UseBundleTestCase(unittest.TestCase):
     @patch("zipline.research.continuous_future_module.get_default_bundle")
     @patch("zipline.research.sid_module.load_extensions")
     @patch("zipline.research.sid_module.get_default_bundle")
+    @patch("zipline.research.bundle.load_extensions")
     def test_use_bundle(
         self,
+        mock_bundle_load_extensions,
         mock_sid_get_default_bundle,
         mock_sid_load_extensions,
         mock_contfut_get_default_bundle,
@@ -99,6 +101,10 @@ class UseBundleTestCase(unittest.TestCase):
         self.assertEqual(mock_pipeline_load_extensions.call_args_list[1][1]["code"], "usstock-1min")
 
         # now set a default bundle and make sure it is used
+        # (register the bundle to avoid ValidationError)
+        @zipline.data.bundles.register("my-bundle")
+        def ingest(*args, **kwargs):
+            pass
         use_bundle("my-bundle")
 
         # sid() and symbol()

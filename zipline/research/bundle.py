@@ -51,7 +51,7 @@ def use_bundle(bundle: str) -> None:
     --------
     Set the bundle to use for subsequent research calls:
 
-    >>> use_bundle("usstock-1min")
+    >>> use_bundle("usstock-1min")                                                                       # doctest: +SKIP
 
     See Also
     --------
