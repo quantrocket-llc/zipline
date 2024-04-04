@@ -1,5 +1,5 @@
 #
-# Copyright 2020 QuantRocket LLC
+# Copyright 2020-2024 QuantRocket LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 from zipline.pipeline.data import reuters
 from zipline.pipeline.data import sharadar
+from zipline.pipeline.data import brain
 from zipline.pipeline.data import alpaca
 from zipline.pipeline.data import ibkr
 from zipline.pipeline.data.master import SecuritiesMaster
@@ -28,6 +29,12 @@ from zipline.pipeline.loaders.sharadar import (
     SharadarFundamentalsPipelineLoader,
     SharadarSP500PipelineLoader,
     SharadarInstitutionsPipelineLoader
+)
+from zipline.pipeline.loaders.brain import (
+    BSIPipelineLoader,
+    BLMCFPipelineLoader,
+    BLMECTPipelineLoader
+
 )
 from zipline.pipeline.loaders.alpaca import AlpacaETBPipelineLoader
 from zipline.pipeline.loaders.ibkr import (
@@ -63,6 +70,14 @@ class QuantRocketPipelineLoaderRouter:
         self.sharadar_institutions_loader = SharadarInstitutionsPipelineLoader(
             sids_to_real_sids
         )
+
+        # Brain
+        self.bsi_loader = BSIPipelineLoader(
+            sids_to_real_sids)
+        self.blmcf_loader = BLMCFPipelineLoader(
+            sids_to_real_sids)
+        self.blmect_loader = BLMECTPipelineLoader(
+            sids_to_real_sids)
 
         # Alpaca
         self.alpaca_etb_loader = AlpacaETBPipelineLoader(
@@ -107,6 +122,18 @@ class QuantRocketPipelineLoaderRouter:
             return self.sharadar_institutions_loader
         elif self.isin(column, sharadar.SP500):
             return self.sharadar_sp500_loader
+
+        # Brain
+        elif (
+            hasattr(column.dataset, "dataset_family")
+            and column.dataset.dataset_family == brain.BSI):
+            return self.bsi_loader
+        elif (
+            hasattr(column.dataset, "dataset_family")
+            and column.dataset.dataset_family == brain.BLMCF):
+            return self.blmcf_loader
+        elif self.isin(column, brain.BLMECT):
+            return self.blmect_loader
 
         # Reuters
         elif (
