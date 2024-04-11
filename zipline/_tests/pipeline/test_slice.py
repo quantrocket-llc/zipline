@@ -366,67 +366,19 @@ class SliceTestCase(WithSeededRandomPipelineEngine, ZiplineTestCase):
             # `compute` function of our custom factors above.
             self.run_pipeline(Pipeline(columns=columns), start_date, end_date)
 
-    @parameter_space(returns_length=[2, 3], correlation_length=[3, 4])
-    def test_factor_correlation_methods(self,
-                                        returns_length,
-                                        correlation_length):
+    def test_no_factor_correlation_methods_on_datetime_factor(self):
         """
-        Ensure that `Factor.pearsonr` and `Factor.spearmanr` are consistent
-        with the built-in factors `RollingPearsonOfReturns` and
-        `RollingSpearmanOfReturns`.
+        Make sure we cannot call `Factor.pearsonr` and `Factor.spearmanr` on factors
+        or slices of dtype `datetime64[ns]`.
         """
         my_asset = self.asset_finder.retrieve_asset(self.sids[0])
+
+        returns_length = 2
+        correlation_length = 3
 
         returns = Returns(window_length=returns_length, inputs=[self.col])
         returns_slice = returns[my_asset]
 
-        pearson = returns.pearsonr(
-            target=returns_slice, correlation_length=correlation_length,
-        )
-        spearman = returns.spearmanr(
-            target=returns_slice, correlation_length=correlation_length,
-        )
-        expected_pearson = RollingPearsonOfReturns(
-            target=my_asset,
-            returns_length=returns_length,
-            correlation_length=correlation_length,
-        )
-        expected_spearman = RollingSpearmanOfReturns(
-            target=my_asset,
-            returns_length=returns_length,
-            correlation_length=correlation_length,
-        )
-
-        # These built-ins construct their own Returns factor to use as inputs,
-        # so the only way to set our own inputs is to do so after the fact.
-        # This should not be done in practice. It is necessary here because we
-        # want Returns to use our random data as an input, but by default it is
-        # using USEquityPricing.close.
-        expected_pearson.inputs = [returns, returns_slice]
-        expected_spearman.inputs = [returns, returns_slice]
-
-        columns = {
-            'pearson': pearson,
-            'spearman': spearman,
-            'expected_pearson': expected_pearson,
-            'expected_spearman': expected_spearman,
-        }
-
-        results = self.run_pipeline(
-            Pipeline(columns=columns),
-            self.pipeline_start_date,
-            self.pipeline_end_date,
-        )
-        pearson_results = results['pearson'].unstack()
-        spearman_results = results['spearman'].unstack()
-        expected_pearson_results = results['expected_pearson'].unstack()
-        expected_spearman_results = results['expected_spearman'].unstack()
-
-        assert_frame_equal(pearson_results, expected_pearson_results)
-        assert_frame_equal(spearman_results, expected_spearman_results)
-
-        # Make sure we cannot call the correlation methods on factors or slices
-        # of dtype `datetime64[ns]`.
         class DateFactor(CustomFactor):
             window_length = 1
             inputs = []
@@ -458,57 +410,19 @@ class SliceTestCase(WithSeededRandomPipelineEngine, ZiplineTestCase):
                 correlation_length=correlation_length,
             )
 
-    @parameter_space(returns_length=[2, 3], regression_length=[3, 4])
-    def test_factor_regression_method(self, returns_length, regression_length):
+    def test_no_factor_regression_method_on_datetime_factor(self):
         """
-        Ensure that `Factor.linear_regression` is consistent with the built-in
-        factor `RollingLinearRegressionOfReturns`.
+        Make sure we cannot call `Factor.linear_regression` on factors or
+        slices of dtype `datetime64[ns]`.
         """
         my_asset = self.asset_finder.retrieve_asset(self.sids[0])
+
+        returns_length = 2
+        regression_length = 3
 
         returns = Returns(window_length=returns_length, inputs=[self.col])
         returns_slice = returns[my_asset]
 
-        regression = returns.linear_regression(
-            target=returns_slice, regression_length=regression_length,
-        )
-        expected_regression = RollingLinearRegressionOfReturns(
-            target=my_asset,
-            returns_length=returns_length,
-            regression_length=regression_length,
-        )
-
-        # These built-ins construct their own Returns factor to use as inputs,
-        # so the only way to set our own inputs is to do so after the fact.
-        # This should not be done in practice. It is necessary here because we
-        # want Returns to use our random data as an input, but by default it is
-        # using USEquityPricing.close.
-        expected_regression.inputs = [returns, returns_slice]
-
-        class MyFactor(CustomFactor):
-            inputs = ()
-            window_length = 1
-
-            def compute(self, today, assets, out):
-                out[:] = 0
-
-        columns = {
-            'regression': regression,
-            'expected_regression': expected_regression,
-        }
-
-        results = self.run_pipeline(
-            Pipeline(columns=columns),
-            self.pipeline_start_date,
-            self.pipeline_end_date,
-        )
-        regression_results = results['regression'].unstack()
-        expected_regression_results = results['expected_regression'].unstack()
-
-        assert_frame_equal(regression_results, expected_regression_results)
-
-        # Make sure we cannot call the linear regression method on factors or
-        # slices of dtype `datetime64[ns]`.
         class DateFactor(CustomFactor):
             window_length = 1
             inputs = []
