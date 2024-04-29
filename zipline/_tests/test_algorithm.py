@@ -1981,11 +1981,20 @@ class TestCapitalChanges(zf.WithMakeAlgo, zf.ZiplineTestCase):
         yield cls.DAILY_SID, frame
 
     @parameterized.expand([
-        ('target', 151000.0), ('delta', 50000.0)
+        ('target', 151000.0, False),
+        ('delta', 50000.0, False),
+        ('target', 151000.0, True),
+        ('delta', 50000.0, True)
     ])
-    def test_capital_changes_daily_mode(self, change_type, value):
+    def test_capital_changes_daily_mode(self, change_type, value, tz_aware):
+        # Make sure capital changes can be specified in UTC or naive
+        if tz_aware:
+            dt = pd.Timestamp('2006-01-06', tz='UTC')
+        else:
+            dt = pd.Timestamp('2006-01-06')
+
         capital_changes = {
-            pd.Timestamp('2006-01-06', tz='UTC'):
+            dt:
                 {'type': change_type, 'value': value}
         }
 
@@ -2025,7 +2034,7 @@ def order_stuff(context, data):
         self.assertEqual(len(capital_change_packets), 1)
         self.assertEqual(
             capital_change_packets[0],
-            {'date': pd.Timestamp('2006-01-06', tz='UTC'),
+            {'date': dt,
              'type': 'cash',
              'target': 151000.0 if change_type == 'target' else None,
              'delta': 50000.0})
@@ -2130,7 +2139,7 @@ def order_stuff(context, data):
 
         self.assertEqual(
             algo.capital_change_deltas,
-            {pd.Timestamp('2006-01-06', tz='UTC'): 50000.0}
+            {dt: 50000.0}
         )
 
     @parameterized.expand([

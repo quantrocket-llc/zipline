@@ -798,7 +798,14 @@ class TradingAlgorithm(object):
         try:
             capital_change = self.capital_changes[dt]
         except KeyError:
-            return
+            if dt.tzinfo is not None:
+                dt = dt.tz_localize(None)
+                try:
+                    capital_change = self.capital_changes[dt]
+                except KeyError:
+                    return
+            else:
+                return
 
         self._sync_last_sale_prices()
         if capital_change['type'] == 'target':
