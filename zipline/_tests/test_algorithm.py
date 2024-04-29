@@ -4568,3 +4568,141 @@ class TestAuctionOrdersDailyMode(zf.WithMakeAlgo, zf.ZiplineTestCase):
                 self.assertEqual(all_orders, {})
 
         self.run_algorithm(initialize=initialize, handle_data=handle_data)
+
+class TestDividendPayouts(zf.WithMakeAlgo, zf.ZiplineTestCase):
+    START_DATE = pd.Timestamp('2006-01-03')
+    END_DATE = pd.Timestamp('2006-01-06')
+    SIM_PARAMS_CAPITAL_BASE = 1000
+
+    ASSET_FINDER_EQUITY_SIDS = (1, 133)
+    DIVIDEND_ASSET_SID = 133
+
+    SIM_PARAMS_DATA_FREQUENCY = 'daily'
+
+    @classmethod
+    def make_equity_daily_bar_data(cls, country_code, sids):
+        frame = pd.DataFrame(
+            {
+                # pretend the price is always 90 so it's easier to
+                # see the dividend payout
+                'open': [90, 90, 90, 90],
+                'high': [90, 90, 90, 90],
+                'low': [90, 90, 90, 90],
+                'close': [90, 90, 90, 90],
+                'volume': 100,
+            },
+            index=cls.equity_daily_bar_days,
+        )
+        return ((sid, frame) for sid in sids)
+
+    @classmethod
+    def make_dividends_data(cls):
+        return pd.DataFrame.from_records([
+            {
+                'ex_date':
+                    pd.Timestamp('2006-01-05').to_datetime64(),
+                'record_date':
+                    pd.Timestamp('2006-01-05').to_datetime64(),
+                'declared_date':
+                    pd.Timestamp('2006-01-05').to_datetime64(),
+                'pay_date':
+                    pd.Timestamp('2006-01-06').to_datetime64(),
+                'amount': 22.0,
+                'sid': cls.DIVIDEND_ASSET_SID,
+            },
+            ],
+            columns=[
+                'ex_date',
+                'record_date',
+                'declared_date',
+                'pay_date',
+                'amount',
+                'sid',
+            ]
+        )
+
+    @classmethod
+    def make_stock_dividends_data(cls):
+        declared_date = pd.Timestamp("2006-01-05")
+        ex_date = pd.Timestamp("2006-01-05")
+        record_date = pay_date = pd.Timestamp("2006-01-06")
+        return pd.DataFrame({
+            'sid': np.array([1], dtype=np.int64),
+            'payment_sid': np.array([133], dtype=np.int64),
+            'ratio': np.array([1], dtype=np.float64),
+            'declared_date': np.array([declared_date], dtype='datetime64[ns]'),
+            'ex_date': np.array([ex_date], dtype='datetime64[ns]'),
+            'record_date': np.array([record_date], dtype='datetime64[ns]'),
+            'pay_date': np.array([pay_date], dtype='datetime64[ns]'),
+        })
+
+    def test_dividend_payout(self):
+        """
+        Tests that dividends are correctly credited to the portfolio.
+        """
+        def initialize(context, sids):
+            context.set_commission(PerShare(0, 0))
+            context.set_slippage(FixedSlippage(spread=0))
+            context.ordered = False
+
+        def handle_data(context, data):
+            if not context.ordered:
+                context.order(context.sid(133), 1)
+                context.ordered = True
+
+        result = self.run_algorithm(
+            initialize=initialize,
+            handle_data=handle_data,
+            sids=self.ASSET_FINDER_EQUITY_SIDS,
+        )
+
+        result = result[["capital_used", "portfolio_value", "ending_cash"]]
+        result.index = result.index.strftime('%Y-%m-%d')
+        result.index.name = "date"
+        result = result.reset_index()
+        self.assertEqual(
+            result.to_dict(orient="records"),
+            [{'date': '2006-01-03', 'capital_used': 0.0, 'portfolio_value': 1000.0, 'ending_cash': 1000.0},
+             {'date': '2006-01-04', 'capital_used': -90.0, 'portfolio_value': 1000.0, 'ending_cash': 910.0},
+             {'date': '2006-01-05', 'capital_used': 0.0, 'portfolio_value': 1000.0, 'ending_cash': 910.0},
+             {'date': '2006-01-06', 'capital_used': 22.0, 'portfolio_value': 1022.0, 'ending_cash': 932.0}]
+            )
+
+    def test_stock_dividend_payout(self):
+        """
+        Tests that stock dividends are correctly credited to the portfolio.
+        """
+        def initialize(context, sids):
+            context.set_commission(PerShare(0, 0))
+            context.set_slippage(FixedSlippage(spread=0))
+            context.ordered = False
+
+        def handle_data(context, data):
+            if not context.ordered:
+                context.order(context.sid(1), 1)
+                context.ordered = True
+
+        result = self.run_algorithm(
+            initialize=initialize,
+            handle_data=handle_data,
+            sids=self.ASSET_FINDER_EQUITY_SIDS,
+        )
+
+        result.index = result.index.strftime('%Y-%m-%d')
+        result = result["positions"].to_dict()
+        for positions in result.values():
+            for position in positions:
+                position["sid"] = position["sid"].sid
+
+        self.assertEqual(
+            result,
+            {'2006-01-03': [],
+             '2006-01-04': [
+                 {'sid': 1, 'amount': 1, 'cost_basis': 90.0, 'last_sale_price': 90.0}],
+             '2006-01-05': [
+                 {'sid': 1, 'amount': 1, 'cost_basis': 90.0, 'last_sale_price': 90.0}],
+             '2006-01-06': [
+                 {'sid': 1, 'amount': 1, 'cost_basis': 90.0, 'last_sale_price': 90.0},
+                 {'sid': 133, 'amount': 1, 'cost_basis': 0.0, 'last_sale_price': 90.0}]
+            }
+        )

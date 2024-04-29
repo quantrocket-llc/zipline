@@ -249,6 +249,10 @@ class MetricsTracker(object):
             The current data portal.
         """
         ledger = self._ledger
+
+        if session_label.tzinfo is not None:
+            session_label = session_label.tz_localize(None)
+
         ledger.start_of_session(session_label)
 
         adjustment_reader = data_portal.adjustment_reader
