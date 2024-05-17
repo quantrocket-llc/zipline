@@ -101,6 +101,8 @@ class BollingerBands(CustomFactor):
 
     **Default Inputs:** :data:`zipline.pipeline.data.EquityPricing.close`
 
+    This factor has 3 outputs: `lower`, `middle`, and `upper` bands.
+
     Parameters
     ----------
     inputs : BoundColumn
@@ -123,7 +125,18 @@ class BollingerBands(CustomFactor):
     --------
     Calculate 14-day Bolling Bands at 2 standard deviations:
 
+    >>> from zipline.pipeline.factors import BollingerBands
     >>> bbands = BollingerBands(window_length=14, k=2)
+
+    See the names of available outputs:
+
+    >>> bbands.outputs
+    ('lower', 'middle', 'upper')
+
+    Construct a Filter to select securities that closed above the upper band:
+
+    >>> from zipline.pipeline import EquityPricing
+    >>> overbought = EquityPricing.close.latest > bbands.upper
     """
     params = ('k',)
     inputs = (EquityPricing.close,)
@@ -153,6 +166,8 @@ class Aroon(CustomFactor):
     **Defaults Inputs:** :data:`zipline.pipeline.data.EquityPricing.low`, \
                          :data:`zipline.pipeline.data.EquityPricing.high`
 
+    This factor has 2 outputs: `down` and `up`
+
     Parameters
     ----------
     window_length : int > 0
@@ -163,6 +178,22 @@ class Aroon(CustomFactor):
         A Filter representing assets to consider when computing results.
         If supplied, we ignore asset/date pairs where ``mask`` produces
         ``False``.
+
+    Examples
+    --------
+    Calculate 14-day Aroon technical indicator:
+
+    >>> from zipline.pipeline.factors import Aroon
+    >>> aroon = Aroon(window_length=14)
+
+    See the names of available outputs:
+
+    >>> aroon.outputs
+    ('down', 'up')
+
+    Construct a Filter when the up value is greater than the down value:
+
+    >>> is_aroon_up = aroon.up > aroon.down
     """
 
     inputs = (EquityPricing.low, EquityPricing.high)
@@ -275,6 +306,9 @@ class IchimokuKinkoHyo(CustomFactor):
 
     **Default Window Length:** 52
 
+    This factor has 5 outputs: `tenkan_sen`, `kijun_sen`, `senkou_span_a`,
+    `senkou_span_b`, `chikou_span`.
+
     Parameters
     ----------
     window_length : int > 0
@@ -299,6 +333,11 @@ class IchimokuKinkoHyo(CustomFactor):
     Compute the Ichimoku Kinko Hyo with default parameters:
 
     >>> ikh = IchimokuKinkoHyo()
+
+    See the names of available outputs:
+
+    >>> ikh.outputs
+    ('tenkan_sen', 'kijun_sen', 'senkou_span_a', 'senkou_span_b', 'chikou_span')
     """ # noqa
 
     params = {
