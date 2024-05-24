@@ -366,10 +366,14 @@ def get_forward_returns(
 
         orig_end_date = factor.index.get_level_values("date").max()
 
+        # we will need to shift forward returns back by 1 (because Pipeline
+        # returns are lagged) + window_length
+        shift_length = 1 + window_length
+
         # For end_date, request enough cushion to calculate forward returns
         index_cushion = pd.date_range(
             start=factor.index.levels[0].max(),
-            periods=window_length + 1,
+            periods=shift_length + 1,
             freq=freq)
 
         end_date = index_cushion.max()
@@ -381,11 +385,11 @@ def get_forward_returns(
             index=dt_index_plus_cushion,
             columns=mask.columns)
 
-        # we need to run the pipeline until window_length days after the
+        # we need to run the pipeline until shift_length days after the
         # factor start_date
         start_date = pd.date_range(
             start=factor.index.levels[0].min(),
-            periods=window_length + 1,
+            periods=shift_length + 1,
             freq=freq).max()
 
         try:
@@ -405,7 +409,8 @@ def get_forward_returns(
                 f"earlier or shorten the forward returns computation."),)
             raise e
 
-        returns_data = returns_data[colname].unstack().reindex(index=dt_index_plus_cushion).shift(-window_length).stack(dropna=False)
+
+        returns_data = returns_data[colname].unstack().reindex(index=dt_index_plus_cushion).shift(-shift_length).stack(dropna=False)
         returns_data = returns_data.reindex(index=factor.index)
 
         all_returns_data[colname] = returns_data
