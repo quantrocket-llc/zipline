@@ -265,6 +265,7 @@ def get_forward_returns(
     factor: Union['pd.Series[Any]', 'pd.DataFrame'],
     periods: Union[Union[int, Literal['oc', 'co']], list[Union[int, Literal['oc', 'co']]]] = None,
     bundle: str = None,
+    enter_on_open: bool = False
     ) -> pd.DataFrame:
     """
     Get forward returns for the dates and assets in the input ``factor``
@@ -288,6 +289,10 @@ def get_forward_returns(
         the bundle code. If omitted, the currently active bundle (as set with
         `zipline.research.use_bundle`) will be used, or if that has not been set,
         the default bundle (as set with `quantrocket.zipline.set_default_bundle`).
+
+    enter_on_open : bool
+        If True, calculate forward returns using open prices. The default is to use
+        close prices. Default False.
 
     Returns
     -------
@@ -345,6 +350,8 @@ def get_forward_returns(
 
     all_returns_data = {}
 
+    returns_inputs = [EquityPricing.open] if enter_on_open else [EquityPricing.close]
+
     # we run the pipeline separately for each period, so that we can
     # adjust the start date individually for each period
     for period in periods:
@@ -359,7 +366,7 @@ def get_forward_returns(
             window_length = 1
         else:
             colname = f"{period}D"
-            columns = {colname: Returns(window_length=period+1)}
+            columns = {colname: Returns(inputs=returns_inputs, window_length=period+1)}
             window_length = period
 
         pipeline = Pipeline(columns=columns)
