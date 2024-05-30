@@ -22,6 +22,7 @@ from zipline.pipeline import Pipeline
 from zipline.utils.extensions import load_extensions
 from zipline.pipeline.loaders import EquityPricingLoader
 from zipline.pipeline.data import EquityPricing
+from zipline.pipeline.filters import Filter
 from zipline.pipeline.factors import Returns, OvernightReturns, IntradayReturns
 from zipline.pipeline.loaders.router import QuantRocketPipelineLoaderRouter
 from zipline.pipeline.engine import SimplePipelineEngine
@@ -265,7 +266,8 @@ def get_forward_returns(
     factor: Union['pd.Series[Any]', 'pd.DataFrame'],
     periods: Union[Union[int, Literal['oc', 'co']], list[Union[int, Literal['oc', 'co']]]] = None,
     bundle: str = None,
-    enter_on_open: bool = False
+    enter_on_open: bool = False,
+    initial_universe: Filter = None
     ) -> pd.DataFrame:
     """
     Get forward returns for the dates and assets in the input ``factor``
@@ -293,6 +295,12 @@ def get_forward_returns(
     enter_on_open : bool
         If True, calculate forward returns using open prices. The default is to use
         close prices. Default False.
+
+    initial_universe : zipline.pipeline.Filter, optional
+        A Filter defining the initial universe that was used to compute the factor.
+        If provided, this will also be used to compute the forward returns, which
+        can potentially speed up the computation by limiting the set of relevant
+        assets.
 
     Returns
     -------
@@ -369,7 +377,7 @@ def get_forward_returns(
             columns = {colname: Returns(inputs=returns_inputs, window_length=period+1)}
             window_length = period
 
-        pipeline = Pipeline(columns=columns)
+        pipeline = Pipeline(columns=columns, initial_universe=initial_universe)
 
         orig_end_date = factor.index.get_level_values("date").max()
 
