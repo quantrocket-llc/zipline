@@ -677,7 +677,9 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
         Length of the lookback window over which to compute the average.
 
     decay_rate : float, 0 < decay_rate <= 1
-        Weighting factor by which to discount past observations.
+        Weighting factor by which to discount past observations. Lower values
+        will discount past observations more rapidly, while higher values will
+        discount past observations more slowly.
 
         When calculating historical averages, rows are multiplied by the
         sequence::
@@ -691,9 +693,9 @@ class ExponentialWeightedMovingAverage(_ExponentialWeightedFactor):
 
     Examples
     --------
-    Calculate the 30-day EWMA of `EquityPricing.close` with a decay rate of 0.08.
+    Calculate the 30-day EWMA of `EquityPricing.close` with a decay rate of 0.9.
 
-    >>> ewma = ExponentialWeightedMovingAverage(inputs=EquityPricing.close, window_length=30, decay_rate=0.08)
+    >>> ewma = ExponentialWeightedMovingAverage(inputs=EquityPricing.close, window_length=30, decay_rate=0.9)
 
     Notes
     -----
@@ -736,7 +738,9 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
         Length of the lookback window over which to compute the average.
 
     decay_rate : float, 0 < decay_rate <= 1
-        Weighting factor by which to discount past observations.
+        Weighting factor by which to discount past observations. Lower values
+        will discount past observations more rapidly, while higher values will
+        discount past observations more slowly.
 
         When calculating historical averages, rows are multiplied by the
         sequence::
@@ -749,9 +753,9 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
         ``False``.
 
     --------
-    Calculate the 30-day EWMSTD of `EquityPricing.close` with a decay rate of 0.08.
+    Calculate the 30-day EWMSTD of `EquityPricing.close` with a decay rate of 0.9.
 
-    >>> ewmstd = ExponentialWeightedMovingStdDev(inputs=EquityPricing.close, window_length=30, decay_rate=0.08)
+    >>> ewmstd = ExponentialWeightedMovingStdDev(inputs=EquityPricing.close, window_length=30, decay_rate=0.9)
 
     Notes
     -----
