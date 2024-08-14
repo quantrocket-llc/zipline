@@ -800,6 +800,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
 
         expected_single_order = {
             'amount': shares,
+            'asset': self.equity,
             'commission': 0.0,
             'created': ts_utc('2014-01-06 14:31'),
             'dt': ts_utc('2014-01-06 14:32'),
@@ -1186,6 +1187,7 @@ class TestConstantPrice(WithConstantEquityMinuteBarData,
         expected_orders = [
             [{
                 'amount': contracts,
+                'asset': self.future,
                 'commission': 0.0,
                 'created': ts_utc('2014-01-06 14:31'),
                 'dt': ts_utc('2014-01-06 14:32'),
@@ -1732,6 +1734,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
 
         expected_single_order = {
             'amount': shares,
+            'asset': self.equity,
             'commission': 0.0,
             'created': ts_utc('2014-01-06 14:31'),
             'dt': ts_utc('2014-01-06 14:32'),
@@ -2156,6 +2159,7 @@ class TestFixedReturns(WithMakeAlgo, WithWerror, ZiplineTestCase):
 
         expected_single_order = {
             'amount': contracts,
+            'asset': self.future,
             'commission': 0.0,
             'created': self.future_minutes[0],
             'dt': self.future_minutes[1],

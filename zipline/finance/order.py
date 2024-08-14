@@ -36,7 +36,7 @@ BUY = 1 << 1
 STOP = 1 << 2
 LIMIT = 1 << 3
 
-ORDER_FIELDS_TO_IGNORE = {'type', 'direction', '_status', 'asset'}
+ORDER_FIELDS_TO_IGNORE = {'type', 'direction', '_status'}
 
 
 class Order(object):
