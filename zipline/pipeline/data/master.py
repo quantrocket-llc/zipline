@@ -279,6 +279,9 @@ class SecuritiesMaster(DataSet):
     ibkr_Multiplier : float
         contract multiplier for options and futures
 
+    ibkr_CfdSid : str
+        Sid of the CFD for this security, if any
+
     ibkr_UnderConId : float
         Contract ID of the underlying security for derivatives
 
@@ -721,6 +724,8 @@ class SecuritiesMaster(DataSet):
     """expiration date for derivative contracts"""
     ibkr_Multiplier: 'BoundFloatColumn' = Column(float64_dtype)
     """contract multiplier for options and futures"""
+    ibkr_CfdSid: 'BoundObjectColumn' = Column(object_dtype)
+    """Sid of the CFD for this security, if any"""
     ibkr_UnderConId: 'BoundFloatColumn' = Column(float64_dtype)
     """Contract ID of the underlying security for derivatives"""
     ibkr_UnderSymbol: 'BoundObjectColumn' = Column(object_dtype)
