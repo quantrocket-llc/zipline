@@ -125,6 +125,7 @@ import zipline.protocol
 
 from zipline.gens.sim_engine import MinuteSimulationClock
 from zipline.sources.benchmark_source import BenchmarkSource
+import plotext as plt
 
 logger = logging.getLogger("quantrocket.zipline")
 logger.setLevel(logging.DEBUG)
@@ -434,7 +435,7 @@ class TradingAlgorithm(object):
             self._show_progress_on_dates = []
         else:
             self._show_progress_on_dates = show_progress_on_dates
-        self._progress_last_logged = None
+        self._progress_cum_returns = {}
 
     def init_engine(self, get_loader):
         """
@@ -712,53 +713,40 @@ class TradingAlgorithm(object):
         if "daily_perf" not in perf:
             return
 
+        if not self._show_progress_on_dates:
+            return
+
         current_dt = perf['daily_perf']['period_open'].date()
+        cum_returns = perf["cumulative_perf"]["returns"]
+        self._progress_cum_returns[current_dt] = cum_returns
+
         if current_dt not in self._show_progress_on_dates:
             return
 
-        progress = perf["progress"]
-        progress100 = int(round(progress, 2) * 100)
-        progress10 = int(round(progress, 1) * 10)
-        bar = '█' * progress10 + '-' * (10-progress10)
         sharpe = perf["cumulative_risk_metrics"]["sharpe"]
         if sharpe is not None:
             sharpe = round(sharpe, 2)
         else:
             sharpe = ""
-        returns = perf["cumulative_perf"]["returns"]
-        returns = int(round(returns, 2) * 100)
-        pnl = round(perf["cumulative_perf"]["pnl"])
+        returns = int(round(cum_returns, 2) * 100)
         max_drawdown = int(round(perf["cumulative_risk_metrics"]["max_drawdown"], 2) * 100)
 
-        msg = pd.Series(
-            [
-                f'{bar} {str(progress100).rjust(3)}%',
-                current_dt.isoformat(),
-                f"{returns}%".rjust(20),
-                str(sharpe).rjust(14),
-                f"{max_drawdown}%".rjust(14),
-                f'${pnl}'.rjust(16),
-            ],
-            index=[
-                "",
-                "Date",
-                "  Cumulative Returns",
-                "  Sharpe Ratio",
-                "  Max Drawdown",
-                "  Cumulative PNL"
-            ],
-            name=f"[{self.strategy}]").to_frame().T.to_string()
-
-        lines = msg.splitlines()
-
-        # Only log the header row the first time
-        if self._progress_last_logged is not None:
-            lines = lines[1:]
-
-        self._progress_last_logged = progress
-
-        for line in lines:
-            logger.info(line)
+        cum_returns = pd.Series(self._progress_cum_returns)
+        cum_returns = cum_returns.reindex(self.sim_params.sessions)
+        plt.clear_figure()
+        plt.xscale("log")
+        plt.theme('pro')
+        plt.plotsize(70, 12)
+        dates = plt.datetimes_to_string(cum_returns.index)
+        plt.date_form(output_form="Y-m-d")
+        returns_text = f"Returns: {returns}%"
+        sharpe_text = f"Sharpe: {sharpe}"
+        max_dd_text = f"Max Drawdown: {max_drawdown}%"
+        title = f"{returns_text.ljust(17)}{sharpe_text.ljust(34 - len(max_dd_text))}{max_dd_text}"
+        plt.title(title)
+        plt.plot(dates, 1 + cum_returns, label=self.strategy)
+        plot = plt.build()
+        logger.info("".join("\n" * 10) + plot)
 
     def _create_daily_stats(self, perfs):
         # create daily and cumulative stats dataframe
