@@ -49,7 +49,7 @@ from zipline.data.history_loader import (
     DailyHistoryLoader,
     MinuteHistoryLoader,
 )
-from zipline.data.bar_reader import NoDataOnDate, NoDataAfterDate
+from zipline.data.bar_reader import NoDataOnDate, NoDataAfterDate, NoDataForSid
 from zipline.utils.memoize import remember_last
 from zipline.errors import HistoryWindowStartsBeforeData
 
@@ -568,7 +568,7 @@ class DataPortal(object):
         if not ffill:
             try:
                 return reader.get_value(asset.sid, dt, column)
-            except NoDataOnDate:
+            except (NoDataOnDate, NoDataForSid):
                 if column != 'volume':
                     return np.nan
                 else:
@@ -582,6 +582,11 @@ class DataPortal(object):
             result = reader.get_value(asset.sid, dt, column)
             if not pd.isnull(result):
                 return result
+        except NoDataForSid:
+            if column != 'volume':
+                return np.nan
+            else:
+                return 0
         except NoDataOnDate:
             # Handling of no data for the desired date is done by the
             # forward filling logic.
