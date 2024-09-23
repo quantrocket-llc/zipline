@@ -2447,6 +2447,34 @@ class TradingAlgorithm(object):
         from zipline.data.realtime import set_realtime_db
         set_realtime_db(code, fields)
 
+    @api_method # document in zipline.api.pyi
+    def capital_change(self, amount: float) -> None:
+        """
+        Simulate a deposit or withdrawal from the algorithm's cash.
+
+        Parameters
+        ----------
+        amount : float, required
+            The amount to deposit or withdraw. Negative amounts are
+            withdrawals and positive amounts are deposits. The amount
+            is assumed to be in the algorithm's base currency.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        Withdraw $1,000::
+
+            algo.capital_change(-1000)
+
+        Deposit $1,000::
+
+            algo.capital_change(1000)
+        """
+        self.metrics_tracker.capital_change(amount)
+
     @classmethod
     def all_api_methods(cls):
         """

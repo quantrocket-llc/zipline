@@ -59,6 +59,9 @@ order_value
 pipeline_output
     Get the results of a pipeline specified by name.
 
+capital_change
+    Simulate a deposit or withdrawal from the algorithm's cash.
+
 record
     Track and record values each day.
 
@@ -208,6 +211,7 @@ __all__ = [
     'order_target_value',
     'order_value',
     'pipeline_output',
+    'capital_change',
     'record',
     'set_realtime_db',
     'schedule_function',
@@ -1029,6 +1033,32 @@ def order_value(
     Usage Guide:
 
     * Placing orders: https://qrok.it/dl/z/zipline-orders
+    """
+
+def capital_change(amount: float) -> None:
+    """
+    Simulate a deposit or withdrawal from the algorithm's cash.
+
+    Parameters
+    ----------
+    amount : float, required
+        The amount to deposit or withdraw. Negative amounts are
+        withdrawals and positive amounts are deposits. The amount
+        is assumed to be in the algorithm's base currency.
+
+    Returns
+    -------
+    None
+
+    Examples
+    --------
+    Withdraw $1,000::
+
+        algo.capital_change(-1000)
+
+    Deposit $1,000::
+
+        algo.capital_change(1000)
     """
 
 def pipeline_output(name: str) -> pd.DataFrame:

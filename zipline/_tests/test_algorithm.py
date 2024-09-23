@@ -89,6 +89,7 @@ from zipline._testing.test_algorithms import (
     api_get_environment_algo,
     api_sid_algo,
     api_symbol_algo,
+    api_capital_change_algo,
     handle_data_api,
     handle_data_noop,
     initialize_api,
@@ -1434,6 +1435,12 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     def test_api_symbol(self):
         self.run_algorithm(script=api_symbol_algo)
+
+    def test_api_capital_change(self):
+        results = self.run_algorithm(script=api_capital_change_algo)
+        self.assertEqual(results.starting_cash.iloc[0], 100000)
+        self.assertEqual(results.ending_cash.iloc[0], 100100)
+        self.assertEqual(results.ending_cash.iloc[1], 100050)
 
     def test_fixed_slippage(self):
         # verify order -> transaction -> portfolio position.

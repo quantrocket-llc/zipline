@@ -401,6 +401,22 @@ def handle_data(context, data):
     order(sid('3'), 1)
 """
 
+api_capital_change_algo = """
+from zipline.api import capital_change
+
+def initialize(context):
+    context.deposited = False
+    context.withdrawn = False
+
+def handle_data(context, data):
+    if not context.deposited:
+        capital_change(100)
+        context.deposited = True
+    elif not context.withdrawn:
+        capital_change(-50)
+        context.withdrawn = True
+"""
+
 access_portfolio_in_init = """
 def initialize(context):
     var = context.portfolio.cash
