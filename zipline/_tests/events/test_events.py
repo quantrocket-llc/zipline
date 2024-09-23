@@ -48,7 +48,8 @@ from zipline.utils.events import (
     MAX_MONTH_RANGE,
     MAX_WEEK_RANGE,
     TradingDayOfMonthRule,
-    TradingDayOfWeekRule
+    TradingDayOfWeekRule,
+    date_rules
 )
 
 
@@ -424,6 +425,24 @@ class StatelessRulesTests(RuleTestCase):
                         self.assertEqual(n_days_before, n)
                     else:
                         self.assertNotEqual(n_days_before, n)
+
+    def test_month_start_limit_months(self):
+        rule = date_rules.month_start(0, months=[9])
+        rule.cal = self.cal
+        should_trigger = rule.should_trigger
+        for minute in self.cal.session_minutes(self.sept_sessions[0])[0:10]:
+            self.assertTrue(should_trigger(minute))
+        for minute in self.cal.session_minutes(self.oct_sessions[0])[0:10]:
+            self.assertFalse(should_trigger(minute))
+
+    def test_month_end_limit_months(self):
+        rule = date_rules.month_end(0, months=[9])
+        rule.cal = self.cal
+        should_trigger = rule.should_trigger
+        for minute in self.cal.session_minutes(self.sept_sessions[-1])[0:10]:
+            self.assertTrue(should_trigger(minute))
+        for minute in self.cal.session_minutes(self.oct_sessions[-1])[0:10]:
+            self.assertFalse(should_trigger(minute))
 
     def test_ComposedRule(self):
         minute_groups = minutes_for_days(self.cal)

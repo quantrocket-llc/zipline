@@ -1193,7 +1193,7 @@ class date_rules:
         ...
 
     @staticmethod
-    def month_start(days_offset: int = 0) -> EventRule:
+    def month_start(days_offset: int = 0, months: list[int] = None) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
         start of each month.
@@ -1205,14 +1205,33 @@ class date_rules:
             month. Default is 0, i.e., trigger on the first trading day of the
             month.
 
+        months : list[int], optional
+            List of months to trigger (1-12). If not passed, trigger on every month.
+
         Returns
         -------
         rule : zipline.utils.events.EventRule
+
+        Examples
+        --------
+        Trigger on the 3rd trading day of every month::
+
+            algo.schedule_function(
+                algo.date_rules.month_start(days_offset=2),
+                ...
+            )
+
+        Trigger quarterly on the first trading day of the month::
+
+            algo.schedule_function(
+                algo.date_rules.month_start(months=[1, 4, 7, 10]),
+                ...
+            )
         """
         ...
 
     @staticmethod
-    def month_end(days_offset: int = 0) -> EventRule:
+    def month_end(days_offset: int = 0, months: list[int] = None) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
         end of each month.
@@ -1223,9 +1242,28 @@ class date_rules:
             Number of trading days prior to month end to trigger. Default is 0,
             i.e., trigger on the last day of the month.
 
+        months : list[int], optional
+            List of months to trigger (1-12). If not passed, trigger on every month.
+
         Returns
         -------
         rule : zipline.utils.events.EventRule
+
+        Examples
+        --------
+        Trigger on the last trading day of every month::
+
+            algo.schedule_function(
+                algo.date_rules.month_end(),
+                ...
+            )
+
+        Trigger quarterly on the 2nd to last trading day of the month::
+
+            algo.schedule_function(
+                algo.date_rules.month_end(days_offset=1, months=[1, 4, 7, 10]),
+                ...
+            )
         """
         ...
 

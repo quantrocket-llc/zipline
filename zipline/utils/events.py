@@ -17,12 +17,14 @@ from collections import namedtuple
 import inspect
 import six
 import warnings
+from typing import Literal
 
 import datetime
 import numpy as np
 import pandas as pd
 import pytz
 from toolz import curry
+from pydantic import validate_call
 
 from zipline.utils.preprocess import preprocess
 from zipline.utils.memoize import lazyval
@@ -516,7 +518,7 @@ class NDaysBeforeLastTradingDayOfWeek(TradingDayOfWeekRule):
 class TradingDayOfMonthRule(six.with_metaclass(ABCMeta, StatelessRule)):
 
     @preprocess(n=lossless_float_to_int('TradingDayOfMonthRule'))
-    def __init__(self, n, invert):
+    def __init__(self, n, invert, months=None):
         if not 0 <= n < MAX_MONTH_RANGE:
             raise _out_of_range_error(MAX_MONTH_RANGE)
         if invert:
@@ -524,10 +526,14 @@ class TradingDayOfMonthRule(six.with_metaclass(ABCMeta, StatelessRule)):
         else:
             self.td_delta = n
 
+        self.months = months
+
     def should_trigger(self, dt):
         # is this market minute's period in the list of execution periods?
-        value = self.cal.minute_to_session(dt, direction="none").value
-        return value in self.execution_period_values
+        session = self.cal.minute_to_session(dt, direction="none")
+        if self.months and session.month not in self.months:
+            return False
+        return session.value in self.execution_period_values
 
     @lazyval
     def execution_period_values(self):
@@ -546,16 +552,16 @@ class NthTradingDayOfMonth(TradingDayOfMonthRule):
     A rule that triggers on the nth trading day of the month.
     This is zero-indexed, n=0 is the first trading day of the month.
     """
-    def __init__(self, n):
-        super(NthTradingDayOfMonth, self).__init__(n, invert=False)
+    def __init__(self, n, months=None):
+        super(NthTradingDayOfMonth, self).__init__(n, invert=False, months=months)
 
 
 class NDaysBeforeLastTradingDayOfMonth(TradingDayOfMonthRule):
     """
     A rule that triggers n days before the last trading day of the month.
     """
-    def __init__(self, n):
-        super(NDaysBeforeLastTradingDayOfMonth, self).__init__(n, invert=True)
+    def __init__(self, n, months=None):
+        super(NDaysBeforeLastTradingDayOfMonth, self).__init__(n, invert=True, months=months)
 
 
 # Stateful rules
@@ -607,6 +613,8 @@ class OncePerDay(StatefulRule):
 
 # Factory API
 
+Month = Literal[1,2,3,4,5,6,7,8,9,10,11,12]
+
 class date_rules(object):
     """
     Factories for date-based :func:`~zipline.api.schedule_function` rules.
@@ -627,7 +635,8 @@ class date_rules(object):
         return Always()
 
     @staticmethod
-    def month_start(days_offset: int = 0) -> EventRule:
+    @validate_call
+    def month_start(days_offset: int = 0, months: list[Month] = None) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days after the
         start of each month.
@@ -639,14 +648,34 @@ class date_rules(object):
             month. Default is 0, i.e., trigger on the first trading day of the
             month.
 
+        months : list[int], optional
+            List of months to trigger (1-12). If not passed, trigger on every month.
+
         Returns
         -------
         rule : zipline.utils.events.EventRule
+
+        Examples
+        --------
+        Trigger on the 3rd trading day of every month::
+
+            algo.schedule_function(
+                algo.date_rules.month_start(days_offset=2),
+                ...
+            )
+
+        Trigger quarterly on the first trading day of the month::
+
+            algo.schedule_function(
+                algo.date_rules.month_start(months=[1, 4, 7, 10]),
+                ...
+            )
         """
-        return NthTradingDayOfMonth(n=days_offset)
+        return NthTradingDayOfMonth(n=days_offset, months=months)
 
     @staticmethod
-    def month_end(days_offset: int = 0) -> EventRule:
+    @validate_call
+    def month_end(days_offset: int = 0, months: list[Month] = None) -> EventRule:
         """
         Create a rule that triggers a fixed number of trading days before the
         end of each month.
@@ -657,11 +686,30 @@ class date_rules(object):
             Number of trading days prior to month end to trigger. Default is 0,
             i.e., trigger on the last day of the month.
 
+        months : list[int], optional
+            List of months to trigger (1-12). If not passed, trigger on every month.
+
         Returns
         -------
         rule : zipline.utils.events.EventRule
+
+        Examples
+        --------
+        Trigger on the last trading day of every month::
+
+            algo.schedule_function(
+                algo.date_rules.month_end(),
+                ...
+            )
+
+        Trigger quarterly on the 2nd to last trading day of the month::
+
+            algo.schedule_function(
+                algo.date_rules.month_end(days_offset=1, months=[1, 4, 7, 10]),
+                ...
+            )
         """
-        return NDaysBeforeLastTradingDayOfMonth(n=days_offset)
+        return NDaysBeforeLastTradingDayOfMonth(n=days_offset, months=months)
 
     @staticmethod
     def week_start(days_offset: int = 0) -> EventRule:
