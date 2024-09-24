@@ -126,25 +126,66 @@ class Portfolio(object):
 
     portfolio_value : float
         Current liquidation value of the portfolio's holdings.
-        This is equal to ``cash + sum(shares * price)``
+        This is equal to ``cash + sum(shares × price)``
 
     starting_cash : float
         Amount of cash in the portfolio at the start of the backtest.
 
-    positions_value : float
-        The net value of all positions in the portfolio.
+    gross_exposure : float
+        The gross position exposure. For equities, this is the absolute
+        value of all long and short positions (shares × price). For futures,
+        this is the absolute notional value of all long and short contracts
+        (contracts × price × multiplier).
 
-    positions_exposure : float
-        The net exposure of all positions in the portfolio.
+    gross_value : float
+        The gross position value. For equities, this is equivalent to
+        gross_exposure. For futures, this is 0, as futures do not have
+        inherent value.
+
+    long_exposure : float
+        The exposure of just the long positions. For equities, this is
+        the value of all long positions (shares × price). For futures, this
+        is the notional value of all long contracts (contracts × price × multiplier).
+
+    long_value : float
+        The value of just the long positions. For equities, this is equivalent
+        to long_exposure. For futures, this is 0, as futures do not have
+        inherent value.
+
+    net_exposure : float
+        The net position exposure. For equities, this is the net value of
+        all long and short positions (shares × price). For futures, this is
+        the net notional value of all long and short contracts
+        (contracts × price × multiplier).
+
+    net_value : float
+        The net position value. For equities, this is equivalent to net_exposure.
+        For futures, this is 0, as futures do not have inherent value.
+
+    short_exposure : float
+        The exposure of just the short positions. For equities, this is the
+        value of all short positions (shares × price). For futures, this is
+        the notional value of all short contracts (contracts × price × multiplier).
+
+    short_value : float
+        The value of just the short positions. For equities, this is equivalent
+        to short_exposure. For futures, this is 0, as futures do not have
+        inherent value.
+
+    longs_count : int
+        The number of long positions.
+
+    shorts_count : int
+        The number of short positions.
 
     start_date : pd.Timestamp
-        The start date for the period being recorded.
+        The start date of the period being recorded.
 
     pnl : float
-        The portfolio's profit and loss for the period being recorded.
+        The portfolio's cumulative profit and loss as of the period being recorded.
 
     returns : float
-        The portfolio's returns for the period being recorded.
+        The portfolio's cumulative returns as of the period being recorded.
 
     Examples
     --------
@@ -169,11 +210,11 @@ class Portfolio(object):
         self.starting_cash: float = capital_base
         """Amount of cash in the portfolio at the start of the backtest."""
         self.portfolio_value: float = capital_base
-        """Current liquidation value of the portfolio's holdings. This is equal to ``cash + sum(shares * price)``"""
+        """Current liquidation value of the portfolio's holdings. This is equal to ``cash + sum(shares × price)``"""
         self.pnl: float = 0.0
-        """The portfolio's profit and loss for the period being recorded."""
+        """The portfolio's cumulative profit and loss as of the period being recorded."""
         self.returns: float = 0.0
-        """The portfolio's returns for the period being recorded."""
+        """The portfolio's cumulative returns as of the period being recorded."""
         self.cash: float = capital_base
         """Amount of cash currently held in portfolio."""
         self.positions: dict[Asset, Position] = Positions()
@@ -187,15 +228,41 @@ class Portfolio(object):
         ...     print(asset, position.amount)
         """
         self.start_date: pd.Timestamp = start_date
-        """The start date for the period being recorded."""
-        self.positions_value: float = 0.0
-        """The net value of all positions in the portfolio."""
-        self.positions_exposure: float = 0.0
-        """The net exposure of all positions in the portfolio."""
+        """The start date of the period being recorded."""
+        self.gross_exposure: float = 0.0
+        """The gross position exposure. For equities, this is the absolute value of all long and short positions (shares × price). For futures, this is the absolute notional value of all long and short contracts (contracts × price × multiplier)."""
+        self.gross_value: float = 0.0
+        """The gross position value. For equities, this is equivalent to gross_exposure. For futures, this is 0, as futures do not have inherent value."""
+        self.long_exposure: float = 0.0
+        """The exposure of just the long positions. For equities, this is the value of all long positions (shares × price). For futures, this is the notional value of all long contracts (contracts × price × multiplier)."""
+        self.long_value: float = 0.0
+        """The value of just the long positions. For equities, this is equivalent to long_exposure. For futures, this is 0, as futures do not have inherent value."""
+        self.net_exposure: float = 0.0
+        """The net position exposure. For equities, this is the net value of all long and short positions (shares × price). For futures, this is the net notional value of all long and short contracts (contracts × price × multiplier)."""
+        self.net_value: float = 0.0
+        """The net position value. For equities, this is equivalent to net_exposure. For futures, this is 0, as futures do not have inherent value."""
+        self.short_exposure: float = 0.0
+        """The exposure of just the short positions. For equities, this is the value of all short positions (shares × price). For futures, this is the notional value of all short contracts (contracts × price × multiplier)."""
+        self.short_value: float = 0.0
+        """The value of just the short positions. For equities, this is equivalent to short_exposure. For futures, this is 0, as futures do not have inherent value."""
+        self.longs_count: int = 0
+        """The number of long positions."""
+        self.shorts_count: int = 0
+        """The number of short positions."""
 
     @property
     def capital_used(self) -> float:
         return self.cash_flow
+
+    @property
+    def positions_value(self) -> float:
+        """The net position value. Backward-compatibility alias for net_value."""
+        return self.net_value
+
+    @property
+    def positions_exposure(self) -> float:
+        """The net position exposure. Backward-compatibility alias for net_exposure."""
+        return self.net_exposure
 
     def __setattr__(self, attr, value):
         raise AttributeError('cannot mutate Portfolio objects')

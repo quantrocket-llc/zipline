@@ -701,3 +701,40 @@ def before_trading_start(context, data):
 def handle_data(context, data):
     pass
 """
+
+portfolio_attributes_algo = """
+import zipline.api as algo
+from zipline.finance import commission, slippage
+
+def initialize(context):
+    context.invested = False
+    algo.set_commission(commission.PerShare(1.00))
+    algo.set_slippage(slippage.NoSlippage())
+
+    algo.schedule_function(
+        rebalance,
+        algo.date_rules.every_day(),
+        algo.time_rules.market_open()
+    )
+
+def rebalance(context, data):
+    if not context.invested:
+        algo.order(algo.sid('3'), 2)
+        algo.order(algo.sid('1'), -1)
+        context.invested = True
+
+    algo.record('sid3_close', data.history(algo.sid('3'), 'close', 1, '1d').iloc[0])
+    algo.record('sid1_close', data.history(algo.sid('0'), 'close', 1, '1d').iloc[0])
+    algo.record('longs_count_', context.portfolio.longs_count)
+    algo.record('shorts_count_', context.portfolio.shorts_count)
+    algo.record('long_exposure_', context.portfolio.long_exposure)
+    algo.record('long_value_', context.portfolio.long_value)
+    algo.record('short_exposure_', context.portfolio.short_exposure)
+    algo.record('short_value_', context.portfolio.short_value)
+    algo.record('net_exposure_', context.portfolio.net_exposure)
+    algo.record('net_value_', context.portfolio.net_value)
+    algo.record('gross_exposure_', context.portfolio.gross_exposure)
+    algo.record('gross_value_', context.portfolio.gross_value)
+    algo.record('cash_', context.portfolio.cash)
+    algo.record('portfolio_value_', context.portfolio.portfolio_value)
+"""

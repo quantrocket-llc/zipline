@@ -119,6 +119,7 @@ from zipline._testing.test_algorithms import (
     call_with_bad_kwargs_get_open_orders,
     call_with_good_kwargs_get_open_orders,
     call_with_no_kwargs_get_open_orders,
+    portfolio_attributes_algo,
     empty_positions,
     no_handle_data,
 )
@@ -1441,6 +1442,67 @@ class TestAlgoScript(zf.WithMakeAlgo, zf.ZiplineTestCase):
         self.assertEqual(results.starting_cash.iloc[0], 100000)
         self.assertEqual(results.ending_cash.iloc[0], 100100)
         self.assertEqual(results.ending_cash.iloc[1], 100050)
+
+    def test_portfolio_attributes(self):
+        results = self.run_algorithm(script=portfolio_attributes_algo)
+        results = results[[
+            "sid3_close",
+            "sid1_close",
+            "longs_count_",
+            "shorts_count_",
+            "long_exposure_",
+            "long_value_",
+            "short_exposure_",
+            "short_value_",
+            "net_exposure_",
+            "net_value_",
+            "gross_exposure_",
+            "gross_value_",
+            "cash_",
+            "portfolio_value_",
+        ]]
+        day_0 = results.iloc[0].to_dict()
+        day_1 = results.iloc[1].to_dict()
+
+        self.assertEqual(
+            day_0,
+            {
+                'sid3_close': 10.0,
+                'sid1_close': 10.0,
+                'longs_count_': 0.0,
+                'shorts_count_': 0.0,
+                'long_exposure_': 0.0,
+                'long_value_': 0.0,
+                'short_exposure_': 0.0,
+                'short_value_': 0.0,
+                'net_exposure_': 0.0,
+                'net_value_': 0.0,
+                'gross_exposure_': 0.0,
+                'gross_value_': 0.0,
+                'cash_': 100000.0,
+                'portfolio_value_': 100000.0
+            }
+        )
+
+        self.assertEqual(
+            day_1,
+            {
+                'sid3_close': 10.0,
+                'sid1_close': 10.0,
+                'longs_count_': 1.0,
+                'shorts_count_': 1.0,
+                'long_exposure_': 20.0,
+                'long_value_': 20.0,
+                'short_exposure_': -10.0,
+                'short_value_': -10.0,
+                'net_exposure_': 10.0,
+                'net_value_': 10.0,
+                'gross_exposure_': 30.0,
+                'gross_value_': 30.0,
+                'cash_': 99987.0, # 100000 - $1 commission per order - $10 net exposure
+                'portfolio_value_': 99997.0 # 100000 - $1 commission per order
+            }
+        )
 
     def test_fixed_slippage(self):
         # verify order -> transaction -> portfolio position.

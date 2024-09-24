@@ -688,10 +688,18 @@ class Ledger(object):
         portfolio.positions = pt.get_positions()
         position_stats = pt.stats
 
-        portfolio.positions_value = position_value = (
+        portfolio.gross_exposure = position_stats.gross_exposure
+        portfolio.gross_value = position_stats.gross_value
+        portfolio.long_exposure = position_stats.long_exposure
+        portfolio.long_value = position_stats.long_value
+        portfolio.short_exposure = position_stats.short_exposure
+        portfolio.short_value = position_stats.short_value
+        portfolio.longs_count = position_stats.longs_count
+        portfolio.shorts_count = position_stats.shorts_count
+        portfolio.net_value = position_value = (
             position_stats.net_value
         )
-        portfolio.positions_exposure = position_stats.net_exposure
+        portfolio.net_exposure = position_stats.net_exposure
         self._cash_flow(self._get_payout_total(pt.positions))
 
         start_value = portfolio.portfolio_value
