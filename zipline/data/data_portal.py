@@ -344,11 +344,31 @@ class DataPortal(object):
                 )
         else:
             if field == "last_traded":
-                return self.get_last_traded_dt(asset, dt, 'minute')
+                try:
+                    return self.get_last_traded_dt(asset, dt, 'minute')
+                except NoDataForSid:
+                    # if no minute data and "last_traded" was requested,
+                    # use the daily last_traded
+                    prior_session_label = self.exchange_calendar.previous_session(
+                        session_label
+                    )
+                    return self._get_daily_spot_value(
+                        asset, field, prior_session_label,
+                    )
             elif field == "price":
-                return self._get_minute_spot_value(
-                    asset, "close", dt, ffill=True,
-                )
+                try:
+                    return self._get_minute_spot_value(
+                        asset, "close", dt, ffill=True,
+                    )
+                except NoDataForSid:
+                    # if no minute data and "price" was requested,
+                    # fall back to daily data
+                    prior_session_label = self.exchange_calendar.previous_session(
+                        session_label
+                    )
+                    return self._get_daily_spot_value(
+                        asset, field, prior_session_label,
+                    )
             elif field == "contract":
                 return self._get_current_contract(asset, dt)
             else:
@@ -582,11 +602,6 @@ class DataPortal(object):
             result = reader.get_value(asset.sid, dt, column)
             if not pd.isnull(result):
                 return result
-        except NoDataForSid:
-            if column != 'volume':
-                return np.nan
-            else:
-                return 0
         except NoDataOnDate:
             # Handling of no data for the desired date is done by the
             # forward filling logic.
@@ -718,20 +733,35 @@ class DataPortal(object):
             )
 
             if field_to_use == 'open':
-                minute_value = self._daily_aggregator.opens(
-                    assets, end_dt)
+                try:
+                    minute_value = self._daily_aggregator.opens(
+                        assets, end_dt)
+                except NoDataForSid:
+                    minute_value = np.nan
             elif field_to_use == 'high':
-                minute_value = self._daily_aggregator.highs(
-                    assets, end_dt)
+                try:
+                    minute_value = self._daily_aggregator.highs(
+                        assets, end_dt)
+                except NoDataForSid:
+                    minute_value = np.nan
             elif field_to_use == 'low':
-                minute_value = self._daily_aggregator.lows(
-                    assets, end_dt)
+                try:
+                    minute_value = self._daily_aggregator.lows(
+                        assets, end_dt)
+                except NoDataForSid:
+                    minute_value = np.nan
             elif field_to_use == 'close':
-                minute_value = self._daily_aggregator.closes(
-                    assets, end_dt)
+                try:
+                    minute_value = self._daily_aggregator.closes(
+                        assets, end_dt)
+                except NoDataForSid:
+                    minute_value = np.nan
             elif field_to_use == 'volume':
-                minute_value = self._daily_aggregator.volumes(
-                    assets, end_dt)
+                try:
+                    minute_value = self._daily_aggregator.volumes(
+                        assets, end_dt)
+                except NoDataForSid:
+                    minute_value = 0
             elif field_to_use == 'sid':
                 minute_value = [
                     int(self._get_current_contract(asset, end_dt))
@@ -878,11 +908,16 @@ class DataPortal(object):
 
             initial_values = []
             for asset in df.columns[assets_with_leading_nan]:
-                last_traded = self.get_last_traded_dt(
-                    asset,
-                    history_start,
-                    ffill_data_frequency,
-                )
+                try:
+                    last_traded = self.get_last_traded_dt(
+                        asset,
+                        history_start,
+                        ffill_data_frequency,
+                    )
+                except NoDataForSid:
+                    initial_values.append(nan)
+                    continue
+
                 if isnull(last_traded):
                     initial_values.append(nan)
                 else:
