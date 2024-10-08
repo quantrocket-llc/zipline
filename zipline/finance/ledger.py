@@ -387,6 +387,9 @@ class Ledger(object):
         # start, or when the price at execution.
         self._payout_last_sale_prices = {}
 
+        self.today_commissions = 0.0
+        self.today_fees = 0.0
+
     @property
     def todays_returns(self):
         # compute today's returns in returns space instead of portfolio-value
@@ -413,6 +416,8 @@ class Ledger(object):
         self._processed_transactions.clear()
         self._orders_by_modified.clear()
         self._orders_by_id.clear()
+        self.today_commissions = 0.0
+        self.today_fees = 0.0
 
         # Save the previous day's total returns so that ``todays_returns``
         # produces returns since yesterday. This does not happen in
@@ -545,6 +550,12 @@ class Ledger(object):
 
         self.position_tracker.handle_commission(asset, cost)
         self._cash_flow(-cost)
+
+        self.today_commissions += cost
+
+    def process_fee(self, amount):
+        self._cash_flow(-amount)
+        self.today_fees += amount
 
     def close_position(self, asset, dt, data_portal):
         txn = self.position_tracker.maybe_create_close_position_transaction(

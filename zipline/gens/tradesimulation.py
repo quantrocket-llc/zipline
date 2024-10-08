@@ -84,6 +84,7 @@ class AlgorithmSimulator(object):
         """
         algo = self.algo
         metrics_tracker = algo.metrics_tracker
+        fee_tracker = algo.fee_tracker
         emission_rate = metrics_tracker.emission_rate
 
         def every_bar(dt_to_use, current_data=self.current_data,
@@ -138,10 +139,23 @@ class AlgorithmSimulator(object):
             self.simulation_dt = midnight_dt
             algo.on_dt_changed(midnight_dt)
 
+            # this line triggers start_of_session() on PNL and other metrics.
+            # It must precede fee assessments in order for fees
+            # to be reflected in PNL and return metrics, because PNL is
+            # calculated from the start of the session to the end of the
+            # session, meaning that fees assessed before the session start
+            # will be excluded from PNL calculations.
             metrics_tracker.handle_market_open(
                 midnight_dt,
                 algo.data_portal,
             )
+
+            # the date_rules used by fee models expect market minutes,
+            # so fast-forward from midnight to market close (which is
+            # included in the calendar for daily or minute).
+            dt = algo.exchange_calendar.next_close(midnight_dt)
+            fee_tracker.accrue(dt)
+            fee_tracker.assess(dt)
 
             # handle any splits that impact any positions or any open orders.
             assets_we_care_about = (
@@ -193,7 +207,7 @@ class AlgorithmSimulator(object):
                     algo.blotter.execute_cancel_policy(SESSION_END)
                     algo.validate_account_controls()
 
-                    yield self._get_daily_message(dt, algo, metrics_tracker)
+                    yield self._get_daily_message(dt, algo, metrics_tracker, fee_tracker)
                 elif action == BEFORE_TRADING_START_BAR:
                     self.simulation_dt = dt
                     algo.on_dt_changed(dt)
@@ -259,7 +273,7 @@ class AlgorithmSimulator(object):
                 metrics_tracker.process_order(order)
                 blotter.new_orders.remove(order)
 
-    def _get_daily_message(self, dt, algo, metrics_tracker):
+    def _get_daily_message(self, dt, algo, metrics_tracker, fee_tracker):
         """
         Get a perf message for the given datetime.
         """

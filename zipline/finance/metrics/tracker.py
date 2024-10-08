@@ -90,7 +90,7 @@ class MetricsTracker(object):
         )
         self._total_session_count = len(sessions)
 
-        self._ledger = Ledger(sessions, capital_base, data_frequency)
+        self.ledger = Ledger(sessions, capital_base, data_frequency)
 
         self._benchmark_source = NamedExplodingObject(
             'self._benchmark_source',
@@ -133,7 +133,7 @@ class MetricsTracker(object):
         self._benchmark_source = benchmark_source
 
         self.start_of_simulation(
-            self._ledger,
+            self.ledger,
             self.emission_rate,
             self._exchange_calendar,
             self._sessions,
@@ -142,15 +142,15 @@ class MetricsTracker(object):
 
     @property
     def portfolio(self):
-        return self._ledger.portfolio
+        return self.ledger.portfolio
 
     @property
     def account(self):
-        return self._ledger.account
+        return self.ledger.account
 
     @property
     def positions(self):
-        return self._ledger.position_tracker.positions
+        return self.ledger.position_tracker.positions
 
     def update_position(self,
                         asset,
@@ -158,7 +158,7 @@ class MetricsTracker(object):
                         last_sale_price=None,
                         last_sale_date=None,
                         cost_basis=None):
-        self._ledger.position_tracker.update_position(
+        self.ledger.position_tracker.update_position(
             asset,
             amount,
             last_sale_price,
@@ -167,31 +167,31 @@ class MetricsTracker(object):
         )
 
     def override_account_fields(self, **kwargs):
-        self._ledger.override_account_fields(**kwargs)
+        self.ledger.override_account_fields(**kwargs)
 
     def process_transaction(self, transaction):
-        self._ledger.process_transaction(transaction)
+        self.ledger.process_transaction(transaction)
 
     def handle_splits(self, splits):
-        self._ledger.process_splits(splits)
+        self.ledger.process_splits(splits)
 
     def process_order(self, event):
-        self._ledger.process_order(event)
+        self.ledger.process_order(event)
 
     def process_commission(self, commission):
-        self._ledger.process_commission(commission)
+        self.ledger.process_commission(commission)
 
     def process_close_position(self, asset, dt, data_portal):
-        self._ledger.close_position(asset, dt, data_portal)
+        self.ledger.close_position(asset, dt, data_portal)
 
     def capital_change(self, amount):
-        self._ledger.capital_change(amount)
+        self.ledger.capital_change(amount)
 
     def sync_last_sale_prices(self,
                               dt,
                               data_portal,
                               handle_non_market_minutes=False):
-        self._ledger.sync_last_sale_prices(
+        self.ledger.sync_last_sale_prices(
             dt,
             data_portal,
             handle_non_market_minutes=handle_non_market_minutes,
@@ -227,7 +227,7 @@ class MetricsTracker(object):
             'progress': self._progress(self),
             'cumulative_risk_metrics': {},
         }
-        ledger = self._ledger
+        ledger = self.ledger
         ledger.end_of_bar(self._session_count)
         self.end_of_bar(
             packet,
@@ -248,7 +248,7 @@ class MetricsTracker(object):
         data_portal : DataPortal
             The current data portal.
         """
-        ledger = self._ledger
+        ledger = self.ledger
 
         if session_label.tzinfo is not None:
             session_label = session_label.tz_localize(None)
@@ -315,7 +315,7 @@ class MetricsTracker(object):
             'progress': self._progress(self),
             'cumulative_risk_metrics': {},
         }
-        ledger = self._ledger
+        ledger = self.ledger
         ledger.end_of_session(session_ix)
         self.end_of_session(
             packet,
@@ -335,7 +335,7 @@ class MetricsTracker(object):
         packet = {}
         self.end_of_simulation(
             packet,
-            self._ledger,
+            self.ledger,
             self._exchange_calendar,
             self._sessions,
             data_portal,

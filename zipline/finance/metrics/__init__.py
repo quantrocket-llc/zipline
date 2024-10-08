@@ -91,6 +91,8 @@ def default_metrics():
 
         DailyLedgerField('account.gross_leverage'),
         DailyLedgerField('account.net_leverage'),
+        DailyLedgerField('today_commissions', 'commissions'),
+        DailyLedgerField('today_fees', 'fees'),
 
         AlphaBeta(),
         ReturnsStatistic(empyrical.sharpe_ratio, 'sharpe'),

@@ -66,7 +66,8 @@ def make_simple_equity_info(sids,
                             symbols=None,
                             names=None,
                             exchange='TEST',
-                            currencies=None):
+                            currencies=None,
+                            real_sids=None):
     """
     Create a DataFrame representing assets that exist for the full duration
     between `start_date` and `end_date`.
@@ -108,7 +109,7 @@ def make_simple_equity_info(sids,
     return pd.DataFrame(
         {
             'symbol': symbols,
-            'real_sid': [str(sid) for sid in sids],
+            'real_sid': real_sids or [str(sid) for sid in sids],
             'start_date': pd.to_datetime([start_date] * num_assets),
             'end_date': pd.to_datetime([end_date] * num_assets),
             'asset_name': list(names),

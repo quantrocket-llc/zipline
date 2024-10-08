@@ -109,6 +109,19 @@ set_realtime_db
 set_slippage
     Set the slippage models for the simulation.
 
+set_management_fee
+    Set the management fee for the simulation.
+
+set_performance_fee
+    Set the performance fee for the simulation.
+
+set_margin_interest
+    Set the margin interest rate for the simulation.
+
+set_borrow_fees_provider
+    Set the data provider whose borrow fee data will be used for
+    debiting borrow fees on short positions during the simulation.
+
 sid
     Lookup an Asset by its unique asset identifier.
 
@@ -228,6 +241,10 @@ __all__ = [
     'set_max_position_size',
     'set_min_leverage',
     'set_slippage',
+    'set_management_fee',
+    'set_performance_fee',
+    'set_margin_interest',
+    'set_borrow_fees_provider',
     'sid',
     'symbol',
     'ORDER_STATUS',
@@ -1673,6 +1690,127 @@ def set_slippage(
     Usage Guide:
 
     * Commissions and slippage: https://qrok.it/dl/z/zipline-commissions-slippage
+    """
+
+def set_management_fee(
+    rate: float = None,
+    date_rule: EventRule = None,
+    ) -> None:
+    """Set the management fee for the simulation.
+
+    Parameters
+    ----------
+    rate : float
+        The annualized percentage of assets under management (AUM)
+        that is charged as a management fee.
+    date_rule : EventRule
+        The date rule used to determine when the management fee should
+        be assessed. By default, management fees are assessed on the
+        first trading day of each month.
+
+    Notes
+    -----
+    This function can only be called during
+    :func:`~zipline.api.initialize`.
+
+    Examples
+    --------
+    Set a "2 and 20" fee model::
+
+        import zipline.api as algo
+        algo.set_management_fee(rate=0.02)
+        algo.set_performance_fee(rate=0.20)
+    """
+
+def set_performance_fee(
+    rate: float = None,
+    date_rule: EventRule = None,
+    ) -> None:
+    """Set the performance fee for the simulation.
+
+    Parameters
+    ----------
+    rate : float
+        The percentage of profit (subject to highwater mark) that is
+        charged as a performance fee.
+    date_rule : EventRule
+        The date rule used to determine when the performance fee should
+        be assessed. By default, performance fees are assessed on
+        the first trading day of the quarter.
+
+    Notes
+    -----
+    This function can only be called during
+    :func:`~zipline.api.initialize`.
+
+    Examples
+    --------
+    Set a "2 and 20" fee model::
+
+        import zipline.api as algo
+        algo.set_management_fee(rate=0.02)
+        algo.set_performance_fee(rate=0.20)
+    """
+
+def set_margin_interest(interest_rate: float) -> None:
+    """Set the margin interest rate for the simulation.
+
+    Parameters
+    ----------
+    interest_rate : float
+        The annualized interest rate charged on margin loans.
+
+    Notes
+    -----
+    This function can only be called during
+    :func:`~zipline.api.initialize`.
+
+    By industry convention, the annualized interest rate is divided
+    by 360, not 365, to calculate daily interest.
+
+    Examples
+    --------
+    Set 5% margin interest::
+
+        import zipline.api as algo
+        algo.set_margin_interest(0.05)
+    """
+
+def set_borrow_fees_provider(name: Literal['ibkr']) -> None:
+    """Set the data provider whose borrow fee data will be used for
+    debiting borrow fees on short positions during the simulation.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data provider. The only supported choice is
+        'ibkr'.
+
+    Notes
+    -----
+    This function can only be called during
+    :func:`~zipline.api.initialize`.
+
+    By industry convention, the annualized borrow fee is divided
+    by 360, not 365, to calculate daily fees. The daily fee rate
+    is assessed on a collateral amount that is calculated by
+    multiplying the number of shares times the share price (rounded up
+    to the nearest dollar) times 102% (by industry convention). For
+    example, suppose the annualized borrow fee rate is 3.6%, the share
+    price is $9.15, and 1,000 shares are held short. The daily borrow
+    fee rate is 0.01% (3.6% / 360), and the collateral amount is $10,200:
+    1,000 shares x $10.00/share ($9.15/share rounded up) x 102% = $10,200.
+    Consequently, the daily borrow fee is $1.02.
+
+    Borrow fees accrue daily and are debited from the account on the first
+    trading day of each month.
+
+    Examples
+    --------
+    Set Interactive Brokers as the borrow fees data provider::
+
+        import zipline.api as algo
+        algo.set_borrow_fees_provider('ibkr')
     """
 
 def sid(sid: str) -> Asset:

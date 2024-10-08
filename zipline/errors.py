@@ -173,6 +173,35 @@ You attempted to override commission outside of `initialize`. \
 You may only call 'set_commission' in your initialize method.
 """.strip()
 
+class SetFeesPostInit(ZiplineError):
+    """
+    Raised if a users script calls set_fees magic
+    after the initialize method has returned.
+    """
+    msg = """
+You attempted to override fees outside of `initialize`. \
+You may only call 'set_fees' in your initialize method.
+""".strip()
+
+class SetMarginInterestPostInit(ZiplineError):
+    """
+    Raised if a users script calls set_margin_interest magic
+    after the initialize method has returned.
+    """
+    msg = """
+You attempted to override margin interest outside of `initialize`. \
+You may only call 'set_margin_interest' in your initialize method.
+""".strip()
+
+class SetBorrowFeesPostInit(ZiplineError):
+    """
+    Raised if a users script calls set_borrow_fees_provider magic
+    after the initialize method has returned.
+    """
+    msg = """
+You attempted to override borrow fees outside of `initialize`. \
+You may only call 'set_borrow_fees_provider' in your initialize method.
+""".strip()
 
 class TransactionWithNoVolume(ZiplineError):
     """

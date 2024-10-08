@@ -54,6 +54,9 @@ from zipline.errors import (
     SetCancelPolicyPostInit,
     SetCommissionPostInit,
     SetSlippagePostInit,
+    SetFeesPostInit,
+    SetMarginInterestPostInit,
+    SetBorrowFeesPostInit,
     UnsupportedCancelPolicy,
     UnsupportedOrderParameters,
     ZeroCapitalError,
@@ -83,6 +86,13 @@ from zipline.finance.cancel_policy import NeverCancel, CancelPolicy
 from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.finance.slippage import EquitySlippageModel, FutureSlippageModel
 from zipline.finance.commission import EquityCommissionModel, FutureCommissionModel
+from zipline.finance.fees import (
+    FeeTracker,
+    ManagementFee,
+    PerformanceFee,
+    MarginInterest,
+    IBKRBorrowFees
+)
 from zipline.finance.order import Order
 from zipline.assets import Asset, Equity, Future, ContinuousFuture
 from zipline.gens.tradesimulation import AlgorithmSimulator
@@ -108,6 +118,7 @@ from zipline.utils.cache import ExpiringCache
 
 import zipline.utils.events
 from zipline.utils.events import (
+    EventRule,
     EventManager,
     make_eventrule,
     date_rules,
@@ -297,6 +308,7 @@ class TradingAlgorithm(object):
             )
 
         self.metrics_tracker = None
+        self.fee_tracker = None
         self._last_sync_time = pd.NaT
         self._metrics_set = metrics_set
         if self._metrics_set is None:
@@ -632,6 +644,10 @@ class TradingAlgorithm(object):
             self.sim_params = sim_params
 
         self.metrics_tracker = metrics_tracker = self._create_metrics_tracker()
+        self.fee_tracker = FeeTracker(
+            calendar=self.exchange_calendar,
+            ledger=metrics_tracker.ledger
+        )
 
         # Set the dt initially to the period start by forcing it to change.
         self.on_dt_changed(self.sim_params.start_session)
@@ -1584,7 +1600,7 @@ class TradingAlgorithm(object):
         us_equities: EquityCommissionModel = None,
         us_futures: FutureCommissionModel = None
         ) -> None:
-        """Sets the commission models for the simulation.
+        """Set the commission models for the simulation.
 
         Parameters
         ----------
@@ -1632,6 +1648,182 @@ class TradingAlgorithm(object):
                     supported_asset_types=us_futures.allowed_asset_types,
                 )
             self.blotter.commission_models[Future] = us_futures
+
+    @api_method # document in zipline.api.pyi
+    def set_management_fee(
+        self,
+        rate: float = None,
+        date_rule: EventRule = None,
+        ) -> None:
+        """Set the management fee for the simulation.
+
+        Parameters
+        ----------
+        rate : float
+            The annualized percentage of assets under management (AUM)
+            that is charged as a management fee.
+        date_rule : EventRule
+            The date rule used to determine when the management fee should
+            be assessed. By default, management fees are assessed on the
+            first trading day of each month.
+
+        Notes
+        -----
+        This function can only be called during
+        :func:`~zipline.api.initialize`.
+
+        Examples
+        --------
+        Set a "2 and 20" fee model::
+
+            import zipline.api as algo
+            algo.set_management_fee(rate=0.02)
+            algo.set_performance_fee(rate=0.20)
+        """
+        if self.initialized:
+            raise SetFeesPostInit()
+
+        if date_rule is None:
+            date_rule = date_rules.month_start()
+
+        self.fee_tracker.add_model(
+            ManagementFee(
+                rate,
+                date_rule=date_rule,
+                portfolio=self.metrics_tracker.portfolio,
+                calendar=self.exchange_calendar
+            )
+        )
+
+    @api_method # document in zipline.api.pyi
+    def set_performance_fee(
+        self,
+        rate: float = None,
+        date_rule: EventRule = None,
+        ) -> None:
+        """Set the performance fee for the simulation.
+
+        Parameters
+        ----------
+        rate : float
+            The percentage of profit (subject to highwater mark) that is
+            charged as a performance fee.
+        date_rule : EventRule
+            The date rule used to determine when the performance fee should
+            be assessed. By default, performance fees are assessed on
+            the first trading day of the quarter.
+
+        Notes
+        -----
+        This function can only be called during
+        :func:`~zipline.api.initialize`.
+
+        Examples
+        --------
+        Set a "2 and 20" fee model::
+
+            import zipline.api as algo
+            algo.set_management_fee(rate=0.02)
+            algo.set_performance_fee(rate=0.20)
+        """
+        if self.initialized:
+            raise SetFeesPostInit()
+
+        if date_rule is None:
+            date_rule = date_rules.month_start(months=[1, 4, 7, 10])
+
+        self.fee_tracker.add_model(
+            PerformanceFee(
+                rate,
+                date_rule=date_rule,
+                portfolio=self.metrics_tracker.portfolio
+            )
+        )
+
+    @api_method # document in zipline.api.pyi
+    def set_margin_interest(self, interest_rate: float) -> None:
+        """Set the margin interest rate for the simulation.
+
+        Parameters
+        ----------
+        interest_rate : float
+            The annualized interest rate charged on margin loans.
+
+        Notes
+        -----
+        This function can only be called during
+        :func:`~zipline.api.initialize`.
+
+        Examples
+        --------
+        Set 5% margin interest::
+
+            import zipline.api as algo
+            algo.set_margin_interest(0.05)
+        """
+        if self.initialized:
+            # ideally, users should be able to change the interest rate
+            # over time, but we don't currently support that. Supporting it
+            # would require copying accrued interest from the previous
+            # model into the new one.
+            raise SetMarginInterestPostInit()
+
+        self.fee_tracker.add_model(
+            MarginInterest(
+                interest_rate,
+                account=self.metrics_tracker.account,
+                calendar=self.exchange_calendar
+                )
+        )
+
+    @api_method # document in zipline.api.pyi
+    def set_borrow_fees_provider(self, name: Literal['ibkr']) -> None:
+        """Set the data provider whose borrow fee data will be used for
+        debiting borrow fees on short positions during the simulation.
+
+        Parameters
+        ----------
+        name : str
+            The name of the data provider. The only supported choice is
+            'ibkr'.
+
+        Notes
+        -----
+        This function can only be called during
+        :func:`~zipline.api.initialize`.
+
+        By industry convention, the annualized borrow fee is divided
+        by 360, not 365, to calculate daily fees. The daily fee rate
+        is assessed on a collateral amount that is calculated by
+        multiplying the number of shares times the share price (rounded up
+        to the nearest dollar) times 102% (by industry convention). For
+        example, suppose the annualized borrow fee rate is 3.6%, the share
+        price is $9.15, and 1,000 shares are held short. The daily borrow
+        fee rate is 0.01% (3.6% / 360), and the collateral amount is $10,200:
+        1,000 shares x $10.00/share ($9.15/share rounded up) x 102% = $10,200.
+        Consequently, the daily borrow fee is $1.02.
+
+        Borrow fees accrue daily and are debited from the account on the first
+        trading day of each month.
+
+        Examples
+        --------
+        Set Interactive Brokers as the borrow fees data provider::
+
+            import zipline.api as algo
+            algo.set_borrow_fees_provider('ibkr')
+        """
+        if self.initialized:
+            raise SetBorrowFeesPostInit()
+
+        if name != 'ibkr':
+            raise ValueError("invalid borrow fees provider: %s" % name)
+
+        self.fee_tracker.add_model(
+            IBKRBorrowFees(
+                portfolio=self.metrics_tracker.portfolio,
+                calendar=self.exchange_calendar
+            ))
 
     @api_method # document in zipline.api.pyi
     def set_cancel_policy(self, cancel_policy: CancelPolicy) -> None:
