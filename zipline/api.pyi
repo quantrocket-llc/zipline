@@ -1718,8 +1718,10 @@ def set_management_fee(
     Set a "2 and 20" fee model::
 
         import zipline.api as algo
-        algo.set_management_fee(rate=0.02)
-        algo.set_performance_fee(rate=0.20)
+
+        def initialize(context):
+            algo.set_management_fee(0.02)
+            algo.set_performance_fee(0.20)
     """
 
 def set_performance_fee(
@@ -1748,8 +1750,10 @@ def set_performance_fee(
     Set a "2 and 20" fee model::
 
         import zipline.api as algo
-        algo.set_management_fee(rate=0.02)
-        algo.set_performance_fee(rate=0.20)
+
+        def initialize(context):
+            algo.set_management_fee(0.02)
+            algo.set_performance_fee(0.20)
     """
 
 def set_margin_interest(interest_rate: float) -> None:
@@ -1765,6 +1769,9 @@ def set_margin_interest(interest_rate: float) -> None:
     This function can only be called during
     :func:`~zipline.api.initialize`.
 
+    Margin interest accrues daily on negative cash balances and
+    is assessed on the first trading day of the month.
+
     By industry convention, the annualized interest rate is divided
     by 360, not 365, to calculate daily interest.
 
@@ -1773,7 +1780,9 @@ def set_margin_interest(interest_rate: float) -> None:
     Set 5% margin interest::
 
         import zipline.api as algo
-        algo.set_margin_interest(0.05)
+
+        def initialize(context):
+            algo.set_margin_interest(0.05)
     """
 
 def set_borrow_fees_provider(name: Literal['ibkr']) -> None:
@@ -1810,7 +1819,9 @@ def set_borrow_fees_provider(name: Literal['ibkr']) -> None:
     Set Interactive Brokers as the borrow fees data provider::
 
         import zipline.api as algo
-        algo.set_borrow_fees_provider('ibkr')
+
+        def initialize(context):
+            algo.set_borrow_fees_provider('ibkr')
     """
 
 def sid(sid: str) -> Asset:

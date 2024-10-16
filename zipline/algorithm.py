@@ -1677,8 +1677,10 @@ class TradingAlgorithm(object):
         Set a "2 and 20" fee model::
 
             import zipline.api as algo
-            algo.set_management_fee(rate=0.02)
-            algo.set_performance_fee(rate=0.20)
+
+            def initialize(context):
+                algo.set_management_fee(0.02)
+                algo.set_performance_fee(0.20)
         """
         if self.initialized:
             raise SetFeesPostInit()
@@ -1723,8 +1725,10 @@ class TradingAlgorithm(object):
         Set a "2 and 20" fee model::
 
             import zipline.api as algo
-            algo.set_management_fee(rate=0.02)
-            algo.set_performance_fee(rate=0.20)
+
+             def initialize(context):
+                algo.set_management_fee(0.02)
+                algo.set_performance_fee(0.20)
         """
         if self.initialized:
             raise SetFeesPostInit()
@@ -1754,12 +1758,20 @@ class TradingAlgorithm(object):
         This function can only be called during
         :func:`~zipline.api.initialize`.
 
+        Margin interest accrues daily on negative cash balances and
+        is assessed on the first trading day of the month.
+
+        By industry convention, the annualized interest rate is divided
+        by 360, not 365, to calculate daily interest.
+
         Examples
         --------
         Set 5% margin interest::
 
             import zipline.api as algo
-            algo.set_margin_interest(0.05)
+
+            def initialize(context):
+                algo.set_margin_interest(0.05)
         """
         if self.initialized:
             # ideally, users should be able to change the interest rate
@@ -1811,7 +1823,9 @@ class TradingAlgorithm(object):
         Set Interactive Brokers as the borrow fees data provider::
 
             import zipline.api as algo
-            algo.set_borrow_fees_provider('ibkr')
+
+            def initialize(context):
+                algo.set_borrow_fees_provider('ibkr')
         """
         if self.initialized:
             raise SetBorrowFeesPostInit()
