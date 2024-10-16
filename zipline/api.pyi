@@ -1693,7 +1693,7 @@ def set_slippage(
     """
 
 def set_management_fee(
-    rate: float = None,
+    rate: float,
     date_rule: EventRule = None,
     ) -> None:
     """Set the management fee for the simulation.
@@ -1723,7 +1723,7 @@ def set_management_fee(
     """
 
 def set_performance_fee(
-    rate: float = None,
+    rate: float,
     date_rule: EventRule = None,
     ) -> None:
     """Set the performance fee for the simulation.

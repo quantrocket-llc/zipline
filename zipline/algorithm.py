@@ -1652,7 +1652,7 @@ class TradingAlgorithm(object):
     @api_method # document in zipline.api.pyi
     def set_management_fee(
         self,
-        rate: float = None,
+        rate: float,
         date_rule: EventRule = None,
         ) -> None:
         """Set the management fee for the simulation.
@@ -1698,7 +1698,7 @@ class TradingAlgorithm(object):
     @api_method # document in zipline.api.pyi
     def set_performance_fee(
         self,
-        rate: float = None,
+        rate: float,
         date_rule: EventRule = None,
         ) -> None:
         """Set the performance fee for the simulation.
