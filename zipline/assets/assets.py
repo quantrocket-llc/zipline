@@ -64,8 +64,7 @@ from .exchange_info import ExchangeInfo
 from zipline.utils.functional import invert
 from zipline.utils.memoize import lazyval
 from zipline.utils.numpy_utils import as_column
-from zipline.utils.preprocess import preprocess
-from zipline.utils.sqlite_utils import group_into_chunks, coerce_string_to_eng
+from zipline.utils.sqlite_utils import group_into_chunks, check_and_create_engine
 
 # A set of fields that need to be converted to strings before building an
 # Asset to avoid unicode fields
@@ -261,8 +260,9 @@ class AssetFinder(object):
     --------
     :class:`zipline.assets.AssetDBWriter`
     """
-    @preprocess(engine=coerce_string_to_eng(require_exists=True))
     def __init__(self, engine, future_chain_predicates=None):
+        if isinstance(engine, str):
+            engine = check_and_create_engine(engine, require_exists=True)
         self.engine = engine
         metadata = sa.MetaData(bind=engine)
         metadata.reflect(only=asset_db_table_names)

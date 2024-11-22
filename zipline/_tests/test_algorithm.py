@@ -655,20 +655,20 @@ def log_nyse_close(context, data):
         self.assertIsInstance(algo.sid(4), Equity)
 
         # Supplying a non-string argument to symbol()
-        # should result in a TypeError.
-        with self.assertRaises(TypeError):
+        # should result in a AttributeError.
+        with self.assertRaises(AttributeError):
             algo.symbol(1)
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.symbol((1,))
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.symbol({1})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.symbol([1])
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.symbol({'foo': 'bar'})
 
     def test_future_symbol(self):
@@ -697,20 +697,20 @@ def log_nyse_close(context, data):
             algo.future_symbol('FOOBAR')
 
         # Supplying a non-string argument to future_symbol()
-        # should result in a TypeError.
-        with self.assertRaises(TypeError):
+        # should result in a AttributeError.
+        with self.assertRaises(AttributeError):
             algo.future_symbol(1)
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.future_symbol((1,))
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.future_symbol({1})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.future_symbol([1])
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             algo.future_symbol({'foo': 'bar'})
 
 

@@ -18,8 +18,6 @@ import pandas as pd
 from zipline.data import bundles
 from zipline.assets import Asset
 from zipline.utils.extensions import load_extensions
-from zipline.utils.input_validation import ensure_upper_case
-from zipline.utils.preprocess import preprocess
 from zipline.research.exceptions import ValidationError
 from zipline.research._asset import asset_finder_cache
 from zipline.research.bundle import _get_bundle
@@ -101,7 +99,6 @@ def sid(sid: str, bundle: str = None) -> Asset:
 
     return asset
 
-@preprocess(symbol=ensure_upper_case)
 def symbol(symbol: str, bundle: str = None) -> Asset:
     """
     Lookup an Equity by its ticker symbol in the specified bundle
@@ -165,6 +162,6 @@ def symbol(symbol: str, bundle: str = None) -> Asset:
     asset_finder = asset_finder_cache.get(bundle, bundle_data.asset_finder)
     asset_finder_cache[bundle] = asset_finder
 
-    asset = asset_finder.lookup_symbol(symbol)
+    asset = asset_finder.lookup_symbol(symbol.upper())
 
     return asset

@@ -4,7 +4,6 @@ An ndarray subclass for working with arrays of strings.
 from functools import total_ordering
 from operator import eq, ne
 import re
-from pydantic import validate_call
 from typing import Union
 
 import numpy as np
@@ -14,11 +13,8 @@ from toolz import compose
 
 from zipline.utils.compat import unicode
 from zipline.utils.functional import instance
-from zipline.utils.preprocess import preprocess
 from zipline.utils.sentinel import sentinel
-from zipline.utils.input_validation import (
-    coerce
-)
+
 from zipline.utils.numpy_utils import (
     bool_dtype,
     unsigned_int_dtype_with_size_in_bytes,
@@ -761,7 +757,6 @@ class LabelArray(ndarray):
         """
         return self.map_predicate(lambda elem: substring in elem)
 
-    @preprocess(pattern=coerce(from_=(bytes, unicode), to=re.compile))
     def matches(self, pattern):
         """
         Elementwise regex match.
@@ -776,11 +771,11 @@ class LabelArray(ndarray):
             An array with the same shape as self indicating whether each
             element of self was matched by ``pattern``.
         """
+        pattern = re.compile(pattern)
         return self.map_predicate(compose(bool, pattern.match))
 
     # These types all implement an O(N) __contains__, so pre-emptively
     # coerce to `set`.
-    @preprocess(container=coerce((list, tuple, np.ndarray), set))
     def isin(self, container):
         """
         Check if each element of self is in ``container``.
@@ -797,6 +792,7 @@ class LabelArray(ndarray):
             An array with the same shape as self indicating whether each
             element of self was an element of ``container``.
         """
+        container = set(container)
         return self.map_predicate(container.__contains__)
 
 

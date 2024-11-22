@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 import os
 import sqlite3
 
 import sqlalchemy as sa
 from six.moves import range
-
-from .input_validation import coerce_string
 
 SQLITE_MAX_VARIABLE_NUMBER = 998
 
@@ -46,14 +43,3 @@ def check_and_create_engine(path, require_exists):
         verify_sqlite_path_exists(path)
     return sa.create_engine('sqlite:///' + path)
 
-
-def coerce_string_to_conn(require_exists):
-    return coerce_string(
-        partial(check_and_create_connection, require_exists=require_exists)
-    )
-
-
-def coerce_string_to_eng(require_exists):
-    return coerce_string(
-        partial(check_and_create_engine, require_exists=require_exists)
-    )

@@ -30,7 +30,6 @@ from zipline._testing.fixtures import (
     WithAssetFinder,
 )
 from zipline.utils.classproperty import classproperty
-from zipline.utils.input_validation import _qualified_name
 from zipline.utils.numpy_utils import int64_dtype
 
 

@@ -11,6 +11,7 @@ from six import (
 )
 from toolz import first
 
+import numpy as np
 from zipline.currency import Currency
 from zipline.data.fx import DEFAULT_FX_RATE
 from zipline.pipeline.classifiers import Classifier, Latest as LatestClassifier
@@ -24,11 +25,7 @@ from zipline.pipeline.term import (
     validate_dtype,
 )
 from zipline.utils.formatting import s, plural
-from zipline.utils.input_validation import (
-    ensure_dtype,
-)
 from zipline.utils.numpy_utils import float64_dtype, NoDefaultMissingValue
-from zipline.utils.preprocess import preprocess
 from zipline.utils.string_formatting import bulleted_list
 
 
@@ -39,13 +36,13 @@ class Column(object):
     """
     An abstract column of data, not yet associated with a dataset.
     """
-    @preprocess(dtype=ensure_dtype)
     def __init__(self,
                  dtype,
                  missing_value=None,
                  doc=None,
                  metadata=None,
                  currency_aware=False):
+        dtype = np.dtype(dtype)
         if currency_aware and dtype != float64_dtype:
             raise ValueError(
                 'Columns cannot be constructed with currency_aware={}, '

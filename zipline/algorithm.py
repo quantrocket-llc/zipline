@@ -109,10 +109,6 @@ from zipline.utils.api_support import (
     require_not_initialized,
     ZiplineAPI,
     disallowed_in_before_trading_start)
-from zipline.utils.input_validation import (
-    coerce_string,
-    ensure_upper_case
-)
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.utils.cache import ExpiringCache
 
@@ -130,7 +126,6 @@ from zipline.utils.math_utils import (
     tolerant_equals,
     round_if_near_integer,
 )
-from zipline.utils.preprocess import preprocess
 
 import zipline.protocol
 
@@ -1049,7 +1044,6 @@ class TradingAlgorithm(object):
         self.benchmark_sid = benchmark
 
     @api_method # document in zipline.api.pyi
-    @preprocess(root_symbol_str=ensure_upper_case)
     def continuous_future(
         self,
         root_symbol_str: str,
@@ -1096,14 +1090,13 @@ class TradingAlgorithm(object):
             algo.continuous_future("ES", roll="volume")
         """
         return self.asset_finder.create_continuous_future(
-            root_symbol_str,
+            root_symbol_str.upper(),
             offset,
             roll,
             adjustment,
         )
 
     @api_method # document in zipline.api.pyi
-    @preprocess(symbol=ensure_upper_case)
     def symbol(self, symbol: str) -> Asset:
         """Lookup an Equity by its ticker symbol.
 
@@ -1128,7 +1121,7 @@ class TradingAlgorithm(object):
         MultipleSymbolsFound
             Raised when the symbol was held by more than one equity.
         """
-        return self.asset_finder.lookup_symbol(symbol)
+        return self.asset_finder.lookup_symbol(symbol.upper())
 
     @api_method # document in zipline.api.pyi
     def sid(self, sid: str) -> Asset:
@@ -1172,7 +1165,6 @@ class TradingAlgorithm(object):
         return self.asset_finder.retrieve_asset(zipline_sid)
 
     @api_method # document in zipline.api.pyi
-    @preprocess(symbol=ensure_upper_case)
     def future_symbol(self, symbol: str) -> Future:
         """Lookup a futures contract with a given symbol.
 
@@ -1191,7 +1183,7 @@ class TradingAlgorithm(object):
         SymbolNotFound
             Raised when no contract named 'symbol' is found.
         """
-        return self.asset_finder.lookup_future_symbol(symbol)
+        return self.asset_finder.lookup_future_symbol(symbol.upper())
 
     def _calculate_order_value_amount(self, asset, value):
         """
@@ -1520,7 +1512,6 @@ class TradingAlgorithm(object):
 
     @api_method # document in zipline.api.pyi
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    @preprocess(tz=coerce_string(pytz.timezone))
     def get_datetime(self, tz: tzinfo | str | None = None) -> pd.Timestamp:
         """
         Returns the current simulation datetime.

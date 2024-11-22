@@ -9,7 +9,6 @@ import six
 import sqlite3
 
 from zipline.utils.functional import keysorted
-from zipline.utils.preprocess import preprocess
 
 from zipline.utils.numpy_utils import (
     datetime64ns_dtype,
@@ -19,7 +18,7 @@ from zipline.utils.numpy_utils import (
     uint64_dtype,
 )
 from zipline.utils.pandas_utils import empty_dataframe
-from zipline.utils.sqlite_utils import group_into_chunks, coerce_string_to_conn
+from zipline.utils.sqlite_utils import group_into_chunks, check_and_create_connection
 from ._adjustments import load_adjustments_from_sqlite
 
 SQLITE_ADJUSTMENT_TABLENAMES = frozenset(['splits', 'dividends', 'mergers'])
@@ -103,8 +102,9 @@ class SQLiteAdjustmentReader(object):
         'stock_dividend_payouts': SQLITE_STOCK_DIVIDEND_PAYOUT_COLUMN_DTYPES,
     }
 
-    @preprocess(conn=coerce_string_to_conn(require_exists=True))
     def __init__(self, conn):
+        if isinstance(conn, str):
+            conn = check_and_create_connection(conn, require_exists=True)
         self.conn = conn
 
     def __enter__(self):

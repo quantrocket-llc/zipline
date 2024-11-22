@@ -1,9 +1,6 @@
 """
 Utilities for creating public APIs (e.g. argument validation decorators).
 """
-from zipline.utils.preprocess import preprocess
-
-
 
 def restrict_to_dtype(dtype, message_template):
     """
@@ -32,15 +29,17 @@ def restrict_to_dtype(dtype, message_template):
     def some_factor_method(self, ...):
         self.stuff_that_requires_being_float64(...)
     """
-    def processor(term_method, _, term_instance):
-        term_dtype = term_instance.dtype
-        if term_dtype != dtype:
-            raise TypeError(
-                message_template.format(
-                    method_name=term_method.__name__,
-                    expected_dtype=dtype.name,
-                    received_dtype=term_dtype,
+    def decorator(term_method):
+        def wrapper(term_instance, *args, **kwargs):
+            term_dtype = term_instance.dtype
+            if term_dtype != dtype:
+                raise TypeError(
+                    message_template.format(
+                        method_name=term_method.__name__,
+                        expected_dtype=dtype.name,
+                        received_dtype=term_dtype,
+                    )
                 )
-            )
-        return term_instance
-    return preprocess(self=processor)
+            return term_method(term_instance, *args, **kwargs)
+        return wrapper
+    return decorator
