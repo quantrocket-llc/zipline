@@ -222,6 +222,8 @@ CO_EQUITIES = EquityCalendarDomain(CountryCode.COLOMBIA, 'XBOG')
 CZ_EQUITIES = EquityCalendarDomain(CountryCode.CZECH_REPUBLIC, 'XPRA')
 DE_EQUITIES = EquityCalendarDomain(CountryCode.GERMANY, 'XFRA')
 DE_EQUITIES_XETR = EquityCalendarDomain(CountryCode.GERMANY, 'XETR')
+DE_EQUITIES_XDUS = EquityCalendarDomain(CountryCode.GERMANY, 'XDUS')
+DE_EQUITIES_XHAM = EquityCalendarDomain(CountryCode.GERMANY, 'XHAM')
 DK_EQUITIES = EquityCalendarDomain(CountryCode.DENMARK, 'XCSE')
 ES_EQUITIES = EquityCalendarDomain(CountryCode.SPAIN, 'XMAD')
 FI_EQUITIES = EquityCalendarDomain(CountryCode.FINLAND, 'XHEL')
@@ -268,6 +270,7 @@ CBOT_FUTURES = EquityCalendarDomain(CountryCode.UNITED_STATES, 'CBOT')
 IEPA_FUTURES = EquityCalendarDomain(CountryCode.UNITED_STATES, 'IEPA')
 XCBF_FUTURES = EquityCalendarDomain(CountryCode.UNITED_STATES, 'XCBF')
 US_FUTURES = EquityCalendarDomain(CountryCode.UNITED_STATES, 'us_futures')
+XEEE_FUTURES = EquityCalendarDomain(CountryCode.GERMANY, 'XEEE')
 
 WEEKDAY_EQUITIES = EquityCalendarDomain(CountryCode.UNITED_STATES, '24/5')
 ALWAYS_OPEN_EQUITIES = EquityCalendarDomain(CountryCode.UNITED_STATES, '24/7')
@@ -286,6 +289,8 @@ BUILT_IN_DOMAINS = [
     CZ_EQUITIES,
     DE_EQUITIES,
     DE_EQUITIES_XETR,
+    DE_EQUITIES_XDUS,
+    DE_EQUITIES_XHAM,
     DK_EQUITIES,
     ES_EQUITIES,
     FI_EQUITIES,
@@ -331,6 +336,7 @@ BUILT_IN_DOMAINS = [
     IEPA_FUTURES,
     XCBF_FUTURES,
     US_FUTURES,
+    XEEE_FUTURES,
     WEEKDAY_EQUITIES,
     ALWAYS_OPEN_EQUITIES,
 ]
