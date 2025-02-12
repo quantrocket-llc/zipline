@@ -489,6 +489,7 @@ class TrueRange(CustomFactor):
         EquityPricing.low,
         EquityPricing.close,
     )
+    window_safe = True
     window_length = 2
 
     if TYPE_CHECKING:
