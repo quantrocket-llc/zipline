@@ -124,3 +124,6 @@ def teardown(self, np=np):
 
 del os
 del np
+
+from . import _version
+__version__ = _version.get_versions()['version']
