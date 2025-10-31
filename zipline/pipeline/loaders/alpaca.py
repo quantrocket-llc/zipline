@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from interface import implements
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
 from zipline.lib.adjusted_array import AdjustedArray
@@ -22,7 +21,7 @@ from quantrocket.fundamental import (
     NoFundamentalData)
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
-class AlpacaETBPipelineLoader(implements(PipelineLoader)):
+class AlpacaETBPipelineLoader(PipelineLoader):
 
     def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids

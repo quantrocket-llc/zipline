@@ -18,7 +18,6 @@ import datetime
 from textwrap import dedent
 from pydantic import validate_call
 
-from interface import default, implements, Interface
 import numpy as np
 import pandas as pd
 import pytz
@@ -31,7 +30,7 @@ from zipline.utils.memoize import lazyval
 from zipline.utils.pandas_utils import days_at_time
 
 
-class IDomain(Interface):
+class IDomain:
     """Domain interface.
     """
     def sessions(self):
@@ -73,7 +72,6 @@ class IDomain(Interface):
             "available" on each session.
         """
 
-    @default
     def roll_forward(self, dt):
         """
         Given a date, align it to the calendar of the pipeline's domain.
@@ -101,7 +99,9 @@ class IDomain(Interface):
             )
 
 
-Domain = implements(IDomain)
+class Domain(IDomain):
+    pass
+
 Domain.__doc__ = """
 A domain represents a set of labels for the arrays computed by a Pipeline.
 

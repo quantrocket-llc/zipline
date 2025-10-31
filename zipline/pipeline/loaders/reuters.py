@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from interface import implements
 from collections import defaultdict
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
@@ -25,7 +24,7 @@ from quantrocket.fundamental import (
 )
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
-class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
+class ReutersFinancialsPipelineLoader(PipelineLoader):
 
     def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
@@ -68,7 +67,7 @@ class ReutersFinancialsPipelineLoader(implements(PipelineLoader)):
 
         return out
 
-class ReutersEstimatesPipelineLoader(implements(PipelineLoader)):
+class ReutersEstimatesPipelineLoader(PipelineLoader):
 
     def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids

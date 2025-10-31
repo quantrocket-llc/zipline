@@ -1,10 +1,7 @@
 """
 Base class for Pipeline API data loaders.
 """
-from interface import default, Interface
-
-
-class PipelineLoader(Interface):
+class PipelineLoader:
     """Interface for PipelineLoaders.
     """
 
@@ -35,7 +32,6 @@ class PipelineLoader(Interface):
             rolling view over the requested dates for the requested sids.
         """
 
-    @default
     @property
     def currency_aware(self):
         """Whether or not this loader supports currency-conversions.

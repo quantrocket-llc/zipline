@@ -1,5 +1,4 @@
 from contextlib2 import ExitStack
-from interface import implements
 
 from zipline.utils.compat import contextmanager, wraps
 
@@ -32,7 +31,7 @@ def delegating_hooks_method(method_name):
         return method
 
 
-class DelegatingHooks(implements(PipelineHooks)):
+class DelegatingHooks(PipelineHooks):
     """A PipelineHooks that delegates to one or more other hooks.
 
     Parameters
@@ -56,11 +55,13 @@ class DelegatingHooks(implements(PipelineHooks)):
 
     # Implement all interface methods by delegating to corresponding methods on
     # input hooks.
-    locals().update({
-        name: delegating_hooks_method(name)
-        # TODO: Expose this publicly on interface.
-        for name in PipelineHooks._signatures
-    })
+    for name in [
+        "running_pipeline",
+        "computing_chunk",
+        "loading_terms",
+        "computing_term",
+    ]:
+        locals()[name] = delegating_hooks_method(name)
 
 
 del delegating_hooks_method

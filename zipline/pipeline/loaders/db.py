@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from interface import implements
 import pandas as pd
 from collections import defaultdict
 from zipline.pipeline.loaders.base import PipelineLoader
@@ -26,7 +25,7 @@ from zipline.utils.numpy_utils import (
 from quantrocket import get_prices_reindexed_like
 from quantrocket.exceptions import NoData
 
-class DatabasePipelineLoader(implements(PipelineLoader)):
+class DatabasePipelineLoader(PipelineLoader):
     """
     Loads data using quantrocket.get_prices_reindexed_like.
     """

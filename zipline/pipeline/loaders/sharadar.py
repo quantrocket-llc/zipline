@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from interface import implements
 from collections import defaultdict
 import pandas as pd
 from zipline.pipeline.loaders.base import PipelineLoader
@@ -27,7 +26,7 @@ from quantrocket.fundamental import (
 from zipline.utils.numpy_utils import datetime64ns_dtype
 from zipline.pipeline.loaders.missing import MISSING_VALUES_BY_DTYPE
 
-class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
+class SharadarFundamentalsPipelineLoader(PipelineLoader):
 
     def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
@@ -85,7 +84,7 @@ class SharadarFundamentalsPipelineLoader(implements(PipelineLoader)):
 
         return out
 
-class SharadarInstitutionsPipelineLoader(implements(PipelineLoader)):
+class SharadarInstitutionsPipelineLoader(PipelineLoader):
 
     def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids
@@ -116,7 +115,7 @@ class SharadarInstitutionsPipelineLoader(implements(PipelineLoader)):
 
         return out
 
-class SharadarSP500PipelineLoader(implements(PipelineLoader)):
+class SharadarSP500PipelineLoader(PipelineLoader):
 
     def __init__(self, zipline_sids_to_real_sids):
         self.zipline_sids_to_real_sids = zipline_sids_to_real_sids

@@ -3,7 +3,6 @@ PipelineLoader accepting a DataFrame as input.
 """
 from functools import partial
 
-from interface import implements
 from numpy import (
     ix_,
     zeros,
@@ -33,7 +32,7 @@ ADJUSTMENT_COLUMNS = Index([
 ])
 
 
-class DataFrameLoader(implements(PipelineLoader)):
+class DataFrameLoader(PipelineLoader):
     """
     A PipelineLoader that reads its input from DataFrames.
 
