@@ -45,9 +45,6 @@ from zipline.utils.calendar_utils import get_calendar
 
 from . import data
 from . import finance
-from . import gens
-from . import utils
-from ._version import get_versions
 
 # These need to happen after the other imports.
 from . algorithm import TradingAlgorithm
@@ -68,12 +65,9 @@ if global_calendar_dispatcher._calendars:
     del warnings
 del global_calendar_dispatcher
 
-
-__version__ = get_versions()['version']
-del get_versions
-
 extension_args = ext.Namespace()
 
+from ._version import version as __version__
 
 def load_ipython_extension(ipython):
     from .__main__ import zipline_magic
@@ -124,6 +118,3 @@ def teardown(self, np=np):
 
 del os
 del np
-
-from . import _version
-__version__ = _version.get_versions()['version']

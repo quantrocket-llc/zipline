@@ -1,0 +1,46 @@
+[project]
+name = "zipline"
+description = "A backtester for financial algorithms."
+readme = "README.md"
+requires-python = ">=3.13"
+dynamic = ["version"]
+
+authors = [
+    { name = "Quantopian Inc." },
+    { name = "QuantRocket LLC" },
+]
+
+[build-system]
+requires = [
+    "setuptools>=64",
+    "wheel",
+    "Cython>=0.29.21,<3.2.0",
+    "numpy>=1.23.5",
+    "setuptools_scm[toml]>=6.2",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["zipline*"]
+
+[tool.setuptools.package-data]
+"zipline" = [
+    "py.typed",
+    "*.pyi",
+    "*.pyx",
+    "*.pxi",
+    "*.pxd",
+    "*.csv",
+    "*.zip",
+    "*.joblib",
+]
+
+[tool.setuptools_scm]
+write_to = "zipline/_version.py"
+version_scheme = "guess-next-dev"
+local_scheme = "dirty-tag"

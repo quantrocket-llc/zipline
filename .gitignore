@@ -65,3 +65,4 @@ TAGS
 .gdb_history
 
 *.dSYM/
+/zipline/_version.py
