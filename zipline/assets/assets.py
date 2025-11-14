@@ -143,12 +143,12 @@ def _build_ownership_map_from_rows(rows, key_from_row, value_from_row):
     return merge_ownership_periods(mappings)
 
 
-def build_ownership_map(table, key_from_row, value_from_row):
-    """
-    Builds a dict mapping to lists of OwnershipPeriods, from a db table.
-    """
+def build_ownership_map(engine, table, key_from_row, value_from_row):
+    """Builds a dict mapping to lists of OwnershipPeriods, from a db table."""
+    with engine.connect() as conn:
+        rows = conn.execute(sa.select(table.c)).fetchall()
     return _build_ownership_map_from_rows(
-        sa.select(table.c).execute().fetchall(),
+        rows,
         key_from_row,
         value_from_row,
     )
@@ -264,8 +264,8 @@ class AssetFinder(object):
         if isinstance(engine, str):
             engine = check_and_create_engine(engine, require_exists=True)
         self.engine = engine
-        metadata = sa.MetaData(bind=engine)
-        metadata.reflect(only=asset_db_table_names)
+        metadata = sa.MetaData()
+        metadata.reflect(bind=engine, only=asset_db_table_names)
         for table_name in asset_db_table_names:
             setattr(self, table_name, metadata.tables[table_name])
 
@@ -299,7 +299,10 @@ class AssetFinder(object):
 
     @lazyval
     def exchange_info(self):
-        es = sa.select(self.exchanges.c).execute().fetchall()
+        stmt = sa.select(self.exchanges.c)
+        with self.engine.connect() as conn:
+            es = conn.execute(stmt).fetchall()
+
         return {
             name: ExchangeInfo(name, canonical_name, country_code)
             for name, canonical_name, country_code in es
@@ -308,6 +311,7 @@ class AssetFinder(object):
     @lazyval
     def symbol_ownership_map(self):
         return build_ownership_map(
+            engine=self.engine,
             table=self.equity_symbol_mappings,
             key_from_row=(
                 lambda row: (row.company_symbol, row.share_class_symbol)
@@ -317,9 +321,11 @@ class AssetFinder(object):
 
     @lazyval
     def country_codes(self):
-        return tuple([c for (c,) in sa.select(
-            sa.distinct(self.exchanges.c.country_code,
-        )).execute().fetchall()])
+        stmt = sa.select(sa.distinct(self.exchanges.c.country_code))
+        with self.engine.connect() as conn:
+            rows = conn.execute(stmt).fetchall()
+
+        return tuple([c for (c,) in rows])
 
     def lookup_asset_types(self, sids):
         """
@@ -349,10 +355,12 @@ class AssetFinder(object):
         router_cols = self.asset_router.c
 
         for assets in group_into_chunks(missing):
-            query = sa.select((router_cols.sid, router_cols.asset_type)).where(
+            query = sa.select(router_cols.sid, router_cols.asset_type).where(
                 self.asset_router.c.sid.in_(map(int, assets))
             )
-            for sid, type_ in query.execute().fetchall():
+            with self.engine.connect() as conn:
+                rows = conn.execute(query).fetchall()
+            for sid, type_ in rows:
                 missing.remove(sid)
                 found[sid] = self._asset_type_cache[sid] = type_
 
@@ -508,13 +516,13 @@ class AssetFinder(object):
 
     @staticmethod
     def _select_assets_by_sid(asset_tbl, sids):
-        return sa.select([asset_tbl]).where(
+        return sa.select(asset_tbl).where(
             asset_tbl.c.sid.in_(map(int, sids))
         )
 
     @staticmethod
     def _select_asset_by_symbol(asset_tbl, symbol):
-        return sa.select([asset_tbl]).where(asset_tbl.c.symbol == symbol)
+        return sa.select(asset_tbl).where(asset_tbl.c.symbol == symbol)
 
     def _select_most_recent_symbols_chunk(self, sid_group):
         """Retrieve the most recent symbol for a set of sids.
@@ -546,38 +554,38 @@ class AssetFinder(object):
         data_cols = (cols.sid,) + tuple(cols[name] for name in symbol_columns)
 
         # Also select the max of end_date so that all non-grouped fields take
-        # on the value associated with the max end_date. The SQLite docs say
-        # this:
-        #
-        # When the min() or max() aggregate functions are used in an aggregate
-        # query, all bare columns in the result set take values from the input
-        # row which also contains the minimum or maximum. Only the built-in
-        # min() and max() functions work this way.
-        #
-        # See https://www.sqlite.org/lang_select.html#resultset, for more info.
-        to_select = data_cols + (sa.func.max(cols.end_date),)
-
-        return sa.select(
-            to_select,
-        ).where(
-            cols.sid.in_(map(int, sid_group))
-        ).group_by(
-            cols.sid,
+        # on the value associated with the max end_date.
+        # to_select = data_cols + (sa.func.max(cols.end_date),)
+        func_rank = (
+            sa.func.rank()
+            .over(order_by=cols.end_date.desc(), partition_by=cols.sid)
+            .label("rnk")
         )
+        to_select = data_cols + (func_rank,)
+
+        subquery = (
+            sa.select(*to_select)
+            .where(cols.sid.in_(map(int, sid_group)))
+            .subquery("sq")
+        )
+        query = (
+            sa.select(subquery.columns)
+            .filter(subquery.c.rnk == 1)
+            .select_from(subquery)
+        )
+        return query
 
     def _lookup_most_recent_symbols(self, sids):
-        return {
-            row.sid: {c: row[c] for c in symbol_columns}
-            for row in concat(
-                self.engine.execute(
-                    self._select_most_recent_symbols_chunk(sid_group),
-                ).fetchall()
-                for sid_group in partition_all(
-                    SQLITE_MAX_VARIABLE_NUMBER,
-                    sids
+        with self.engine.connect() as conn:
+            return {
+                row["sid"]: {c: row[c] for c in symbol_columns}
+                for row in concat(
+                    conn.execute(
+                        self._select_most_recent_symbols_chunk(sid_group)
+                    ).mappings().all()
+                    for sid_group in partition_all(SQLITE_MAX_VARIABLE_NUMBER, sids)
                 )
-            )
-        }
+            }
 
     def _retrieve_asset_dicts(self, sids, asset_tbl, querying_equities):
         if not sids:
@@ -602,8 +610,9 @@ class AssetFinder(object):
             # Load misses from the db.
             query = self._select_assets_by_sid(asset_tbl, assets)
 
-            for row in query.execute().fetchall():
-                yield _convert_asset_timestamp_fields(mkdict(row))
+            with self.engine.connect() as conn:
+                for row in conn.execute(query).mappings().all():
+                    yield _convert_asset_timestamp_fields(mkdict(row))
 
     def _retrieve_assets(self, sids, asset_tbl, asset_type):
         """
@@ -739,8 +748,9 @@ class AssetFinder(object):
 
         """
 
-        data = self._select_asset_by_symbol(self.futures_contracts, symbol)\
-                   .execute().fetchone()
+        stmt = self._select_asset_by_symbol(self.futures_contracts, symbol)
+        with self.engine.connect() as conn:
+            data = conn.execute(stmt).mappings().fetchone()
 
         # If no data found, raise an exception
         if not data:
@@ -750,19 +760,21 @@ class AssetFinder(object):
     def _get_contract_sids(self, root_symbol):
         fc_cols = self.futures_contracts.c
 
-        return [r.sid for r in
-                list(sa.select((fc_cols.sid,)).where(
-                    (fc_cols.root_symbol == root_symbol) &
-                    (pd.notnull(fc_cols.start_date))).order_by(
-                        fc_cols.auto_close_date).execute().fetchall())]
+        stmt = sa.select(fc_cols.sid).where(
+            (fc_cols.root_symbol == root_symbol) &
+            (pd.notnull(fc_cols.start_date))
+        ).order_by(fc_cols.auto_close_date)
+        with self.engine.connect() as conn:
+            rows = conn.execute(stmt).fetchall()
+
+        return [r.sid for r in rows]
 
     def _get_root_symbol_exchange(self, root_symbol):
         fc_cols = self.futures_root_symbols.c
 
-        fields = (fc_cols.exchange,)
-
-        exchange = sa.select(fields).where(
-            fc_cols.root_symbol == root_symbol).execute().scalar()
+        stmt = sa.select(fc_cols.exchange).where(fc_cols.root_symbol == root_symbol)
+        with self.engine.connect() as conn:
+            exchange = conn.execute(stmt).scalar_one_or_none()
 
         if exchange is not None:
             return exchange
@@ -827,13 +839,9 @@ class AssetFinder(object):
 
     def _make_sids(tblattr):
         def _(self):
-            return tuple(map(
-                itemgetter('sid'),
-                sa.select((
-                    getattr(self, tblattr).c.sid,
-                )).execute().fetchall(),
-            ))
-
+            stmt = sa.select(getattr(self, tblattr).c.sid)
+            with self.engine.engine.connect() as conn:
+                return tuple(conn.execute(stmt).scalars())
         return _
 
     sids = property(
@@ -869,8 +877,10 @@ class AssetFinder(object):
             FROM
                 futures_contracts
             """
-            result = self.engine.execute(sql)
-            self._sids_to_real_sids = {row[0]: row[1] for row in result.fetchall()}
+            with self.engine.connect() as conn:
+                result = conn.execute(sa.text(sql))
+                rows = result.fetchall()
+            self._sids_to_real_sids = {row[0]: row[1] for row in rows}
 
         return self._sids_to_real_sids
 
@@ -889,8 +899,7 @@ class AssetFinder(object):
         through which the bundle has been updated.
         """
         if not self._bundle_end_date:
-            max_date = self.engine.execute(
-                """
+            sql = """
                 SELECT
                     MAX(end_date)
                 FROM (
@@ -905,7 +914,8 @@ class AssetFinder(object):
                         futures_contracts
                 )
                 """
-                ).scalar()
+            with self.engine.connect() as conn:
+                max_date = conn.execute(sa.text(sql)).scalar_one_or_none()
             self._bundle_end_date = pd.Timestamp(max_date)
 
         return self._bundle_end_date
@@ -918,23 +928,24 @@ class AssetFinder(object):
         equities_cols = self.equities.c
         futures_cols = self.futures_contracts.c
         if country_codes:
-            equities_query = sa.select((
+            equities_query = sa.select(
                 equities_cols.sid,
                 equities_cols.start_date,
                 equities_cols.auto_close_date,
-            )).where(
+            ).where(
                 (self.exchanges.c.exchange == equities_cols.exchange) &
                 (self.exchanges.c.country_code.in_(country_codes))
             )
-            futures_query = sa.select((
+            futures_query = sa.select(
                 futures_cols.sid,
                 futures_cols.start_date,
                 futures_cols.auto_close_date,
-            )).where(
+            ).where(
                 (self.exchanges.c.exchange == futures_cols.exchange) &
                 (self.exchanges.c.country_code.in_(country_codes))
             )
-            results = equities_query.union(futures_query).execute().fetchall()
+            with self.engine.connect() as conn:
+                results = conn.execute(equities_query.union(futures_query)).fetchall()
             if results:
                 sids, starts, ends = zip(*results)
 

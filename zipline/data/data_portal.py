@@ -331,9 +331,9 @@ class DataPortal(object):
                 session_label > asset.auto_close_date):
                 # don't forward-fill price if it's past auto_close_date,
                 # otherwise forward-fill
-                return np.NaN
+                return np.nan
             elif field not in ("last_traded", "price"):
-                return np.NaN
+                return np.nan
 
         if data_frequency == "daily":
             if field == "contract":
@@ -1026,7 +1026,7 @@ class DataPortal(object):
             # volumes default to 0, so we don't need to put NaNs in the array;
             # sid (which is a valid field for continuous future bar readers)
             # won't be empty so it doesn't matter what the prefill is
-            return_array[:] = np.NAN
+            return_array[:] = np.nan
 
         if bar_count != 0:
             data = self._history_loader.history(assets,

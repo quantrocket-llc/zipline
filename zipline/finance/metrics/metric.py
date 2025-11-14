@@ -174,8 +174,8 @@ class Returns(object):
             ledger.portfolio.returns
         )
 
-    end_of_bar = partial(_end_of_period, 'minute_perf')
-    end_of_session = partial(_end_of_period, 'daily_perf')
+    end_of_bar = staticmethod(partial(_end_of_period, 'minute_perf'))
+    end_of_session = staticmethod(partial(_end_of_period, 'daily_perf'))
 
 
 class BenchmarkReturnsAndVolatility(object):
@@ -719,7 +719,7 @@ class _ClassicRiskMetrics(object):
             start=start_session,
             # Ensure we have at least one month
             end=end - datetime.timedelta(days=1),
-            freq='M',
+            freq='ME',
             tz='utc',
         )
 

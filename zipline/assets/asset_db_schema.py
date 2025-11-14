@@ -192,5 +192,5 @@ version_info = sa.Table(
         nullable=False,
     ),
     # This constraint ensures a single entry in this table
-    sa.CheckConstraint('id <= 1'),
+    sa.CheckConstraint('id = 0'),
 )

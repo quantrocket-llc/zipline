@@ -60,8 +60,7 @@ def compose_types(a, *cs):
        >>> D()
        Traceback (most recent call last):
           ...
-       TypeError: Can't instantiate abstract class D with abstract method f
-
+       TypeError: Can't instantiate abstract class D ...
 
     An important note here is that ``M`` did not use ``type.__new__`` and
     instead used ``super()``. This is to support cooperative multiple

@@ -550,11 +550,11 @@ def create_daily_df_for_asset(exchange_calendar, start_day, end_day,
         # only keep every 'interval' rows
         for idx, _ in enumerate(days_arr):
             if (idx + 1) % interval != 0:
-                df["open"].iloc[idx] = 0
-                df["high"].iloc[idx] = 0
-                df["low"].iloc[idx] = 0
-                df["close"].iloc[idx] = 0
-                df["volume"].iloc[idx] = 0
+                df.at[df.index[idx], "open"] = 0
+                df.at[df.index[idx], "high"] = 0
+                df.at[df.index[idx], "low"] = 0
+                df.at[df.index[idx], "close"] = 0
+                df.at[df.index[idx], "volume"] = 0
 
     return df
 

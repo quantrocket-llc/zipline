@@ -15,6 +15,7 @@
 
 import os
 import pandas as pd
+import sqlalchemy as sa
 from zipline.data import bundles
 from zipline.assets import Asset
 from zipline.utils.extensions import load_extensions
@@ -74,22 +75,24 @@ def sid(sid: str, bundle: str = None) -> Asset:
     asset_finder = asset_finder_cache.get(bundle, bundle_data.asset_finder)
     asset_finder_cache[bundle] = asset_finder
 
-    zipline_sid = asset_finder.engine.execute(
-        """
-        SELECT
-            sid
-        FROM
-            equities
-        WHERE
-            real_sid = ?
-        UNION
-        SELECT
-            sid
-        FROM
-            futures_contracts
-        WHERE
-            real_sid = ?
-        """, (sid, sid)).scalar()
+    stmt = sa.text("""
+            SELECT
+                sid
+            FROM
+                equities
+            WHERE
+                real_sid = :sid
+            UNION
+            SELECT
+                sid
+            FROM
+                futures_contracts
+            WHERE
+                real_sid = :sid
+            """)
+
+    with asset_finder.engine.connect() as conn:
+        zipline_sid = conn.execute(stmt, {"sid": sid}).scalar()
 
     if zipline_sid is None:
         raise ValidationError(

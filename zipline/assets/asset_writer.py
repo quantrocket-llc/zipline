@@ -300,14 +300,15 @@ def _dt_to_epoch_ns(dt_series):
     return index.view(np.int64)
 
 
-def check_version_info(conn, version_table, expected_version):
+def check_version_info(conn_or_engine, version_table, expected_version):
     """
-    Checks for a version value in the version table.
+    Check the version value stored in the version table, using either
+    an Engine or a Connection.
 
     Parameters
     ----------
-    conn : sa.Connection
-        The connection to use to perform the check.
+    conn : sa.Connection or sa.Engine
+        The connection or engine to use to perform the check.
     version_table : sa.Table
         The version table of the asset database
     expected_version : int
@@ -319,20 +320,31 @@ def check_version_info(conn, version_table, expected_version):
         If the version is in the table and not equal to ASSET_DB_VERSION.
     """
 
-    # Read the version out of the table
-    version_from_table = conn.execute(
-        sa.select((version_table.c.version,)),
-    ).scalar()
+    # Normalize to a Connection
+    if hasattr(conn_or_engine, "connect") and not hasattr(conn_or_engine, "execute"):
+        # This is an Engine
+        with conn_or_engine.connect() as conn:
+            return _check_version_info_connection(conn, version_table, expected_version)
+    else:
+        # This is already a Connection (or a patched Engine with .execute)
+        return _check_version_info_connection(conn_or_engine, version_table, expected_version)
 
-    # A db without a version is considered v0
+
+def _check_version_info_connection(conn, version_table, expected_version):
+    # SELECT version FROM version_table
+    stmt = sa.select(version_table.c.version)
+    result = conn.execute(stmt)
+    version_from_table = result.scalar_one_or_none()
+
+    # a missing version = version 0
     if version_from_table is None:
         version_from_table = 0
 
-    # Raise an error if the versions do not match
-    if (version_from_table != expected_version):
-        raise AssetDBVersionError(db_version=version_from_table,
-                                  expected_version=expected_version)
-
+    if version_from_table != expected_version:
+        raise AssetDBVersionError(
+            db_version=version_from_table,
+            expected_version=expected_version,
+        )
 
 def write_version_info(conn, version_table, version_value):
     """
@@ -348,8 +360,12 @@ def write_version_info(conn, version_table, version_value):
         The version to write in to the database
 
     """
-    conn.execute(sa.insert(version_table, values={'version': version_value}))
-
+    # Ensure exactly one row, with a valid id (0 or 1)
+    stmt = (
+        sa.insert(version_table)
+        .values(id=0, version=version_value)
+    )
+    conn.execute(stmt)
 
 class _empty(object):
     columns = ()
@@ -751,9 +767,11 @@ class AssetDBWriter(object):
         has_tables : bool
             True if any tables are present, otherwise False.
         """
-        conn = txn.connect()
+        inspector_target = getattr(txn, 'engine', txn)
+        inspector = sa.inspect(inspector_target)
+
         for table_name in asset_db_table_names:
-            if txn.dialect.has_table(conn, table_name):
+            if inspector.has_table(table_name):
                 return True
         return False
 
@@ -778,7 +796,7 @@ class AssetDBWriter(object):
             tables_already_exist = self._all_tables_present(txn)
 
             # Create the SQL tables if they do not already exist.
-            metadata.create_all(txn, checkfirst=True)
+            metadata.create_all(bind=txn, checkfirst=True)
 
             if tables_already_exist:
                 check_version_info(txn, version_info, ASSET_DB_VERSION)

@@ -25,6 +25,7 @@ import pytz
 import pandas as pd
 from contextlib2 import ExitStack
 import numpy as np
+import sqlalchemy as sa
 
 from itertools import chain, repeat
 
@@ -1142,22 +1143,24 @@ class TradingAlgorithm(object):
         SidsNotFound
             When a requested ``sid`` does not map to any asset.
         """
-        zipline_sid = self.asset_finder.engine.execute(
-            """
+        stmt = sa.text("""
             SELECT
                 sid
             FROM
                 equities
             WHERE
-                real_sid = ?
+                real_sid = :sid
             UNION
             SELECT
                 sid
             FROM
                 futures_contracts
             WHERE
-                real_sid = ?
-            """, (sid, sid)).scalar()
+                real_sid = :sid
+            """)
+
+        with self.asset_finder.engine.connect() as conn:
+            zipline_sid = conn.execute(stmt, {"sid": sid}).scalar()
 
         if zipline_sid is None:
             raise SidsNotFound(sids=[sid])

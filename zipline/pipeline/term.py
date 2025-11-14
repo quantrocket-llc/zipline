@@ -15,6 +15,7 @@ from numpy import (
     dtype as dtype_class,
     ndarray,
 )
+from pandas import BooleanDtype
 from six import with_metaclass
 
 from zipline.assets import Asset
@@ -747,7 +748,43 @@ class ComputableTerm(Term):
         workspace_value : array-like
             An array like value that the engine can consume.
         """
-        return result.unstack().fillna(self.missing_value).reindex(
+        result = result.unstack()
+
+        # Next we want to fillna(), but first:
+        # Pandas 2.2+ emits a FutureWarning when .fillna() is called on an
+        # object-dtype column that *looks* like it could be downcast to a
+        # boolean or numeric dtype. This happens for Filters because:
+        #
+        #   • Filters produce boolean values (True/False),
+        #   • unstack() inserts NaN where asset/date pairs are missing,
+        #   • True/NaN mix forces the column to dtype=object,
+        #   • and .fillna(False) triggers pandas' legacy “silent downcasting”
+        #     logic, which restores the column dtype to bool but which is
+        #     deprecated and will be removed in pandas 3.0.
+        #
+        # In pandas 3.0, .fillna() will *not* attempt this downcast, so
+        # object-with-NaN filter results would remain object dtype unless the
+        # caller explicitly normalizes the dtype. That would change Zipline’s
+        # historical behavior (Filters must always return numpy.bool_ arrays).
+        #
+        # The correct migration path is to convert the unstacked result to
+        # pandas’ nullable BooleanDtype *before* .fillna(). BooleanDtype
+        # represents True/False/<NA> without going through object dtype, which
+        # prevents the deprecated downcast path from being taken and eliminates
+        # the warning. After filling missing values, the data naturally become
+        # pure booleans again (because we only return result.values), and downstream
+        # pipeline code continues to operate on numpy.bool_ arrays as it always has.
+        #
+        # In short:
+        #   - unstack() introduces NaNs → object dtype,
+        #   - BooleanDtype() preserves NA semantics without using object dtype,
+        #   - .fillna(False) becomes safe and warning-free,
+        #   - and the final returned array remains ordinary numpy bools.
+        # This keeps Zipline’s Filter semantics stable across pandas 2.x → 3.x.
+        if self.dtype == bool_dtype:
+            result = result.astype(BooleanDtype())
+
+        return result.fillna(self.missing_value).reindex(
             columns=assets,
             fill_value=self.missing_value,
         ).values

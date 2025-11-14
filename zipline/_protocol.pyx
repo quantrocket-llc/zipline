@@ -81,12 +81,12 @@ cdef class check_parameters(object):
                     expected_type_name = expected_type.__name__ \
                         if not _is_iterable(expected_type) \
                         else ', '.join([type_.__name__ for type_ in expected_type])
-
-                    raise TypeError("Expected %s argument to be of type %s%s" %
-                        (self.keyword_names[i],
-                         'or iterable of type ' if i in (0, 1) else '',
-                         expected_type_name)
-                    )
+                    raise TypeError(
+                        "Expected {} argument to be of type {}{}".format(
+                            self.keyword_names[i],
+                            "or iterable of type " if i in (0, 1) else "",
+                            expected_type_name,
+                    ))
 
             # verify type of each kwarg
             for keyword, arg in iteritems(kwargs):

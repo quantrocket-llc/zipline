@@ -18,7 +18,6 @@ Tests for the zipline.assets package
 """
 from collections import namedtuple
 from datetime import timedelta
-from functools import partial
 import os
 import pickle
 import string
@@ -771,68 +770,88 @@ class TestAssetDBVersioning(ZiplineTestCase):
     def init_instance_fixtures(self):
         super(TestAssetDBVersioning, self).init_instance_fixtures()
         self.engine = eng = self.enter_instance_context(empty_assets_db())
-        self.metadata = sa.MetaData(eng)
-        self.metadata.reflect()
+        self.metadata = sa.MetaData()
+        self.metadata.reflect(bind=eng)
 
     def test_check_version(self):
         version_table = self.metadata.tables['version_info']
 
+        with self.engine.begin() as conn:
+            conn.execute(sa.delete(version_table))
+
         # This should not raise an error
-        check_version_info(self.engine, version_table, ASSET_DB_VERSION)
+        with self.engine.begin() as conn:
+            write_version_info(conn, version_table, ASSET_DB_VERSION)
 
         # This should fail because the version is too low
         with self.assertRaises(AssetDBVersionError):
-            check_version_info(
-                self.engine,
-                version_table,
-                ASSET_DB_VERSION - 1,
+            with self.engine.begin() as conn:
+                check_version_info(
+                    conn,
+                    version_table,
+                    ASSET_DB_VERSION - 1,
             )
 
         # This should fail because the version is too high
         with self.assertRaises(AssetDBVersionError):
-            check_version_info(
-                self.engine,
-                version_table,
-                ASSET_DB_VERSION + 1,
-            )
+            with self.engine.begin() as conn:
+                check_version_info(
+                    conn,
+                    version_table,
+                    ASSET_DB_VERSION + 1,
+                )
 
     def test_write_version(self):
         version_table = self.metadata.tables['version_info']
-        version_table.delete().execute()
+        # Remove any existing rows in the table.
+        with self.engine.begin() as conn:
+            conn.execute(version_table.delete())
 
         # Assert that the version is not present in the table
-        self.assertIsNone(sa.select((version_table.c.version,)).scalar())
+        with self.engine.connect() as conn:
+            self.assertIsNone(
+                conn.execute(sa.select(version_table.c.version)).scalar_one_or_none()
+            )
 
         # This should fail because the table has no version info and is,
         # therefore, consdered v0
         with self.assertRaises(AssetDBVersionError):
-            check_version_info(self.engine, version_table, -2)
+            with self.engine.begin() as conn:
+                check_version_info(conn, version_table, -2)
 
         # This should not raise an error because the version has been written
-        write_version_info(self.engine, version_table, -2)
-        check_version_info(self.engine, version_table, -2)
+        with self.engine.begin() as conn:
+            write_version_info(conn, version_table, -2)
+            check_version_info(conn, version_table, -2)
 
         # Assert that the version is in the table and correct
-        self.assertEqual(sa.select((version_table.c.version,)).scalar(), -2)
+        with self.engine.connect() as conn:
+            self.assertEqual(
+                conn.execute(sa.select(version_table.c.version)).scalar_one(),
+                -2,
+            )
 
         # Assert that trying to overwrite the version fails
         with self.assertRaises(sa.exc.IntegrityError):
-            write_version_info(self.engine, version_table, -3)
+            with self.engine.begin() as conn:
+                write_version_info(conn, version_table, -3)
 
     def test_finder_checks_version(self):
         version_table = self.metadata.tables['version_info']
-        version_table.delete().execute()
-        write_version_info(self.engine, version_table, -2)
-        check_version_info(self.engine, version_table, -2)
+        with self.engine.begin() as conn:
+            conn.execute(version_table.delete())
+            write_version_info(conn, version_table, -2)
+            check_version_info(conn, version_table, -2)
 
         # Assert that trying to build a finder with a bad db raises an error
         with self.assertRaises(AssetDBVersionError):
             AssetFinder(engine=self.engine)
 
         # Change the version number of the db to the correct version
-        version_table.delete().execute()
-        write_version_info(self.engine, version_table, ASSET_DB_VERSION)
-        check_version_info(self.engine, version_table, ASSET_DB_VERSION)
+        with self.engine.begin() as conn:
+            conn.execute(version_table.delete())
+            write_version_info(conn, version_table, ASSET_DB_VERSION)
+            check_version_info(conn, version_table, ASSET_DB_VERSION)
 
         # Now that the versions match, this Finder should succeed
         AssetFinder(engine=self.engine)

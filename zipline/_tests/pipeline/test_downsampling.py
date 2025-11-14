@@ -648,7 +648,7 @@ class DownsampledPipelineTestCase(WithSeededRandomPipelineEngine,
 
         expected_results = {
             'year': (raw_term_results
-                     .groupby(pd.Grouper(freq='AS'))
+                     .groupby(pd.Grouper(freq='YS'))
                      .first()
                      .reindex(compute_dates, method='ffill')),
             'quarter': (raw_term_results
@@ -746,7 +746,7 @@ class DownsampledCAPipelineTestCase(DownsampledPipelineTestCase):
 
 class TestDownsampledRowwiseOperation(WithAssetFinder, ZiplineTestCase):
 
-    T = partial(pd.Timestamp)
+    T = staticmethod(partial(pd.Timestamp))
     START_DATE = T('2014-01-01')
     END_DATE = T('2014-02-01')
     HALF_WAY_POINT = T('2014-01-15')
