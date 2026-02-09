@@ -32,8 +32,7 @@ from zipline.pipeline.loaders.sharadar import (
 )
 from zipline.pipeline.loaders.brain import (
     BSIPipelineLoader,
-    BLMCFPipelineLoader,
-    BLMECTPipelineLoader
+    BLMCFPipelineLoader
 
 )
 from zipline.pipeline.loaders.alpaca import AlpacaETBPipelineLoader
@@ -75,8 +74,6 @@ class QuantRocketPipelineLoaderRouter:
         self.bsi_loader = BSIPipelineLoader(
             sids_to_real_sids)
         self.blmcf_loader = BLMCFPipelineLoader(
-            sids_to_real_sids)
-        self.blmect_loader = BLMECTPipelineLoader(
             sids_to_real_sids)
 
         # Alpaca
@@ -132,9 +129,7 @@ class QuantRocketPipelineLoaderRouter:
             hasattr(column.dataset, "dataset_family")
             and column.dataset.dataset_family == brain.BLMCF):
             return self.blmcf_loader
-        elif self.isin(column, brain.BLMECT):
-            return self.blmect_loader
-
+        
         # Reuters
         elif (
             hasattr(column.dataset, "dataset_family")
