@@ -425,7 +425,7 @@ def get_forward_returns(
             raise e
 
 
-        returns_data = returns_data[colname].unstack().reindex(index=dt_index_plus_cushion).shift(-shift_length).stack(dropna=False)
+        returns_data = returns_data[colname].unstack().reindex(index=dt_index_plus_cushion).shift(-shift_length).stack(future_stack=True)
         returns_data = returns_data.reindex(index=factor.index)
 
         all_returns_data[colname] = returns_data
